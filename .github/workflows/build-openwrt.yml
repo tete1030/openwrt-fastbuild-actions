@@ -1,4 +1,5 @@
 #=================================================
+# https://github.com/P3TERX/Actions-OpenWrt
 # Description: Build OpenWrt using GitHub Actions
 # Lisence: MIT
 # Author: P3TERX
@@ -32,30 +33,19 @@ jobs:
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        docker rmi `docker images -q`
         echo "Deleting files, please wait ..."
-        sudo rm -rf \
-          /usr/share/dotnet \
-          /etc/mysql \
-          /etc/php
-        sudo -E apt-get -y purge \
-          azure-cli \
-          ghc* \
-          zulu* \
-          hhvm \
-          llvm* \
-          firefox \
-          google* \
-          dotnet* \
-          powershell \
-          openjdk* \
-          mysql* \
-          php*
-        sudo -E apt-get update
-        sudo -E apt-get -y install build-essential asciidoc binutils bzip2 gawk gettext git libncurses5-dev libz-dev patch unzip zlib1g-dev lib32gcc1 libc6-dev-i386 subversion flex uglifyjs git-core gcc-multilib p7zip p7zip-full msmtp libssl-dev texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler
+        sudo rm -rf /usr/share/dotnet /etc/apt/sources.list.d/*
+        sudo swapoff /swapfile
+        sudo rm -f /swapfile
+        #docker rmi `docker images -q`
+        #sudo -E apt-get -q purge azure-cli ghc* zulu* hhvm llvm* firefox google* dotnet* powershell openjdk* mysql* php*
+        sudo -E apt-get -qq update
+        sudo -E apt-get -qq install build-essential asciidoc binutils bzip2 gawk gettext git libncurses5-dev libz-dev patch unzip zlib1g-dev lib32gcc1 libc6-dev-i386 subversion flex uglifyjs git-core gcc-multilib p7zip p7zip-full msmtp libssl-dev texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler
         sudo -E apt-get -y install tar wget curl nginx
-        sudo -E apt-get -y autoremove --purge
-        sudo -E apt-get clean
+        sudo -E apt-get -qq autoremove --purge
+        sudo -E apt-get -qq clean
+        curl -fsSL https://raw.githubusercontent.com/P3TERX/dotfiles/master/.bashrc >> ~/.bashrc
+        sudo ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
     - name: Clone source code
       env: 
@@ -81,8 +71,8 @@ jobs:
         make defconfig
         make oldconfig
 
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v1
+    - name: SSH connection to Actions
+      uses: P3TERX/debugger-action@master
 
     - name: Download package
       run: |
@@ -90,17 +80,38 @@ jobs:
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
 
-    - name: Build
+    - name: Multi-thread compile
       run: |
         cd openwrt
-        echo -e "$(nproc) thread build."
-        make -j$(nproc) V=s
+        echo -e "$(nproc) thread compile"
+        make -j$(nproc)
 
-    - name : Upload artifact
+    - name: Single-thread compile
+      if: failure()
+      run: |
+        cd openwrt
+        make -j1 V=s
+
+    - name: Upload bin directory
       uses: actions/upload-artifact@master
+      if: always()
       with:
-        name: OpenWrt
+        name: OpenWrt_bin
         path: openwrt/bin
+
+    - name: Organize files
+      if: always()
+      run: |
+        cd openwrt/bin/targets/*/*
+        rm -rf packages
+        echo "::set-env name=FIRMWARE::$(pwd)"
+
+    - name: Upload firmware
+      uses: actions/upload-artifact@master
+      if: always()
+      with:
+        name: OpenWrt_firmware
+        path: ${{ env.FIRMWARE }}
 
 # Base
 # * +mentohust
