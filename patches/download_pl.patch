@@ -1,0 +1,11 @@
+--- scripts/download.pl	2019-12-01 05:43:25.000000000 +0000
++++ scripts/download.pl	2019-12-01 06:08:02.494788876 +0000
+@@ -82,7 +82,7 @@
+ 	}
+ 
+ 	return $have_curl
+-		? (qw(curl -f --connect-timeout 20 --retry 5 --location --insecure), shellwords($ENV{CURL_OPTIONS} || ''), $url)
++		? (qw(curl -f --connect-timeout 20 --max-time 240 --retry 5 --location --insecure), shellwords($ENV{CURL_OPTIONS} || ''), $url)
+ 		: (qw(wget --tries=5 --timeout=20 --no-check-certificate --output-document=-), shellwords($ENV{WGET_OPTIONS} || ''), $url)
+ 	;
+ }

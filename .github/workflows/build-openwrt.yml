@@ -53,6 +53,7 @@ jobs:
           php*
         sudo -E apt-get update
         sudo -E apt-get -y install build-essential asciidoc binutils bzip2 gawk gettext git libncurses5-dev libz-dev patch unzip zlib1g-dev lib32gcc1 libc6-dev-i386 subversion flex uglifyjs git-core gcc-multilib p7zip p7zip-full msmtp libssl-dev texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler
+        sudo -E apt-get -y install tar wget curl nginx
         sudo -E apt-get -y autoremove --purge
         sudo -E apt-get clean
 
@@ -70,15 +71,18 @@ jobs:
 
     - name: Load custom configuration
       env:
-        CONFIG_FILE: '.config'
+        CONFIG_FILE: 'config.diff'
         DIY_SH: 'diy.sh'
       run: |
-        [ -e files ] && mv files openwrt/files
         [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
         chmod +x $DIY_SH
         cd openwrt
         ../$DIY_SH
         make defconfig
+        make oldconfig
+
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v1
 
     - name: Download package
       run: |
@@ -97,3 +101,44 @@ jobs:
       with:
         name: OpenWrt
         path: openwrt/bin
+
+# Base
+# * +mentohust
+# * -shadowsocksr
+# * -unblockmusic
+# * -v2ray
+# * -samba +samba4
+# * -adbyby
+# * -xlnetacc
+# * -mia
+# * -wifi_schedule
+# * -kms
+# * -zerotier
+# * +dockerce
+# * +curl
+# * +wget
+
+# Install
+# * autossh
+# * openclash
+# * fping
+# * netdata
+# * zsh
+# * tcpdump
+# * dmesg
+# * tmux
+# * vim-full
+# * strace
+# * htop
+
+# Change source
+# * Upgrade download_pl
+# * Add mentohust
+# * autossh.init
+# * transmission init.d
+# * netdata init.d upgrade
+# * netdata makefile upgrade for 1.19
+# * Add libJudy for netdata
+# * netdata add go.d.plugin
+# * openclash replace clashr
+# 

@@ -1,9 +1,12 @@
 #!/bin/bash
-#=================================================
-# Description: DIY script
-# Lisence: MIT
-# Author: P3TERX
-# Blog: https://p3terx.com
-#=================================================
-# Modify default IP
-#sed -i 's/192.168.1.1/192.168.50.5/g' package/base-files/files/bin/config_generate
+
+cd openwrt
+
+patch package/admin/netdata/Makefile ../patches/netdata_makefile.patch
+patch package/admin/netdata/files/netdata.init ../patches/netdata_init.patch
+
+patch -p0 < ../patches/libjudy.patch
+patch -p0 < ../patches/download_pl.patch
+
+git clone https://github.com/KyleRicardo/MentoHUST-OpenWrt-ipk.git package/mentohust
+git clone https://github.com/BoringCat/luci-app-mentohust.git package/luci-app-mentohust
