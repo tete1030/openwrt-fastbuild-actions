@@ -2,8 +2,8 @@
 
 cd openwrt
 
-patch package/admin/netdata/Makefile ../patches/netdata_makefile.patch
-patch package/admin/netdata/files/netdata.init ../patches/netdata_init.patch
+patch package/feeds/packages/netdata/Makefile ../patches/netdata_makefile.patch
+patch package/feeds/packages/netdata/files/netdata.init ../patches/netdata_init.patch
 
 patch -p0 < ../patches/libjudy.patch
 patch -p0 < ../patches/download_pl.patch
