@@ -59,6 +59,9 @@ jobs:
     - name: Install feeds
       run: cd openwrt && ./scripts/feeds install -a
 
+    - name: SSH connection to Actions
+      uses: P3TERX/debugger-action@master
+
     - name: Load custom configuration
       env:
         CONFIG_FILE: 'config.diff'
@@ -70,9 +73,6 @@ jobs:
         ../$DIY_SH
         make defconfig
         make oldconfig
-
-    - name: SSH connection to Actions
-      uses: P3TERX/debugger-action@master
 
     - name: Download package
       run: |
