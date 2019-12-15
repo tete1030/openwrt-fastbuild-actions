@@ -15,7 +15,10 @@ on:
     branches: 
       - master
     paths:
-      - '.config'
+      - 'config.diff'
+      - 'diy.sh'
+      - '.github/workflows/*'
+      - 'patches/*'
 #  schedule:
 #    - cron: 0 8 * * 5
 #  watch:
