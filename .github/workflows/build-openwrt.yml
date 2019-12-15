@@ -11,6 +11,8 @@ name: Build OpenWrt
 on: 
   release:
     types: [published]
+  repository_dispatch:
+    types: build-openwrt
   push:
     branches: 
       - master
