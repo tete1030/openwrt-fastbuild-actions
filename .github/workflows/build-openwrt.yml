@@ -99,7 +99,7 @@ jobs:
 
     # if: failure() is not accurate, because the failure may come from any previous step
     - name: Single-thread compile
-      if: steps.mtcompile.outputs.status == fail
+      if: steps.mtcompile.outputs.status == 'fail'
       run: |
         . docker.sh
         BUILD_OPTS="--target singlethread-compile" build_image
