@@ -81,12 +81,25 @@ jobs:
         BUILD_OPTS="--target download" build_image
 
     - name: Multi-thread compile
+      id: mtcompile
+      continue-on-error: true
       run: |
         . docker.sh
-        BUILD_OPTS="--target multithread-compile" build_image
+        retVal=$?
+        if [ $retVal -eq 0 ]; then
+          BUILD_OPTS="--target multithread-compile" build_image
+          retVal=$?
+        fi
+        if [ $retVal -eq 0 ]; then
+          echo "::set-output name=status::success"
+        else
+          echo "::set-output name=status::fail"
+        fi
+        exit $retVal
 
+    # if: failure() is not accurate, because the failure may come from any previous step
     - name: Single-thread compile
-      if: failure()
+      if: steps.mtcompile.outputs.status == fail
       run: |
         . docker.sh
         BUILD_OPTS="--target singlethread-compile" build_image
