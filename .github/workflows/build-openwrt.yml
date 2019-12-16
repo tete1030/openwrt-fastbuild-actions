@@ -25,7 +25,7 @@ jobs:
     env:
       USERNAME: ${{secrets.docker_username}}
       PASSWORD: ${{secrets.docker_password}}
-      IMAGE_NAME: openwrt_x86_64
+      IMAGE_NAME: tete1030/openwrt_x86_64
       IMAGE_TAG: latest
       CONTEXT: ./
       DOCKERFILE: Dockerfile
