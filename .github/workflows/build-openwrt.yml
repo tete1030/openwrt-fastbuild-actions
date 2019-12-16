@@ -31,6 +31,10 @@ jobs:
       DOCKERFILE: Dockerfile
       PULL_STAGES_LOG: pull-stages-output.log
       BUILD_LOG: build-output.log
+      REPO_URL: https://github.com/coolsnowwolf/lede
+      REPO_BRANCH: master
+      CONFIG_FILE: 'config.diff'
+      BUILD_ARGS: 'REPO_URL REPO_BRANCH CONFIG_FILE'
 
     steps:
     - name: Checkout
@@ -46,22 +50,17 @@ jobs:
       run: |
         scripts/cleanup.sh
         . docker.sh
-        BUILD_OPTS="--target init-env" build_image
+        build_image init-env
 
     - name: Clone all source code
-      env: 
-        REPO_URL: https://github.com/coolsnowwolf/lede
-        REPO_BRANCH: master
       run: |
         . docker.sh
-        BUILD_OPTS="--target clone --build-arg REPO_URL=\"$REPO_URL\" --build-arg REPO_BRANCH=\"$REPO_BRANCH\"" build_image
+        build_image clone
 
     - name: Load custom configuration
-      env:
-        CONFIG_FILE: 'config.diff'
       run: |
         . docker.sh
-        BUILD_OPTS="--target custom --build-arg CONFIG_FILE=\"$CONFIG_FILE\"" build_image
+        build_image custom
 
     # - name: SSH connection to Actions
     #   uses: P3TERX/debugger-action@master
@@ -69,7 +68,7 @@ jobs:
     - name: Download package
       run: |
         . docker.sh
-        BUILD_OPTS="--target download" build_image
+        build_image download
 
     - name: Multi-thread compile
       id: mtcompile
@@ -78,7 +77,7 @@ jobs:
         . docker.sh
         retVal=$?
         if [ $retVal -eq 0 ]; then
-          BUILD_OPTS="--target multithread-compile" build_image
+          build_image multithread-compile
           retVal=$?
         fi
         if [ $retVal -eq 0 ]; then
@@ -93,7 +92,7 @@ jobs:
       if: steps.mtcompile.outputs.status == 'fail'
       run: |
         . docker.sh
-        BUILD_OPTS="--target singlethread-compile" build_image
+        build_image singlethread-compile
 
     - name: Push docker cache
       if: always()

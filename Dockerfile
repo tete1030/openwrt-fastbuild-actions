@@ -10,13 +10,13 @@ RUN scripts/initenv.sh
 FROM init-env AS clone
 ARG REPO_URL
 ARG REPO_BRANCH
-RUN /bin/bash -c "REPO_URL=\"$REPO_URL\" REPO_BRANCH=\"$REPO_BRANCH\" scripts/clone.sh"
+RUN REPO_URL="${REPO_URL}" REPO_BRANCH="${REPO_BRANCH}" scripts/clone.sh
 
 FROM clone AS custom
 ARG CONFIG_FILE
 COPY --chown=builder:builder patches ./patches
 COPY --chown=builder:builder ${CONFIG_FILE} ./
-RUN /bin/bash -c "CONFIG_FILE=\"$CONFIG_FILE\" scripts/customize.sh"
+RUN CONFIG_FILE="${CONFIG_FILE}" scripts/customize.sh
 
 FROM custom AS download
 RUN scripts/download.sh

@@ -56,10 +56,28 @@ build_image() {
     echo "Use cache: $cache_from"
   fi
 
+  build_target=()
+  if [ ! -z "${1}" ]; then
+    build_target+=(--target "${1}")
+  fi
+  build_args=()
+  if [ ! -z "${BUILD_ARGS}" ]; then
+    IFS_ORI="$IFS"
+    IFS=$'\x20'
+    
+    for arg in ${BUILD_ARGS[@]};
+    do
+      build_args+=(--build-arg "${arg}=${!arg}")
+    done
+    IFS="$IFS_ORI"
+  fi
+
   # build image using cache
-  docker build \
-    $BUILD_OPTS \
+  DOCKER_BUILDKIT=1 docker build \
+    "${build_target[@]}" \
+    "${build_args[@]}" \
     $cache_from \
+    --build-arg BUILDKIT_INLINE_CACHE=1 \
     --tag "$(_get_full_image_name)":${IMAGE_TAG} \
     --file ${CONTEXT}/${DOCKERFILE} \
     ${CONTEXT} | tee "$BUILD_LOG"
