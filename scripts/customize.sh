@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 [ -e $CONFIG_FILE ] && cp $CONFIG_FILE openwrt/.config
 
 cd openwrt

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
 
 echo "Updating and installing feeds ..."
