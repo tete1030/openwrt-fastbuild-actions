@@ -93,7 +93,7 @@ jobs:
 
     - name: Push docker cache
       if: always()
-      runs: |
+      run: |
         . docker.sh
         push_image_and_stages
 
