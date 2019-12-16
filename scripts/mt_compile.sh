@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -eo pipefail
 
 cd openwrt
 echo -e "$(nproc) thread compile"

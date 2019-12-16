@@ -1,6 +1,6 @@
 FROM ubuntu:18.04 AS init-env
 RUN useradd -ms /bin/bash builder \
-  && bash -c 'echo "builder ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/99_sudo_include_file' \
+  && /bin/bash -c 'echo "builder ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/99_sudo_include_file' \
   && service sudo restart
 USER builder
 WORKDIR /home/builder

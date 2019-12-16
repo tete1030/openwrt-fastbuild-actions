@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -eo pipefail
 
 echo "Fallback to single thread compile"
 cd openwrt

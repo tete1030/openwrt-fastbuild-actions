@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -eo pipefail
 
 git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -eo pipefail
 
 echo "Installing building components ..."
 sudo -E apt-get -qq update \

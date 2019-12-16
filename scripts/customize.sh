@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -eo pipefail
 
 [ -e $CONFIG_FILE ] && cp $CONFIG_FILE openwrt/.config
 
