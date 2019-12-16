@@ -14,13 +14,6 @@ on:
   repository_dispatch:
     types: build-openwrt
   push:
-    branches: 
-      - master
-    paths:
-      - 'config.diff'
-      - 'diy.sh'
-      - '.github/workflows/*'
-      - 'patches/*'
 #  schedule:
 #    - cron: 0 8 * * 5
 #  watch:
