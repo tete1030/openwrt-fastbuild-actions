@@ -27,75 +27,81 @@ on:
 #    types: [started]
 
 jobs:
-  build:
+  build-docker:
     runs-on: ubuntu-18.04
+    env:
+      USERNAME: ${{secrets.docker_username}}
+      PASSWORD: ${{secrets.docker_password}}
+      IMAGE_NAME: openwrt_x86_64
+      IMAGE_TAG: latest
+      CONTEXT: ./
+      DOCKERFILE: Dockerfile
+      PULL_STAGES_LOG: pull-stages-output.log
+      BUILD_LOG: build-output.log
 
     steps:
     - name: Checkout
       uses: actions/checkout@master
 
-    - name: Initialization environment
+    - name: Pull docker cache
+      run: |
+        . docker.sh
+        login_to_registry
+        pull_cached_stages
+
+    - name: Initialize environment
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        echo "Deleting files, please wait ..."
-        sudo rm -rf /usr/share/dotnet /etc/apt/sources.list.d/*
-        sudo swapoff /swapfile
-        sudo rm -f /swapfile
-        #docker rmi `docker images -q`
-        #sudo -E apt-get -q purge azure-cli ghc* zulu* hhvm llvm* firefox google* dotnet* powershell openjdk* mysql* php*
-        sudo -E apt-get -qq update
-        sudo -E apt-get -qq install build-essential asciidoc binutils bzip2 gawk gettext git libncurses5-dev libz-dev patch unzip zlib1g-dev lib32gcc1 libc6-dev-i386 subversion flex uglifyjs git-core gcc-multilib p7zip p7zip-full msmtp libssl-dev texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler
-        sudo -E apt-get -y install tar wget curl nginx
-        sudo -E apt-get -qq autoremove --purge
-        sudo -E apt-get -qq clean
-        curl -fsSL https://raw.githubusercontent.com/P3TERX/dotfiles/master/.bashrc >> ~/.bashrc
-        sudo ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+        scripts/cleanup.sh
+        . docker.sh
+        BUILD_OPTS="--target init-env" build_image
 
-    - name: Clone source code
+    - name: Clone all source code
       env: 
         REPO_URL: https://github.com/coolsnowwolf/lede
         REPO_BRANCH: master
-      run: git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
-
-    - name: Update feeds
-      run: cd openwrt && ./scripts/feeds update -a
-
-    - name: Install feeds
-      run: cd openwrt && ./scripts/feeds install -a
+      run: |
+        . docker.sh
+        BUILD_OPTS="--target clone --build-arg REPO_URL=\"$REPO_URL\" --build-arg REPO_BRANCH=\"$REPO_BRANCH\"" build_image
 
     - name: Load custom configuration
       env:
         CONFIG_FILE: 'config.diff'
-        DIY_SH: 'diy.sh'
       run: |
-        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
-        chmod +x $DIY_SH
-        cd openwrt
-        ../$DIY_SH
-        make defconfig
-        make oldconfig
+        . docker.sh
+        BUILD_OPTS="--target custom --build-arg CONFIG_FILE=\"$CONFIG_FILE\"" build_image
 
     # - name: SSH connection to Actions
     #   uses: P3TERX/debugger-action@master
 
     - name: Download package
       run: |
-        cd openwrt && make download -j8
-        find dl -size -1024c -exec ls -l {} \;
-        find dl -size -1024c -exec rm -f {} \;
+        . docker.sh
+        BUILD_OPTS="--target download" build_image
 
     - name: Multi-thread compile
       run: |
-        cd openwrt
-        echo -e "$(nproc) thread compile"
-        make -j$(nproc)
+        . docker.sh
+        BUILD_OPTS="--target multithread-compile" build_image
 
     - name: Single-thread compile
       if: failure()
       run: |
-        cd openwrt
-        make -j1 V=s
+        . docker.sh
+        BUILD_OPTS="--target singlethread-compile" build_image
+
+    - name: Push docker cache
+      if: always()
+      runs: |
+        . docker.sh
+        push_image_and_stages
+
+    - name: Mount built files
+      if: always()
+      run: |
+        . docker.sh
+        mount_container ./openwrt /home/builder/openwrt
 
     - name: Upload bin directory
       uses: actions/upload-artifact@master
@@ -117,6 +123,65 @@ jobs:
       with:
         name: OpenWrt_firmware
         path: ${{ env.FIRMWARE }}
+
+  # build:
+  #   runs-on: ubuntu-18.04
+
+  #   steps:
+  #   - name: Checkout
+  #     uses: actions/checkout@master
+
+  #   - name: Initialize environment
+  #     env:
+  #       DEBIAN_FRONTEND: noninteractive
+  #     run: |
+  #       scripts/cleanup.sh
+  #       scripts/initenv.sh
+
+  #   - name: Clone all source code
+  #     env: 
+  #       REPO_URL: https://github.com/coolsnowwolf/lede
+  #       REPO_BRANCH: master
+  #     run: scripts/clone.sh
+
+  #   - name: Load custom configuration
+  #     env:
+  #       CONFIG_FILE: 'config.diff'
+  #     run: scripts/customize.sh
+
+  #   # - name: SSH connection to Actions
+  #   #   uses: P3TERX/debugger-action@master
+
+  #   - name: Download package
+  #     run: scripts/download.sh
+
+  #   - name: Multi-thread compile
+  #     run: scripts/mt_compile.sh
+
+  #   - name: Single-thread compile
+  #     if: failure()
+  #     run: scripts/st_compile.sh
+
+  #   - name: Upload bin directory
+  #     uses: actions/upload-artifact@master
+  #     if: always()
+  #     with:
+  #       name: OpenWrt_bin
+  #       path: openwrt/bin
+
+  #   - name: Organize files
+  #     if: always()
+  #     run: |
+  #       cd openwrt/bin/targets/*/*
+  #       rm -rf packages
+  #       echo "::set-env name=FIRMWARE::$(pwd)"
+
+  #   - name: Upload firmware
+  #     uses: actions/upload-artifact@master
+  #     if: always()
+  #     with:
+  #       name: OpenWrt_firmware
+  #       path: ${{ env.FIRMWARE }}
 
 # Base
 # * +mentohust
