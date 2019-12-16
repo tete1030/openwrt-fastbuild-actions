@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -eo pipefail
+export DEBIAN_FRONTEND=noninteractive
 
 echo "Installing building components ..."
 sudo -E apt-get -qq update

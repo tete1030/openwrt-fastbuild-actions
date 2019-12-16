@@ -43,8 +43,6 @@ jobs:
         pull_cached_stages
 
     - name: Initialize environment
-      env:
-        DEBIAN_FRONTEND: noninteractive
       run: |
         scripts/cleanup.sh
         . docker.sh
@@ -138,8 +136,6 @@ jobs:
   #     uses: actions/checkout@master
 
   #   - name: Initialize environment
-  #     env:
-  #       DEBIAN_FRONTEND: noninteractive
   #     run: |
   #       scripts/cleanup.sh
   #       scripts/initenv.sh
