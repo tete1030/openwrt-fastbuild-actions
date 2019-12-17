@@ -37,8 +37,6 @@ jobs:
       IMAGE_TAG: latest
       CONTEXT: ./
       DOCKERFILE: Dockerfile
-      PULL_STAGES_LOG: pull-stages-output.log
-      BUILD_LOG: build-output.log
       REPO_URL: https://github.com/coolsnowwolf/lede
       REPO_BRANCH: master
       CONFIG_FILE: 'config.diff'
@@ -57,7 +55,7 @@ jobs:
       run: |
         . docker.sh
         login_to_registry
-        pull_cached_stages
+        pull_image
 
     - name: Initialize environment
       run: |
@@ -75,6 +73,7 @@ jobs:
         . docker.sh
         build_image custom
 
+    # Allow intermediate customization
     - name: SSH connection to Actions
       if: github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true
       uses: tete1030/debugger-action@my
@@ -101,34 +100,36 @@ jobs:
         fi
         exit $retVal
 
-    # if: failure() is not accurate, because the failure may come from any previous step
+    # if: failure() alone is not accurate but still necessary.
+    #     The failure may come from any previous step.
+    #     However, without failure(), the `if:` statement would combine success() implicitly
     - name: Single-thread compile
-      if: steps.mtcompile.outputs.status == 'fail'
+      if: failure() && steps.mtcompile.outputs.status == 'fail'
       run: |
         . docker.sh
         build_image singlethread-compile
 
     - name: Push docker cache
-      if: always()
+      if: (!cancelled())
       run: |
         . docker.sh
-        push_image_and_stages
+        push_image
 
     - name: Mount built files
-      if: always()
+      if: (!cancelled())
       run: |
         . docker.sh
         mount_container "$(pwd)/openwrt" /home/builder/openwrt
 
     - name: Upload bin directory
       uses: actions/upload-artifact@master
-      if: always()
+      if: (!cancelled())
       with:
         name: OpenWrt_bin
         path: openwrt/bin
 
     - name: Organize files
-      if: always()
+      if: (!cancelled())
       run: |
         cd openwrt/bin/targets/*/*
         rm -rf packages
@@ -136,13 +137,14 @@ jobs:
 
     - name: Upload firmware
       uses: actions/upload-artifact@master
-      if: always()
+      if: (!cancelled())
       with:
         name: OpenWrt_firmware
         path: ${{ env.FIRMWARE }}
 
+    # Allow intermediate customization and failure checking (when failure() or cancelled())
     - name: SSH connection to Actions
-      if: github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true
+      if: (!success()) || (github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true)
       uses: tete1030/debugger-action@my
 
   # build:
