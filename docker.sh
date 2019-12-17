@@ -39,6 +39,14 @@ check_required_input() {
   _exit_if_empty BUILD_LOG "${BUILD_LOG}"
 }
 
+configure_docker() {
+  echo '{
+    "max-concurrent-downloads": 50,
+    "max-concurrent-uploads": 50
+  }' | sudo tee /etc/docker/daemon.json
+  sudo service docker restart
+}
+
 login_to_registry() {
   echo "${PASSWORD}" | docker login -u "${USERNAME}" --password-stdin "${REGISTRY}"
 }
