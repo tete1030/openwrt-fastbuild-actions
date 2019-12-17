@@ -117,6 +117,7 @@ jobs:
         push_image
 
     - name: Copy out bin directory
+      id: copydir
       if: (!cancelled())
       run: |
         . docker.sh
@@ -124,16 +125,17 @@ jobs:
           mkdir "$(pwd)/openwrt"
         fi
         copy_directory /home/builder/openwrt/bin "$(pwd)/openwrt/bin"
+        echo "::set-output name=status::success"
 
     - name: Upload bin directory
       uses: actions/upload-artifact@master
-      if: (!cancelled())
+      if: steps.copydir.outputs.status == 'success' && !cancelled()
       with:
         name: OpenWrt_bin
         path: openwrt/bin
 
     - name: Organize files
-      if: (!cancelled())
+      if: steps.copydir.outputs.status == 'success' && !cancelled()
       run: |
         cd openwrt/bin/targets/*/*
         rm -rf packages
@@ -141,7 +143,7 @@ jobs:
 
     - name: Upload firmware
       uses: actions/upload-artifact@master
-      if: (!cancelled())
+      if: steps.copydir.outputs.status == 'success' && success() && !cancelled()
       with:
         name: OpenWrt_firmware
         path: ${{ env.FIRMWARE }}
@@ -216,6 +218,7 @@ jobs:
         build_image singlethread-compile
 
     - name: Copy out bin directory
+      id: copydir
       if: (!cancelled())
       run: |
         . docker.sh
@@ -223,16 +226,17 @@ jobs:
           mkdir "$(pwd)/openwrt"
         fi
         copy_directory /home/builder/openwrt/bin "$(pwd)/openwrt/bin"
+        echo "::set-output name=status::success"
 
     - name: Upload bin directory
       uses: actions/upload-artifact@master
-      if: (!cancelled())
+      if: steps.copydir.outputs.status == 'success' && !cancelled()
       with:
         name: OpenWrt_bin
         path: openwrt/bin
 
     - name: Organize files
-      if: (!cancelled()) && github.event_name == 'repository_dispatch' && github.event.client_payload.build_whole == true
+      if: steps.copydir.outputs.status == 'success' && !cancelled() && github.event_name == 'repository_dispatch' && github.event.client_payload.build_whole == true
       run: |
         cd openwrt/bin/targets/*/*
         rm -rf packages
@@ -240,7 +244,7 @@ jobs:
   
     - name: Upload firmware
       uses: actions/upload-artifact@master
-      if: (!cancelled()) && github.event_name == 'repository_dispatch' && github.event.client_payload.build_whole == true
+      if: steps.copydir.outputs.status == 'success' && success() && !cancelled() && github.event_name == 'repository_dispatch' && github.event.client_payload.build_whole == true
       with:
         name: OpenWrt_firmware
         path: ${{ env.FIRMWARE }}
@@ -318,7 +322,7 @@ jobs:
 
     - name: Upload firmware
       uses: actions/upload-artifact@master
-      if: (!cancelled())
+      if: (success() && !cancelled())
       with:
         name: OpenWrt_firmware
         path: ${{ env.FIRMWARE }}
