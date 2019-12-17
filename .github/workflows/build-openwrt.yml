@@ -26,7 +26,7 @@ on:
 jobs:
   docker-build:
     runs-on: ubuntu-18.04
-    if: github.event_name == "release" || (github.event_name == "repository_dispatch" && github.event.action == "docker")
+    if: github.event_name == 'release' || (github.event_name == 'repository_dispatch' && github.event.action == 'docker')
     env:
       USERNAME: ${{secrets.docker_username}}
       PASSWORD: ${{secrets.docker_password}}
@@ -68,7 +68,7 @@ jobs:
         build_image custom
 
     - name: SSH connection to Actions
-      if: github.event_name == "repository_dispatch" && github.event.client_payload.debug == true
+      if: github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true
       uses: P3TERX/debugger-action@master
 
     - name: Download package
@@ -134,7 +134,7 @@ jobs:
         path: ${{ env.FIRMWARE }}
 
     - name: SSH connection to Actions
-      if: github.event_name == "repository_dispatch" && github.event.client_payload.debug == true
+      if: github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true
       uses: P3TERX/debugger-action@master
 
   # build:
