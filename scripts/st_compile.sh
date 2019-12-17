@@ -2,6 +2,6 @@
 
 set -eo pipefail
 
-echo "Fallback to single thread compile"
+echo "Fallback to single thread compile $COMPILE_OPTIONS"
 cd openwrt
-make -j1 V=s
+make $COMPILE_OPTIONS -j1 V=s

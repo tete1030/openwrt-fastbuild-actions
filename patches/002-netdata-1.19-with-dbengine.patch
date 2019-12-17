@@ -1,6 +1,5 @@
-diff --git a/admin/netdata/Makefile b/admin/netdata/Makefile
---- a/admin/netdata/Makefile
-+++ b/admin/netdata/Makefile
+--- package/feeds/packages/netdata/Makefile
++++ package/feeds/packages/netdata/Makefile
 @@ -8,7 +8,7 @@
  include $(TOPDIR)/rules.mk
  

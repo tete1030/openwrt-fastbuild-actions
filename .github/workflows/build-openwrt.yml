@@ -147,62 +147,177 @@ jobs:
       if: (!success()) || (github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true)
       uses: tete1030/debugger-action@my
 
-  # build:
-  #   runs-on: ubuntu-18.04
+  docker-build-inc:
+    runs-on: ubuntu-18.04
+    if: github.event_name == 'push' || (github.event_name == 'repository_dispatch' && github.event.action == 'docker-inc')
+    env:
+      USERNAME: ${{secrets.docker_username}}
+      PASSWORD: ${{secrets.docker_password}}
+      IMAGE_NAME: ${{secrets.docker_username}}/openwrt_x86_64
+      IMAGE_TAG: latest
+      CONTEXT: ./
+      DOCKERFILE: Dockerfile-inc
+      REPO_URL: https://github.com/coolsnowwolf/lede
+      REPO_BRANCH: master
+      CONFIG_FILE: 'config.diff'
+      BUILD_WHOLE: ${{ github.event.client_payload.build_whole || false }}
+      BUILD_ARGS: 'REPO_URL REPO_BRANCH CONFIG_FILE IMAGE_NAME IMAGE_TAG BUILD_WHOLE'
 
-  #   steps:
-  #   - name: Checkout
-  #     uses: actions/checkout@master
+    steps:
+    - name: Checkout
+      uses: actions/checkout@master
 
-  #   - name: Initialize environment
-  #     run: |
-  #       scripts/cleanup.sh
-  #       scripts/initenv.sh
+    - name: Configure docker
+      run: |
+        . docker.sh
+        configure_docker
 
-  #   - name: Clone all source code
-  #     env: 
-  #       REPO_URL: https://github.com/coolsnowwolf/lede
-  #       REPO_BRANCH: master
-  #     run: scripts/clone.sh
+    - name: Pull docker cache
+      run: |
+        . docker.sh
+        login_to_registry
+        pull_image
 
-  #   - name: Load custom configuration
-  #     env:
-  #       CONFIG_FILE: 'config.diff'
-  #     run: scripts/customize.sh
+    - name: Apply customizations
+      run: |
+        . docker.sh
+        build_image applycustom
 
-  #   # - name: SSH connection to Actions
-  #   #   uses: P3TERX/debugger-action@master
+    # Allow intermediate customization
+    - name: Multi-thread compile
+      id: mtcompile
+      continue-on-error: true
+      run: |
+        . docker.sh
+        retVal=$?
+        if [ $retVal -eq 0 ]; then
+          build_image multithread-compile
+          retVal=$?
+        fi
+        if [ $retVal -eq 0 ]; then
+          echo "::set-output name=status::success"
+        else
+          echo "::set-output name=status::fail"
+        fi
+        exit $retVal
 
-  #   - name: Download package
-  #     run: scripts/download.sh
+    # if: failure() alone is not accurate but still necessary.
+    #     The failure may come from any previous step.
+    #     However, without failure(), the `if:` statement would combine success() implicitly
+    - name: Single-thread compile
+      if: failure() && steps.mtcompile.outputs.status == 'fail'
+      run: |
+        . docker.sh
+        build_image singlethread-compile
 
-  #   - name: Multi-thread compile
-  #     run: scripts/mt_compile.sh
+    - name: Mount built files
+      if: (!cancelled())
+      run: |
+        . docker.sh
+        mount_container "$(pwd)/openwrt" /home/builder/openwrt
 
-  #   - name: Single-thread compile
-  #     if: failure()
-  #     run: scripts/st_compile.sh
+    - name: Upload bin directory
+      uses: actions/upload-artifact@master
+      if: (!cancelled())
+      with:
+        name: OpenWrt_bin
+        path: openwrt/bin
 
-  #   - name: Upload bin directory
-  #     uses: actions/upload-artifact@master
-  #     if: always()
-  #     with:
-  #       name: OpenWrt_bin
-  #       path: openwrt/bin
+    - name: Organize files
+      if: (!cancelled()) && github.event_name == 'repository_dispatch' && github.event.client_payload.build_whole == true
+      run: |
+        cd openwrt/bin/targets/*/*
+        rm -rf packages
+        echo "::set-env name=FIRMWARE::$(pwd)"
+  
+    - name: Upload firmware
+      uses: actions/upload-artifact@master
+      if: (!cancelled()) && github.event_name == 'repository_dispatch' && github.event.client_payload.build_whole == true
+      with:
+        name: OpenWrt_firmware
+        path: ${{ env.FIRMWARE }}
 
-  #   - name: Organize files
-  #     if: always()
-  #     run: |
-  #       cd openwrt/bin/targets/*/*
-  #       rm -rf packages
-  #       echo "::set-env name=FIRMWARE::$(pwd)"
+    # Allow intermediate customization and failure checking (when failure() or cancelled())
+    - name: SSH connection to Actions
+      if: (!success()) || (github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true)
+      uses: tete1030/debugger-action@my
 
-  #   - name: Upload firmware
-  #     uses: actions/upload-artifact@master
-  #     if: always()
-  #     with:
-  #       name: OpenWrt_firmware
-  #       path: ${{ env.FIRMWARE }}
+  direct-build:
+    runs-on: ubuntu-18.04
+    if: github.event_name == 'repository_dispatch' && github.event.action == 'direct'
+    steps:
+    - name: Checkout
+      uses: actions/checkout@master
+
+    - name: Initialize environment
+      run: |
+        scripts/cleanup.sh
+        scripts/initenv.sh
+
+    - name: Clone all source code
+      env: 
+        REPO_URL: https://github.com/coolsnowwolf/lede
+        REPO_BRANCH: master
+      run: scripts/clone.sh
+
+    - name: Load custom configuration
+      env:
+        CONFIG_FILE: 'config.diff'
+      run: scripts/customize.sh
+
+    # Allow intermediate customization
+    - name: SSH connection to Actions
+      if: github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true
+      uses: tete1030/debugger-action@my
+
+    - name: Download package
+      run: scripts/download.sh
+
+    - name: Multi-thread compile
+      id: mtcompile
+      continue-on-error: true
+      run: |
+        scripts/mtcompile.sh
+        retVal=$?
+        if [ $retVal -eq 0 ]; then
+          echo "::set-output name=status::success"
+        else
+          echo "::set-output name=status::fail"
+        fi
+        exit $retVal
+
+    # if: failure() alone is not accurate but still necessary.
+    #     The failure may come from any previous step.
+    #     However, without failure(), the `if:` statement would combine success() implicitly
+    - name: Single-thread compile
+      if: failure() && steps.mtcompile.outputs.status == 'fail'
+      run: scripts/st_compile.sh
+
+    - name: Upload bin directory
+      uses: actions/upload-artifact@master
+      if: (!cancelled())
+      with:
+        name: OpenWrt_bin
+        path: openwrt/bin
+
+    - name: Organize files
+      if: (!cancelled())
+      run: |
+        cd openwrt/bin/targets/*/*
+        rm -rf packages
+        echo "::set-env name=FIRMWARE::$(pwd)"
+
+    - name: Upload firmware
+      uses: actions/upload-artifact@master
+      if: (!cancelled())
+      with:
+        name: OpenWrt_firmware
+        path: ${{ env.FIRMWARE }}
+
+    # Allow intermediate customization and failure checking (when failure() or cancelled())
+    - name: SSH connection to Actions
+      if: (!success()) || (github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true)
+      uses: tete1030/debugger-action@my
 
 # Base
 # * +mentohust
