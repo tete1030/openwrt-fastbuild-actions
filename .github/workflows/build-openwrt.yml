@@ -85,8 +85,9 @@ jobs:
 
     - name: Multi-thread compile
       id: mtcompile
-      continue-on-error: true
       run: |
+        set +eo pipefail
+        NO_FAILEXIT=1
         . docker.sh
         retVal=$?
         if [ $retVal -eq 0 ]; then
@@ -115,11 +116,14 @@ jobs:
         . docker.sh
         push_image
 
-    - name: Mount built files
+    - name: Copy out bin directory
       if: (!cancelled())
       run: |
         . docker.sh
-        mount_container "$(pwd)/openwrt" /home/builder/openwrt
+        if [ ! -d "$(pwd)/openwrt" ]; then
+          mkdir "$(pwd)/openwrt"
+        fi
+        copy_directory /home/builder/openwrt/bin "$(pwd)/openwrt/bin"
 
     - name: Upload bin directory
       uses: actions/upload-artifact@master
@@ -186,8 +190,9 @@ jobs:
     # Allow intermediate customization
     - name: Multi-thread compile
       id: mtcompile
-      continue-on-error: true
       run: |
+        set +eo pipefail
+        NO_FAILEXIT=1
         . docker.sh
         retVal=$?
         if [ $retVal -eq 0 ]; then
@@ -210,11 +215,14 @@ jobs:
         . docker.sh
         build_image singlethread-compile
 
-    - name: Mount built files
+    - name: Copy out bin directory
       if: (!cancelled())
       run: |
         . docker.sh
-        mount_container "$(pwd)/openwrt" /home/builder/openwrt
+        if [ ! -d "$(pwd)/openwrt" ]; then
+          mkdir "$(pwd)/openwrt"
+        fi
+        copy_directory /home/builder/openwrt/bin "$(pwd)/openwrt/bin"
 
     - name: Upload bin directory
       uses: actions/upload-artifact@master
@@ -275,8 +283,9 @@ jobs:
 
     - name: Multi-thread compile
       id: mtcompile
-      continue-on-error: true
       run: |
+        set +eo pipefail
+        NO_FAILEXIT=1
         scripts/mtcompile.sh
         retVal=$?
         if [ $retVal -eq 0 ]; then

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-set -eo pipefail
+if [ "x$NO_FAILEXIT" != "x1" ]; then
+  set -eo pipefail
+fi
 
 # helper functions
 _exit_if_empty() {
@@ -73,8 +75,10 @@ build_image() {
     ${CONTEXT}
 }
 
-mount_container() {
-  docker container create --name builder -v "${1}:${2}" "$(_get_full_image_name)":${IMAGE_TAG}
+copy_directory() {
+  docker run -d -i --rm --name builder "$(_get_full_image_name)":${IMAGE_TAG}
+  # docker exec builder stat "$1"
+  docker cp builder:"$1" "$2"
 }
 
 push_git_tag() {
