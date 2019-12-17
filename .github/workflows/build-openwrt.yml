@@ -111,7 +111,7 @@ jobs:
         build_image singlethread-compile
 
     - name: Push docker cache
-      if: (!cancelled())
+      if: (!cancelled()) && !(failure() && github.event_name == 'repository_dispatch' && github.event.client_payload.disable_push_when_fail == true)
       run: |
         . docker.sh
         push_image
