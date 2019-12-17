@@ -84,7 +84,7 @@ build_image() {
 }
 
 mount_container() {
-  docker container create --name builder -v $1:$2 "$(_get_full_image_name)":${IMAGE_TAG}
+  docker container create --name builder -v "${1}:${2}" "$(_get_full_image_name)":${IMAGE_TAG}
 }
 
 push_git_tag() {

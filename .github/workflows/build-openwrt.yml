@@ -104,7 +104,7 @@ jobs:
       if: always()
       run: |
         . docker.sh
-        mount_container ./openwrt /home/builder/openwrt
+        mount_container "$(pwd)/openwrt" /home/builder/openwrt
 
     - name: Upload bin directory
       uses: actions/upload-artifact@master
