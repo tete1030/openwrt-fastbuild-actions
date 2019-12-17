@@ -8,24 +8,29 @@
 
 name: Build OpenWrt
 
-on: 
+on:
   release:
     types: [published]
   repository_dispatch:
-    types: build-openwrt
+    types: [docker, direct, docker-inc]
   push:
+    paths-ignore:
+    - README.md
+    - LICENSE
+
 #  schedule:
 #    - cron: 0 8 * * 5
 #  watch:
 #    types: [started]
 
 jobs:
-  build-docker:
+  docker-build:
     runs-on: ubuntu-18.04
+    if: github.event_name == "release" || (github.event_name == "repository_dispatch" && github.event.action == "docker")
     env:
       USERNAME: ${{secrets.docker_username}}
       PASSWORD: ${{secrets.docker_password}}
-      IMAGE_NAME: tete1030/openwrt_x86_64
+      IMAGE_NAME: ${{secrets.docker_username}}/openwrt_x86_64
       IMAGE_TAG: latest
       CONTEXT: ./
       DOCKERFILE: Dockerfile
@@ -62,8 +67,9 @@ jobs:
         . docker.sh
         build_image custom
 
-    # - name: SSH connection to Actions
-    #   uses: P3TERX/debugger-action@master
+    - name: SSH connection to Actions
+      if: github.event_name == "repository_dispatch" && github.event.client_payload.debug == true
+      uses: P3TERX/debugger-action@master
 
     - name: Download package
       run: |
@@ -126,6 +132,10 @@ jobs:
       with:
         name: OpenWrt_firmware
         path: ${{ env.FIRMWARE }}
+
+    - name: SSH connection to Actions
+      if: github.event_name == "repository_dispatch" && github.event.client_payload.debug == true
+      uses: P3TERX/debugger-action@master
 
   # build:
   #   runs-on: ubuntu-18.04
