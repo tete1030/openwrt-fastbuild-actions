@@ -54,13 +54,13 @@ jobs:
 
     - name: Configure docker
       run: |
+        scripts/cleanup.sh
         . docker.sh
         configure_docker
         login_to_registry
 
     - name: Initialize environment
       run: |
-        scripts/cleanup.sh
         . docker.sh
         build_image init-env
 
@@ -177,6 +177,7 @@ jobs:
 
     - name: Configure docker
       run: |
+        scripts/cleanup.sh
         . docker.sh
         configure_docker
         login_to_registry
