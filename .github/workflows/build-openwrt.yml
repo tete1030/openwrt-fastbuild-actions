@@ -46,15 +46,21 @@ jobs:
     - name: Checkout
       uses: actions/checkout@master
 
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: crazy-max/ghaction-docker-buildx@v1
+      with:
+        version: latest
+
     - name: Configure docker
       run: |
         . docker.sh
         configure_docker
+        login_to_registry
 
     - name: Pull docker cache
       run: |
         . docker.sh
-        login_to_registry
         pull_image
 
     - name: Initialize environment
@@ -166,15 +172,21 @@ jobs:
     - name: Checkout
       uses: actions/checkout@master
 
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: crazy-max/ghaction-docker-buildx@v1
+      with:
+        version: latest
+
     - name: Configure docker
       run: |
         . docker.sh
         configure_docker
+        login_to_registry
 
     - name: Pull docker cache
       run: |
         . docker.sh
-        login_to_registry
         pull_image
 
     - name: Apply customizations

@@ -34,6 +34,7 @@ configure_docker() {
     "max-concurrent-uploads": 50
   }' | sudo tee /etc/docker/daemon.json
   sudo service docker restart
+  docker buildx create --use --name builder --driver docker-container 
 }
 
 login_to_registry() {
@@ -45,8 +46,10 @@ pull_image() {
 }
 
 build_image() {
-  cache_from="$cache_from --cache-from=$(_get_full_image_name):${IMAGE_TAG}"
+  cache_from="$cache_from --cache-from=type=registry,ref=$(_get_full_image_name):buildcache"
+  cache_to="$cache_to --cache-to=type=registry,ref=$(_get_full_image_name):buildcache,mode=max"
   echo "Use cache: $cache_from"
+  echo "Export cache: $cache_to"
 
   build_target=()
   if [ ! -z "${1}" ]; then
@@ -65,13 +68,14 @@ build_image() {
   fi
 
   # build image using cache
-  DOCKER_BUILDKIT=1 docker build \
+  docker buildx build \
     "${build_target[@]}" \
     "${build_args[@]}" \
     $cache_from \
-    --build-arg BUILDKIT_INLINE_CACHE=1 \
+    $cache_to \
     --tag "$(_get_full_image_name)":${IMAGE_TAG} \
     --file ${CONTEXT}/${DOCKERFILE} \
+    --load \
     ${CONTEXT}
 }
 
@@ -85,7 +89,7 @@ push_git_tag() {
   [[ "$GITHUB_REF" =~ /tags/ ]] || return 0
   local git_tag=${GITHUB_REF##*/tags/}
   local image_with_git_tag
-  image_with_git_tag="$(_get_full_image_name)":$git_tag
+  image_with_git_tag="$(_get_full_image_name)":gittag-$git_tag
   docker tag "$(_get_full_image_name)":${IMAGE_TAG} "$image_with_git_tag"
   docker push "$image_with_git_tag"
 }
@@ -93,6 +97,7 @@ push_git_tag() {
 push_image() {
   # push image
   docker push "$(_get_full_image_name)":${IMAGE_TAG}
+  docker push "$(_get_full_image_name)":buildcache
   push_git_tag
 }
 
