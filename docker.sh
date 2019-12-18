@@ -34,7 +34,7 @@ configure_docker() {
     "max-concurrent-uploads": 50
   }' | sudo tee /etc/docker/daemon.json
   sudo service docker restart
-  docker buildx create --use --name builder --driver docker-container 
+  docker buildx create --use --name builder --node builder0 --driver docker-container 
 }
 
 login_to_registry() {
