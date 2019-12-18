@@ -54,12 +54,6 @@ build_image() {
   declare -a cache_to
 
   if [ "x$NO_REMOTE_CACHE" = "x1" ]; then
-    if [ ! -z "${IMAGE_BASE}" ]; then
-      cache_from+=( "--cache-from=type=registry,ref=${IMAGE_BASE}" )
-    else
-      cache_from+=( "--cache-from=type=registry,ref=$(_get_full_image_name):${IMAGE_TAG}" )
-    fi
-
     if [ "x$INLINE_CACHE" = "x1" ]; then
       cache_from+=( "--cache-from=type=registry,ref=$(_get_full_image_name):${IMAGE_TAG}-build" )
       cache_to+=( "--cache-to=type=inline,mode=min" )
@@ -71,6 +65,12 @@ build_image() {
       if [ ! -d "./cache" ]; then
         mkdir ./cache
       fi
+    fi
+
+    if [ ! -z "${IMAGE_BASE}" ]; then
+      cache_from+=( "--cache-from=type=registry,ref=${IMAGE_BASE}" )
+    else
+      cache_from+=( "--cache-from=type=registry,ref=$(_get_full_image_name):${IMAGE_TAG}" )
     fi
 
   else
