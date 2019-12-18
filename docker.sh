@@ -120,9 +120,10 @@ build_image() {
 
 copy_files() {
   TAG="$(_get_full_image_name):${IMAGE_TAG}-build"
-  docker buildx build --no-cache "--output=type=local,dest=$2" - << EOF
+  docker buildx build --no-cache --target buildresult "--output=type=local,dest=$2" - << EOF
+FROM ${TAG} AS buildimage
 FROM alpine AS buildresult
-COPY "--from=$TAG" "$1" ./
+COPY "--from=buildimage" "${1}" ./
 EOF
   # docker run -d -i --rm --name builder "$(_get_full_image_name):${IMAGE_TAG}"
   # docker exec builder stat "$1"
