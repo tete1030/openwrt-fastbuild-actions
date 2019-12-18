@@ -58,11 +58,6 @@ jobs:
         configure_docker
         login_to_registry
 
-    - name: Pull docker cache
-      run: |
-        . docker.sh
-        pull_image
-
     - name: Initialize environment
       run: |
         scripts/cleanup.sh
@@ -121,7 +116,7 @@ jobs:
         if [ ! -d "$(pwd)/openwrt" ]; then
           mkdir "$(pwd)/openwrt"
         fi
-        copy_directory /home/builder/openwrt/bin "$(pwd)/openwrt/bin"
+        copy_files /home/builder/openwrt/bin "$(pwd)/openwrt/bin"
         echo "::set-output name=status::success"
 
     - name: Upload bin directory
@@ -166,7 +161,10 @@ jobs:
       REPO_BRANCH: master
       CONFIG_FILE: 'config.diff'
       BUILD_WHOLE: ${{ github.event.client_payload.build_whole || false }}
-      BUILD_ARGS: 'REPO_URL REPO_BRANCH CONFIG_FILE IMAGE_NAME IMAGE_TAG BUILD_WHOLE'
+      NO_REMOTE_CACHE: 1
+      NO_PUSH: 1
+      IMAGE_BASE: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+      BUILD_ARGS: 'CONFIG_FILE IMAGE_BASE BUILD_WHOLE'
 
     steps:
     - name: Checkout
@@ -183,11 +181,6 @@ jobs:
         . docker.sh
         configure_docker
         login_to_registry
-
-    - name: Pull docker cache
-      run: |
-        . docker.sh
-        pull_image
 
     - name: Apply customizations
       run: |
@@ -226,7 +219,7 @@ jobs:
         if [ ! -d "$(pwd)/openwrt" ]; then
           mkdir "$(pwd)/openwrt"
         fi
-        copy_directory /home/builder/openwrt/bin "$(pwd)/openwrt/bin"
+        copy_files /home/builder/openwrt/bin "$(pwd)/openwrt/bin"
         echo "::set-output name=status::success"
 
     - name: Upload bin directory

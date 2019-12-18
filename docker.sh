@@ -42,62 +42,86 @@ login_to_registry() {
 }
 
 pull_image() {
-  docker pull --all-tags "$(_get_full_image_name)" 2> /dev/null || true
+  # docker pull --all-tags "$(_get_full_image_name)" 2> /dev/null || true
+  echo "Nothing to pull when using BuildKit"
 }
 
 build_image() {
-  cache_from="$cache_from --cache-from=type=registry,ref=$(_get_full_image_name):buildcache"
-  cache_to="$cache_to --cache-to=type=registry,ref=$(_get_full_image_name):buildcache,mode=max"
-  echo "Use cache: $cache_from"
-  echo "Export cache: $cache_to"
+  IFS_ORI="$IFS"
+  IFS=$'\x20'
+  declare -a cache_from
+  declare -a cache_to
 
-  build_target=()
-  if [ ! -z "${1}" ]; then
-    build_target+=(--target "${1}")
+  if [ "x$NO_REMOTE_CACHE" = "x1" ]; then
+    # cache_from+=( "--cache-from=type=local,src=./buildcache" )
+    # cache_to+=( "--cache-to=type=local,src=./buildcache" )
+    true
+  else
+    cache_from+=( "--cache-from=type=registry,ref=$(_get_full_image_name):buildcache" )
+    cache_to+=( "--cache-to=type=registry,ref=$(_get_full_image_name):buildcache,mode=max" )
   fi
-  build_args=()
+  echo "From cache: ${cache_from[@]}"
+  echo "To cache: ${cache_to[@]}"
+
+  declare -a build_target
+  if [ ! -z "${1}" ]; then
+    build_target+=( "--target=${1}" )
+  fi
+  declare -a build_args
   if [ ! -z "${BUILD_ARGS}" ]; then
-    IFS_ORI="$IFS"
-    IFS=$'\x20'
-    
     for arg in ${BUILD_ARGS[@]};
     do
-      build_args+=(--build-arg "${arg}=${!arg}")
+      build_args+=( --build-arg "${arg}=${!arg}" )
     done
-    IFS="$IFS_ORI"
   fi
+
+  declare -a build_other_opts
+  if [ "x$NO_PUSH" = "x1" ]; then
+    build_other_opts+=( --output=type=image,push=false )
+  else
+    build_other_opts+=( --push )
+  fi
+  build_other_opts+=( "--tag=$(_get_full_image_name):${IMAGE_TAG}-build" )
 
   # build image using cache
   docker buildx build \
     "${build_target[@]}" \
     "${build_args[@]}" \
-    $cache_from \
-    $cache_to \
-    --tag "$(_get_full_image_name)":${IMAGE_TAG} \
-    --file ${CONTEXT}/${DOCKERFILE} \
-    --load \
-    ${CONTEXT}
+    "${cache_from[@]}" \
+    "${cache_to[@]}" \
+    "${build_other_opts[@]}" \
+    --progress=plain \
+    "--file=${CONTEXT}/${DOCKERFILE}" \
+    "${CONTEXT}"
+
+  IFS="$IFS_ORI"
 }
 
-copy_directory() {
-  docker run -d -i --rm --name builder "$(_get_full_image_name)":${IMAGE_TAG}
+copy_files() {
+  TAG="$(_get_full_image_name):${IMAGE_TAG}-build"
+  docker buildx build --no-cache "--output=type=local,dest=$2" - <<<EOF
+FROM alpine AS buildresult
+COPY --from=$TAG "$1" ./
+  EOF
+  # docker run -d -i --rm --name builder "$(_get_full_image_name):${IMAGE_TAG}"
   # docker exec builder stat "$1"
-  docker cp builder:"$1" "$2"
+  # docker cp builder:"$1" "$2"
 }
 
 push_git_tag() {
   [[ "$GITHUB_REF" =~ /tags/ ]] || return 0
   local git_tag=${GITHUB_REF##*/tags/}
   local image_with_git_tag
-  image_with_git_tag="$(_get_full_image_name)":gittag-$git_tag
-  docker tag "$(_get_full_image_name)":${IMAGE_TAG} "$image_with_git_tag"
-  docker push "$image_with_git_tag"
+  image_with_git_tag="$(_get_full_image_name):gittag-$git_tag"
+  # docker tag "$(_get_full_image_name):${IMAGE_TAG}" "$image_with_git_tag"
+  # docker push "$image_with_git_tag"
+  docker buildx imagetools create -t "$image_with_git_tag" "$(_get_full_image_name):${IMAGE_TAG}"
 }
 
 push_image() {
   # push image
-  docker push "$(_get_full_image_name)":${IMAGE_TAG}
-  docker push "$(_get_full_image_name)":buildcache
+  # docker push "$(_get_full_image_name):${IMAGE_TAG}"
+  docker buildx imagetools create -t "$(_get_full_image_name):${IMAGE_TAG}" "$(_get_full_image_name):${IMAGE_TAG}-build"
   push_git_tag
 }
 
