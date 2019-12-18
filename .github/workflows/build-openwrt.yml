@@ -94,15 +94,15 @@ jobs:
     - name: Multi-thread compile
       id: mtcompile
       run: |
+        echo "::set-output name=started::yes"
         . docker.sh
         build_image multithread-compile
-        echo "::set-output name=status::success"
 
     # if: failure() alone is not accurate but still necessary.
     #     The failure may come from any previous step.
     #     However, without failure(), the `if:` statement would combine success() implicitly
     - name: Single-thread compile
-      if: failure() && steps.mtcompile.outputs.status != 'success'
+      if: failure() && steps.mtcompile.outputs.started == 'yes'
       run: |
         . docker.sh
         build_image singlethread-compile
@@ -205,15 +205,15 @@ jobs:
     - name: Multi-thread compile
       id: mtcompile
       run: |
+        echo "::set-output name=started::yes"
         . docker.sh
         build_image multithread-compile
-        echo "::set-output name=status::success"
 
     # if: failure() alone is not accurate but still necessary.
     #     The failure may come from any previous step.
     #     However, without failure(), the `if:` statement would combine success() implicitly
     - name: Single-thread compile
-      if: failure() && steps.mtcompile.outputs.status != 'success'
+      if: failure() && steps.mtcompile.outputs.started == 'yes'
       run: |
         . docker.sh
         build_image singlethread-compile
@@ -293,14 +293,14 @@ jobs:
     - name: Multi-thread compile
       id: mtcompile
       run: |
+        echo "::set-output name=started::yes"
         scripts/mtcompile.sh
-        echo "::set-output name=status::success"
 
     # if: failure() alone is not accurate but still necessary.
     #     The failure may come from any previous step.
     #     However, without failure(), the `if:` statement would combine success() implicitly
     - name: Single-thread compile
-      if: failure() && steps.mtcompile.outputs.status != 'success'
+      if: failure() && steps.mtcompile.outputs.started == 'yes'
       run: scripts/st_compile.sh
 
     - name: Upload bin directory
