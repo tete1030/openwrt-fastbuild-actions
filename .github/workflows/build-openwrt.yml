@@ -181,7 +181,7 @@ jobs:
         . docker.sh
         configure_docker
         login_to_registry
-        echo "::set-env name=IMAGE_BASE::${IMAGE_NAME}:${IMAGE_TAG}"
+        echo "::set-env name=IMAGE_BASE::$(_get_full_image_name):${IMAGE_TAG}"
 
     - name: Apply customizations
       run: |
