@@ -163,7 +163,6 @@ jobs:
       BUILD_WHOLE: ${{ github.event.client_payload.build_whole || false }}
       NO_REMOTE_CACHE: 1
       NO_PUSH: 1
-      IMAGE_BASE: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
       BUILD_ARGS: 'CONFIG_FILE IMAGE_BASE BUILD_WHOLE'
 
     steps:
@@ -181,6 +180,7 @@ jobs:
         . docker.sh
         configure_docker
         login_to_registry
+        echo "::set-env name=IMAGE_BASE::${IMAGE_NAME}:${IMAGE_TAG}"
 
     - name: Apply customizations
       run: |

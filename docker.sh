@@ -71,6 +71,9 @@ build_image() {
   if [ ! -z "${BUILD_ARGS}" ]; then
     for arg in ${BUILD_ARGS[@]};
     do
+      if [ -z "${!arg}" ]; then
+        echo "Warning: variable \`${arg}\` is empty" >&2
+      fi
       build_args+=( --build-arg "${arg}=${!arg}" )
     done
   fi
@@ -99,10 +102,10 @@ build_image() {
 
 copy_files() {
   TAG="$(_get_full_image_name):${IMAGE_TAG}-build"
-  docker buildx build --no-cache "--output=type=local,dest=$2" - <<<EOF
+  docker buildx build --no-cache "--output=type=local,dest=$2" - << EOF
 FROM alpine AS buildresult
-COPY --from=$TAG "$1" ./
-  EOF
+COPY "--from=$TAG" "$1" ./
+EOF
   # docker run -d -i --rm --name builder "$(_get_full_image_name):${IMAGE_TAG}"
   # docker exec builder stat "$1"
   # docker cp builder:"$1" "$2"
