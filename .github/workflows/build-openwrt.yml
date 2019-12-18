@@ -76,6 +76,8 @@ jobs:
     # Allow intermediate customization
     - name: SSH connection to Actions
       if: github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true
+      env:
+        TIMEOUT_MIN: 5
       uses: tete1030/debugger-action@my
 
     - name: Download package
@@ -86,26 +88,15 @@ jobs:
     - name: Multi-thread compile
       id: mtcompile
       run: |
-        set +eo pipefail
-        NO_FAILEXIT=1
         . docker.sh
-        retVal=$?
-        if [ $retVal -eq 0 ]; then
-          build_image multithread-compile
-          retVal=$?
-        fi
-        if [ $retVal -eq 0 ]; then
-          echo "::set-output name=status::success"
-        else
-          echo "::set-output name=status::fail"
-        fi
-        exit $retVal
+        build_image multithread-compile
+        echo "::set-output name=status::success"
 
     # if: failure() alone is not accurate but still necessary.
     #     The failure may come from any previous step.
     #     However, without failure(), the `if:` statement would combine success() implicitly
     - name: Single-thread compile
-      if: failure() && steps.mtcompile.outputs.status == 'fail'
+      if: failure() && steps.mtcompile.outputs.status != 'success'
       run: |
         . docker.sh
         build_image singlethread-compile
@@ -148,9 +139,11 @@ jobs:
         name: OpenWrt_firmware
         path: ${{ env.FIRMWARE }}
 
-    # Allow intermediate customization and failure checking (when failure() or cancelled())
+    # failure checking
+    # TODO: NOT ACTUALLY WORKING AS FAILURE STATUS NOT PASSING THROUGH TO HERE;
+    #       LAST FAILURE STATUS SHOULD ALSO PASS THROUGH THIS STEP
     - name: SSH connection to Actions
-      if: (!success()) || (github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true)
+      if: failure() || (github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true)
       uses: tete1030/debugger-action@my
 
   docker-build-inc:
@@ -190,29 +183,25 @@ jobs:
         build_image applycustom
 
     # Allow intermediate customization
+    - name: SSH connection to Actions
+      if: github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true
+      env:
+        TIMEOUT_MIN: 5
+      uses: tete1030/debugger-action@my
+
+    # Allow intermediate customization
     - name: Multi-thread compile
       id: mtcompile
       run: |
-        set +eo pipefail
-        NO_FAILEXIT=1
         . docker.sh
-        retVal=$?
-        if [ $retVal -eq 0 ]; then
-          build_image multithread-compile
-          retVal=$?
-        fi
-        if [ $retVal -eq 0 ]; then
-          echo "::set-output name=status::success"
-        else
-          echo "::set-output name=status::fail"
-        fi
-        exit $retVal
+        build_image multithread-compile
+        echo "::set-output name=status::success"
 
     # if: failure() alone is not accurate but still necessary.
     #     The failure may come from any previous step.
     #     However, without failure(), the `if:` statement would combine success() implicitly
     - name: Single-thread compile
-      if: failure() && steps.mtcompile.outputs.status == 'fail'
+      if: failure() && steps.mtcompile.outputs.status != 'success'
       run: |
         . docker.sh
         build_image singlethread-compile
@@ -249,9 +238,11 @@ jobs:
         name: OpenWrt_firmware
         path: ${{ env.FIRMWARE }}
 
-    # Allow intermediate customization and failure checking (when failure() or cancelled())
+    # failure checking
+    # TODO: NOT ACTUALLY WORKING AS FAILURE STATUS NOT PASSING THROUGH TO HERE;
+    #       LAST FAILURE STATUS SHOULD ALSO PASS THROUGH THIS STEP
     - name: SSH connection to Actions
-      if: (!success()) || (github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true)
+      if: failure() || (github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true)
       uses: tete1030/debugger-action@my
 
   direct-build:
@@ -280,6 +271,8 @@ jobs:
     # Allow intermediate customization
     - name: SSH connection to Actions
       if: github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true
+      env:
+        TIMEOUT_MIN: 5
       uses: tete1030/debugger-action@my
 
     - name: Download package
@@ -288,22 +281,14 @@ jobs:
     - name: Multi-thread compile
       id: mtcompile
       run: |
-        set +eo pipefail
-        NO_FAILEXIT=1
         scripts/mtcompile.sh
-        retVal=$?
-        if [ $retVal -eq 0 ]; then
-          echo "::set-output name=status::success"
-        else
-          echo "::set-output name=status::fail"
-        fi
-        exit $retVal
+        echo "::set-output name=status::success"
 
     # if: failure() alone is not accurate but still necessary.
     #     The failure may come from any previous step.
     #     However, without failure(), the `if:` statement would combine success() implicitly
     - name: Single-thread compile
-      if: failure() && steps.mtcompile.outputs.status == 'fail'
+      if: failure() && steps.mtcompile.outputs.status != 'success'
       run: scripts/st_compile.sh
 
     - name: Upload bin directory
@@ -327,9 +312,11 @@ jobs:
         name: OpenWrt_firmware
         path: ${{ env.FIRMWARE }}
 
-    # Allow intermediate customization and failure checking (when failure() or cancelled())
+    # failure checking
+    # TODO: NOT ACTUALLY WORKING AS FAILURE STATUS NOT PASSING THROUGH TO HERE;
+    #       LAST FAILURE STATUS SHOULD ALSO PASS THROUGH THIS STEP)
     - name: SSH connection to Actions
-      if: (!success()) || (github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true)
+      if: failure() || (github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true)
       uses: tete1030/debugger-action@my
 
 # Base
