@@ -164,7 +164,7 @@ jobs:
       NO_REMOTE_CACHE: 1
       NO_PUSH: 1
       BUILD_ARGS: 'CONFIG_FILE IMAGE_BASE BUILD_WHOLE'
-      EXTRA_BUILDX_CREATE_OPTS: --driver-opt image=moby/buildkit:master # for allowing empty local cache (docker/buildx#206)
+      EXTRA_BUILDX_CREATE_OPTS: --driver-opt image=moby/buildkit:6e62650fac # for allowing empty local cache (docker/buildx#206)
 
     steps:
     - name: Checkout
