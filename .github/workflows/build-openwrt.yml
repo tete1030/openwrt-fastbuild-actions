@@ -162,6 +162,7 @@ jobs:
       CONFIG_FILE: 'config.diff'
       BUILD_WHOLE: ${{ github.event.client_payload.build_whole || false }}
       NO_REMOTE_CACHE: 1
+      INLINE_CACHE: 1
       NO_PUSH: 1
       BUILD_ARGS: 'CONFIG_FILE IMAGE_BASE BUILD_WHOLE'
 

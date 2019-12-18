@@ -59,13 +59,20 @@ build_image() {
     else
       cache_from+=( "--cache-from=type=registry,ref=$(_get_full_image_name):${IMAGE_TAG}" )
     fi
-    if [ -f "./cache/index.json" ]; then
-      cache_from+=( "--cache-from=type=local,src=./cache" )
+
+    if [ "x$INLINE_CACHE" = "x1" ]; then
+      cache_from+=( "--cache-from=type=registry,ref=$(_get_full_image_name):${IMAGE_TAG}-build" )
+      cache_to+=( "--cache-to=type=inline,mode=min" )
+    else
+      if [ -f "./cache/index.json" ]; then
+        cache_from+=( "--cache-from=type=local,src=./cache" )
+      fi
+      cache_to+=( "--cache-to=type=local,dest=./cache" )
+      if [ ! -d "./cache" ]; then
+        mkdir ./cache
+      fi
     fi
-    cache_to+=( "--cache-to=type=local,dest=./cache" )
-    if [ ! -d "./cache" ]; then
-      mkdir ./cache
-    fi
+
   else
     cache_from+=( "--cache-from=type=registry,ref=$(_get_full_image_name):buildcache" )
     cache_to+=( "--cache-to=type=registry,ref=$(_get_full_image_name):buildcache,mode=max" )
