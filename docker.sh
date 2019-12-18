@@ -59,7 +59,9 @@ build_image() {
     else
       cache_from+=( "--cache-from=type=registry,ref=$(_get_full_image_name):${IMAGE_TAG}" )
     fi
-    cache_from+=( "--cache-from=type=local,src=./cache" )
+    if [ -f "./cache/index.json" ]; then
+      cache_from+=( "--cache-from=type=local,src=./cache" )
+    fi
     cache_to+=( "--cache-to=type=local,dest=./cache" )
     if [ ! -d "./cache" ]; then
       mkdir ./cache
