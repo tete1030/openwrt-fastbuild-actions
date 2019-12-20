@@ -10,7 +10,8 @@ RUN scripts/initenv.sh
 FROM init-env AS clone
 ARG REPO_URL
 ARG REPO_BRANCH
-RUN REPO_URL="${REPO_URL}" REPO_BRANCH="${REPO_BRANCH}" scripts/clone.sh
+RUN REPO_URL="${REPO_URL}" REPO_BRANCH="${REPO_BRANCH}" scripts/update_repo.sh
+RUN scripts/update_feeds.sh
 
 FROM clone AS custom
 ARG CONFIG_FILE
