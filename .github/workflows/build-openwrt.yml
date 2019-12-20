@@ -100,7 +100,7 @@ jobs:
         echo "::set-env name=LAST_BUILD_STAGE::multithread-compile"
         echo "::set-output name=success::yes"
 
-    # if: failure() will cause current job failure
+    # previous failure will cause current job failure
     - name: Single-thread compile
       if: steps.mtcompile.outputs.started == 'yes' && steps.mtcompile.outputs.success != 'yes'
       run: |
@@ -146,6 +146,7 @@ jobs:
         name: OpenWrt_firmware
         path: ${{ env.FIRMWARE }}
 
+    # failure checking
     - name: SSH connection to Actions
       if: failure() || (github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true)
       uses: tete1030/debugger-action@my
@@ -185,6 +186,11 @@ jobs:
         configure_docker
         login_to_registry
 
+    - name: Pull base image
+      run: |
+        . docker.sh
+        pull_image
+
     # Allow intermediate customization
     - name: SSH connection to Actions
       if: github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true
@@ -198,7 +204,6 @@ jobs:
         build_image applycustom
         echo "::set-env name=LAST_BUILD_STAGE::applycustom"
 
-    # Allow intermediate customization
     - name: Multi-thread compile
       id: mtcompile
       continue-on-error: true
@@ -209,7 +214,7 @@ jobs:
         echo "::set-env name=LAST_BUILD_STAGE::multithread-compile"
         echo "::set-output name=success::yes"
 
-    # if: failure() will cause current job failure
+    # previous failure will cause current job failure
     - name: Single-thread compile
       if: steps.mtcompile.outputs.started == 'yes' && steps.mtcompile.outputs.success != 'yes'
       run: |
@@ -249,6 +254,7 @@ jobs:
         name: OpenWrt_firmware
         path: ${{ env.FIRMWARE }}
 
+    # failure checking
     - name: SSH connection to Actions
       if: failure() || (github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true)
       uses: tete1030/debugger-action@my
@@ -288,15 +294,15 @@ jobs:
 
     - name: Multi-thread compile
       id: mtcompile
+      continue-on-error: true
       run: |
         echo "::set-output name=started::yes"
         scripts/mtcompile.sh
+        echo "::set-output name=success::yes"
 
-    # if: failure() alone is not accurate but still necessary.
-    #     The failure may come from any previous step.
-    #     However, without failure(), the `if:` statement would combine success() implicitly
+    # previous failure will cause current job failure
     - name: Single-thread compile
-      if: failure() && steps.mtcompile.outputs.started == 'yes'
+      if: steps.mtcompile.outputs.started == 'yes' && steps.mtcompile.outputs.success != 'yes'
       run: scripts/st_compile.sh
 
     - name: Upload bin directory
@@ -321,8 +327,6 @@ jobs:
         path: ${{ env.FIRMWARE }}
 
     # failure checking
-    # TODO: NOT ACTUALLY WORKING AS FAILURE STATUS NOT PASSING THROUGH TO HERE;
-    #       LAST FAILURE STATUS SHOULD ALSO PASS THROUGH THIS STEP)
     - name: SSH connection to Actions
       if: failure() || (github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true)
       uses: tete1030/debugger-action@my
