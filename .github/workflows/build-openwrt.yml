@@ -12,7 +12,6 @@ on:
   release:
     types: [published]
   repository_dispatch:
-    types: [docker, direct, docker-inc]
   push:
     paths-ignore:
     - README.md
@@ -25,17 +24,18 @@ on:
 
 env:
   SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
+  USERNAME: ${{secrets.docker_username}}
+  PASSWORD: ${{secrets.docker_password}}
 
 jobs:
   docker-build:
     runs-on: ubuntu-18.04
     if: github.event_name == 'release' || (github.event_name == 'repository_dispatch' && github.event.action == 'docker')
     env:
-      USERNAME: ${{secrets.docker_username}}
-      PASSWORD: ${{secrets.docker_password}}
       IMAGE_NAME: ${{secrets.docker_username}}/openwrt_x86_64
       IMAGE_TAG: latest
-      CONTEXT: ./
+      BUILDX_DRIVER: docker-container
+      CONTEXT: .
       DOCKERFILE: Dockerfile
       REPO_URL: https://github.com/coolsnowwolf/lede
       REPO_BRANCH: master
@@ -63,16 +63,13 @@ jobs:
       run: |
         . docker.sh
         build_image init-env
+        echo "::set-env name=LAST_BUILD_STAGE::init-env"
 
     - name: Clone all source code
       run: |
         . docker.sh
         build_image clone
-
-    - name: Load custom configuration
-      run: |
-        . docker.sh
-        build_image custom
+        echo "::set-env name=LAST_BUILD_STAGE::clone"
 
     # Allow intermediate customization
     - name: SSH connection to Actions
@@ -81,32 +78,41 @@ jobs:
         TIMEOUT_MIN: 5
       uses: tete1030/debugger-action@my
 
+    - name: Load custom configuration
+      run: |
+        . docker.sh
+        build_image custom
+        echo "::set-env name=LAST_BUILD_STAGE::custom"
+
     - name: Download package
       run: |
         . docker.sh
         build_image download
+        echo "::set-env name=LAST_BUILD_STAGE::download"
 
     - name: Multi-thread compile
       id: mtcompile
+      continue-on-error: true
       run: |
         echo "::set-output name=started::yes"
         . docker.sh
         build_image multithread-compile
+        echo "::set-env name=LAST_BUILD_STAGE::multithread-compile"
+        echo "::set-output name=success::yes"
 
-    # if: failure() alone is not accurate but still necessary.
-    #     The failure may come from any previous step.
-    #     However, without failure(), the `if:` statement would combine success() implicitly
+    # if: failure() will cause current job failure
     - name: Single-thread compile
-      if: failure() && steps.mtcompile.outputs.started == 'yes'
+      if: steps.mtcompile.outputs.started == 'yes' && steps.mtcompile.outputs.success != 'yes'
       run: |
         . docker.sh
         build_image singlethread-compile
+        echo "::set-env name=LAST_BUILD_STAGE::singlethread-compile"
 
-    - name: Push docker cache
+    - name: Push image and cache
       if: (!cancelled()) && !(failure() && github.event_name == 'repository_dispatch' && github.event.client_payload.disable_push_when_fail == true)
       run: |
         . docker.sh
-        push_image
+        push_image_and_cache
 
     - name: Copy out bin directory
       id: copydir
@@ -140,9 +146,6 @@ jobs:
         name: OpenWrt_firmware
         path: ${{ env.FIRMWARE }}
 
-    # failure checking
-    # TODO: NOT ACTUALLY WORKING AS FAILURE STATUS NOT PASSING THROUGH TO HERE;
-    #       LAST FAILURE STATUS SHOULD ALSO PASS THROUGH THIS STEP
     - name: SSH connection to Actions
       if: failure() || (github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true)
       uses: tete1030/debugger-action@my
@@ -151,18 +154,17 @@ jobs:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || (github.event_name == 'repository_dispatch' && github.event.action == 'docker-inc')
     env:
-      USERNAME: ${{secrets.docker_username}}
-      PASSWORD: ${{secrets.docker_password}}
+      IMAGE_BASE: ${{secrets.docker_username}}/openwrt_x86_64:latest
       IMAGE_NAME: ${{secrets.docker_username}}/openwrt_x86_64
       IMAGE_TAG: latest
-      CONTEXT: ./
+      CONTEXT: .
+      BUILDX_DRIVER: docker
       DOCKERFILE: Dockerfile-inc
       REPO_URL: https://github.com/coolsnowwolf/lede
       REPO_BRANCH: master
       CONFIG_FILE: 'config.diff'
       BUILD_WHOLE: ${{ github.event.client_payload.build_whole || false }}
       NO_REMOTE_CACHE: 1
-      INLINE_CACHE: 1
       NO_PUSH: 1
       BUILD_ARGS: 'CONFIG_FILE IMAGE_BASE BUILD_WHOLE'
 
@@ -182,12 +184,6 @@ jobs:
         . docker.sh
         configure_docker
         login_to_registry
-        echo "::set-env name=IMAGE_BASE::$(_get_full_image_name):${IMAGE_TAG}"
-
-    - name: Apply customizations
-      run: |
-        . docker.sh
-        build_image applycustom
 
     # Allow intermediate customization
     - name: SSH connection to Actions
@@ -196,22 +192,30 @@ jobs:
         TIMEOUT_MIN: 5
       uses: tete1030/debugger-action@my
 
+    - name: Apply customizations
+      run: |
+        . docker.sh
+        build_image applycustom
+        echo "::set-env name=LAST_BUILD_STAGE::applycustom"
+
     # Allow intermediate customization
     - name: Multi-thread compile
       id: mtcompile
+      continue-on-error: true
       run: |
         echo "::set-output name=started::yes"
         . docker.sh
         build_image multithread-compile
+        echo "::set-env name=LAST_BUILD_STAGE::multithread-compile"
+        echo "::set-output name=success::yes"
 
-    # if: failure() alone is not accurate but still necessary.
-    #     The failure may come from any previous step.
-    #     However, without failure(), the `if:` statement would combine success() implicitly
+    # if: failure() will cause current job failure
     - name: Single-thread compile
-      if: failure() && steps.mtcompile.outputs.started == 'yes'
+      if: steps.mtcompile.outputs.started == 'yes' && steps.mtcompile.outputs.success != 'yes'
       run: |
         . docker.sh
         build_image singlethread-compile
+        echo "::set-env name=LAST_BUILD_STAGE::singlethread-compile"
 
     - name: Copy out bin directory
       id: copydir
@@ -245,9 +249,6 @@ jobs:
         name: OpenWrt_firmware
         path: ${{ env.FIRMWARE }}
 
-    # failure checking
-    # TODO: NOT ACTUALLY WORKING AS FAILURE STATUS NOT PASSING THROUGH TO HERE;
-    #       LAST FAILURE STATUS SHOULD ALSO PASS THROUGH THIS STEP
     - name: SSH connection to Actions
       if: failure() || (github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true)
       uses: tete1030/debugger-action@my
