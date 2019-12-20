@@ -297,13 +297,13 @@ jobs:
       continue-on-error: true
       run: |
         echo "::set-output name=started::yes"
-        scripts/mtcompile.sh
+        scripts/compile.sh m
         echo "::set-output name=success::yes"
 
     # previous failure will cause current job failure
     - name: Single-thread compile
       if: steps.mtcompile.outputs.started == 'yes' && steps.mtcompile.outputs.success != 'yes'
-      run: scripts/st_compile.sh
+      run: scripts/compile.sh s
 
     - name: Upload bin directory
       uses: actions/upload-artifact@master

@@ -9,12 +9,12 @@ RUN CONFIG_FILE="${CONFIG_FILE}" NONSTRICT_PATCH=1 scripts/customize.sh
 
 FROM applycustom AS multithread-compile
 ARG BUILD_WHOLE
-RUN COMPILE_OPTIONS="package/compile" scripts/mt_compile.sh \
-  && COMPILE_OPTIONS="package/index" scripts/mt_compile.sh \
-  && ( [ "x${BUILD_WHOLE}" != "xtrue" -a "x${BUILD_WHOLE}" != "x1" ] || scripts/mt_compile.sh )
+RUN COMPILE_OPTIONS="package/compile" scripts/compile.sh m \
+  && COMPILE_OPTIONS="package/index" scripts/compile.sh m
+RUN [ "x${BUILD_WHOLE}" != "xtrue" -a "x${BUILD_WHOLE}" != "x1" ] || scripts/compile.sh m
 
 FROM applycustom AS singlethread-compile
 ARG BUILD_WHOLE
-RUN COMPILE_OPTIONS="package/compile" scripts/st_compile.sh \
-  && COMPILE_OPTIONS="package/index" scripts/st_compile.sh \
-  && ( [ "x${BUILD_WHOLE}" != "xtrue" -a "x${BUILD_WHOLE}" != "x1" ] || scripts/st_compile.sh )
+RUN COMPILE_OPTIONS="package/compile" scripts/st_compile.sh s \
+  && COMPILE_OPTIONS="package/index" scripts/st_compile.sh s
+RUN [ "x${BUILD_WHOLE}" != "xtrue" -a "x${BUILD_WHOLE}" != "x1" ] || scripts/compile.sh s
