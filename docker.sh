@@ -239,7 +239,7 @@ copy_files() {
     cat >> "${TMP_DOCKERFILE_DIR}/Dockerfile.tmp" << EOF
 FROM scratch AS buildresult
 WORKDIR "${BUILDRESULT_IMAGE_DIR}"
-COPY --from="${LAST_BUILD_STAGE}" "${1}" ./
+COPY --from="${LAST_BUILD_STAGE}" "${1}" ./copied
 EOF
 
     echo "Building copy task image"
@@ -251,9 +251,8 @@ EOF
       export DOCKERFILE_STDIN=1
       build_image buildresult
     )
-    
-    all_files=( "${COPY_CACHE_DIR}/${BUILDRESULT_IMAGE_DIR}"/* )
-    mv "${all_files[@]}" "${2}"
+
+    mv "${COPY_CACHE_DIR}/${BUILDRESULT_IMAGE_DIR}/copied" "${2}"
     all_other_files=( "${COPY_CACHE_DIR}"/* )
     rm -rf "${all_other_files[@]}" || true
   fi
