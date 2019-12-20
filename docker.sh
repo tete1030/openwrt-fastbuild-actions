@@ -18,6 +18,10 @@ _get_full_image_name() {
   echo ${REGISTRY:+$REGISTRY/}${IMAGE_NAME}
 }
 
+_get_full_image_tag() {
+  echo "$(_get_full_image_name):${IMAGE_TAG}"
+}
+
 # action steps
 check_required_input() {
   _exit_if_empty USERNAME "${USERNAME}"
@@ -126,9 +130,9 @@ build_image() {
     # 'buildcache' is for cache from current build
     # This is to prevent overriding cache during multi-stage building
     # We will eventually rename 'buildcache' to 'cache'. At initial and final stage, they are the same
-    cache_from+=( "--cache-from=type=registry,ref=$(_get_full_image_name):cache" )
-    cache_from+=( "--cache-from=type=registry,ref=$(_get_full_image_name):buildcache" )
-    cache_to+=( "--cache-to=type=registry,ref=$(_get_full_image_name):buildcache,mode=max" )
+    cache_from+=( "--cache-from=type=registry,ref=$(_get_full_image_name):${IMAGE_TAG}-cache" )
+    cache_from+=( "--cache-from=type=registry,ref=$(_get_full_image_name):${IMAGE_TAG}-buildcache" )
+    cache_to+=( "--cache-to=type=registry,ref=$(_get_full_image_name):${IMAGE_TAG}-buildcache,mode=max" )
   fi
   echo "From cache: ${cache_from[@]}"
   if [ "x${NO_CACHE_TO}" = "x1" ]; then
@@ -265,7 +269,11 @@ push_git_tag() {
   docker buildx imagetools create -t "$image_with_git_tag" "$(_get_full_image_name):${IMAGE_TAG}"
 }
 
-push_image_and_cache() {
+create_tag_alias() {
+  docker buildx imagetools create -t "${2}" "${1}"
+}
+
+push_image() {
   if [ "x${NO_PUSH}" = "x1" ]; then
     if [ "x${BUILDX_DRIVER}" = "xdocker" ]; then
       docker push "$(_get_full_image_name):${IMAGE_TAG}-build"
@@ -280,9 +288,21 @@ push_image_and_cache() {
   fi
   # push image
   # docker push "$(_get_full_image_name):${IMAGE_TAG}"
-  docker buildx imagetools create -t "$(_get_full_image_name):${IMAGE_TAG}" "$(_get_full_image_name):${IMAGE_TAG}-build"
-  docker buildx imagetools create -t "$(_get_full_image_name):cache" "$(_get_full_image_name):buildcache"
+  create_tag_alias "$(_get_full_image_name):${IMAGE_TAG}-build" "$(_get_full_image_name):${IMAGE_TAG}" 
   # push_git_tag
+}
+
+push_cache() {
+  if [ "x${NO_REMOTE_CACHE}" = "x1" ]; then
+    echo "NO_REMOTE_CACHE is set, no cache to push" >&2
+    exit 1
+  fi
+  create_tag_alias "$(_get_full_image_name):${IMAGE_TAG}-buildcache" "$(_get_full_image_name):${IMAGE_TAG}-cache" 
+}
+
+push_image_and_cache() {
+  push_image
+  push_cache
 }
 
 logout_from_registry() {
