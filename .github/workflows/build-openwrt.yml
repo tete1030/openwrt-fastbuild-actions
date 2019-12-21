@@ -104,6 +104,9 @@ jobs:
         build_image download
         echo "::set-env name=LAST_BUILD_STAGE::download"
 
+    - name: Print disk space size
+      run: df -h
+
     - name: Multi-thread compile
       id: mtcompile
       continue-on-error: true
@@ -121,6 +124,9 @@ jobs:
         . docker.sh
         build_image scompile
         echo "::set-env name=LAST_BUILD_STAGE::scompile"
+
+    - name: Print disk space size
+      run: df -h
 
     - name: Push image and cache
       if: (!cancelled()) && (!failure() || github.event_name == 'repository_dispatch' && github.event.client_payload.push_when_fail == true)
@@ -242,6 +248,9 @@ jobs:
         build_image download
         echo "::set-env name=LAST_BUILD_STAGE::download"
 
+    - name: Print disk space size
+      run: df -h
+
     - name: Multi-thread compile
       id: mtcompile
       continue-on-error: true
@@ -259,6 +268,9 @@ jobs:
         . docker.sh
         build_image scompile
         echo "::set-env name=LAST_BUILD_STAGE::scompile"
+
+    - name: Print disk space size
+      run: df -h
 
     - name: Push image
       if: (!cancelled()) && (!failure() || github.event_name == 'repository_dispatch' && github.event.client_payload.push_when_fail == true)
@@ -379,6 +391,9 @@ jobs:
         build_image download
         echo "::set-env name=LAST_BUILD_STAGE::download"
 
+    - name: Print disk space size
+      run: df -h
+
     - name: Multi-thread compile
       id: mtcompile
       continue-on-error: true
@@ -396,6 +411,9 @@ jobs:
         . docker.sh
         build_image scompile
         echo "::set-env name=LAST_BUILD_STAGE::scompile"
+
+    - name: Print disk space size
+      run: df -h
 
     - name: Push image
       if: (!cancelled()) && (!failure() || github.event_name == 'repository_dispatch' && github.event.client_payload.push_when_fail == true)
@@ -482,6 +500,9 @@ jobs:
     - name: Download package
       run: scripts/download.sh
 
+    - name: Print disk space size
+      run: df -h
+
     - name: Multi-thread compile
       id: mtcompile
       continue-on-error: true
@@ -494,6 +515,9 @@ jobs:
     - name: Single-thread compile
       if: steps.mtcompile.outputs.started == 'yes' && steps.mtcompile.outputs.success != 'yes'
       run: scripts/compile.sh s
+
+    - name: Print disk space size
+      run: df -h
 
     - name: Upload bin directory
       uses: actions/upload-artifact@master
