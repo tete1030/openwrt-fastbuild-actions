@@ -45,7 +45,8 @@ check_required_input() {
 configure_docker() {
   echo '{
     "max-concurrent-downloads": 50,
-    "max-concurrent-uploads": 50
+    "max-concurrent-uploads": 50,
+    "experimental": true
   }' | sudo tee /etc/docker/daemon.json
   sudo service docker restart
   configure_docker_buildx
