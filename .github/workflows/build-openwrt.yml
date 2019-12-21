@@ -110,8 +110,6 @@ jobs:
     - name: Multi-thread compile
       id: mtcompile
       continue-on-error: true
-      env:
-        OUTPUT: type=docker
       run: |
         echo "::set-output name=started::yes"
         . docker.sh
@@ -119,28 +117,13 @@ jobs:
         echo "::set-env name=LAST_BUILD_STAGE::mcompile"
         echo "::set-output name=success::yes"
 
-        # switch building mode
-        echo "::set-env name=NO_PUSH::1"
-        echo "::set-env name=BUILDX_DRIVER::docker"
-        export BUILDX_DRIVER=docker
-        reconfigure_docker_buildx
-
-
     # previous failure will cause current job failure
     - name: Single-thread compile
       if: steps.mtcompile.outputs.started == 'yes' && steps.mtcompile.outputs.success != 'yes'
-      env:
-        OUTPUT: type=docker
       run: |
         . docker.sh
         build_image scompile
         echo "::set-env name=LAST_BUILD_STAGE::scompile"
-
-        # switch building mode
-        echo "::set-env name=NO_PUSH::1"
-        echo "::set-env name=BUILDX_DRIVER::docker"
-        export BUILDX_DRIVER=docker
-        reconfigure_docker_buildx
 
     - name: Print disk space size
       run: df -h
@@ -271,9 +254,6 @@ jobs:
     - name: Multi-thread compile
       id: mtcompile
       continue-on-error: true
-      env:
-        USE_DOCKER_BUILD: 1
-        SQUASH: 1
       run: |
         echo "::set-output name=started::yes"
         . docker.sh
@@ -284,9 +264,6 @@ jobs:
     # previous failure will cause current job failure
     - name: Single-thread compile
       if: steps.mtcompile.outputs.started == 'yes' && steps.mtcompile.outputs.success != 'yes'
-      env:
-        USE_DOCKER_BUILD: 1
-        SQUASH: 1
       run: |
         . docker.sh
         build_image scompile
