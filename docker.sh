@@ -115,6 +115,13 @@ build_image() {
   declare -a cache_from
   declare -a cache_to
 
+  if [ "x${USE_DOCKER_BUILD}" = "x1" ]; then
+    if [ "x${BUILDX_DRIVER}" != "xdocker" ]; then
+      echo "Docker build command does not support other drivers than 'docker'" >&2
+      exit 1
+    fi
+  fi
+
   if [ "x${NO_REMOTE_CACHE}" = "x1" ]; then
     if [ "x${NO_INLINE_CACHE}" = "x1" ]; then
       if [ "x${BUILDX_DRIVER}" = "xdocker" ]; then
@@ -128,13 +135,25 @@ build_image() {
       if [ ! -d "./cache" ]; then
         mkdir ./cache
       fi
+      if [ "x${USE_DOCKER_BUILD}" = "x1" -a "x${NO_CACHE_TO}" != "x1" ]; then
+        echo "Docker build command does not support --cache-to=type=local" >&2
+        exit 1
+      fi
     else
       cache_from+=( "--cache-from=type=registry,ref=$(_get_full_image_name):${IMAGE_TAG}-build" )
-      cache_to+=( "--cache-to=type=inline,mode=min" )
+      if [ "x${USE_DOCKER_BUILD}" = "x1" ]; then
+        cache_to+=( --build-arg BUILDKIT_INLINE_CACHE=1 )
+      else
+        cache_to+=( "--cache-to=type=inline,mode=min" )
+      fi
     fi
   else
     if [ "x${BUILDX_DRIVER}" = "xdocker" ]; then
       echo "Buildx driver 'docker' does not support registry cache" >&2
+      exit 1
+    fi
+    if [ "x${USE_DOCKER_BUILD}" = "x1" -a "x${NO_CACHE_TO}" != "x1" ]; then
+      echo "Docker build command does not support --cache-to=type=registry" >&2
       exit 1
     fi
     # 'cache' is for cache from previous build
@@ -186,7 +205,18 @@ build_image() {
   fi
 
   if [ "x${SQUASH}" = "x1" ]; then
-    build_other_opts+=( "--squash" )
+    if [ "x${USE_DOCKER_BUILD}" = "x1" ]; then
+      build_other_opts+=( "--squash" )
+    else
+      echo "Buildx does not support squash" >&2
+      exit 1
+    fi
+  fi
+
+  BUILD_COMMAND="buildx build"
+  if [ "x${USE_DOCKER_BUILD}" = "x1" ]; then
+    export DOCKER_BUILDKIT=1
+    BUILD_COMMAND="build"
   fi
 
   DOCKERFILE_FULL=${DOCKERFILE_FULL:-${CONTEXT}/${DOCKERFILE}}
@@ -194,7 +224,7 @@ build_image() {
   if [ "x${DOCKERFILE_STDIN}" = "x1" ]; then
     (
       set -x
-      docker buildx build \
+      docker ${BUILD_COMMAND} \
         "${build_target[@]}" \
         "${build_args[@]}" \
         "${cache_from[@]}" \
@@ -207,7 +237,7 @@ build_image() {
   else
     (
       set -x
-      docker buildx build \
+      docker ${BUILD_COMMAND} \
         "${build_target[@]}" \
         "${build_args[@]}" \
         "${cache_from[@]}" \
