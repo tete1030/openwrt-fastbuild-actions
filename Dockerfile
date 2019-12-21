@@ -34,20 +34,9 @@ FROM custom AS download
 COPY --chown=builder:builder scripts/download.sh ./scripts/download.sh
 RUN scripts/download.sh
 
-FROM download AS mcompile
+FROM download AS compile
 COPY --chown=builder:builder scripts/compile.sh ./scripts/compile.sh
-RUN COMPILE_OPTIONS="tools/compile" scripts/compile.sh m
-RUN COMPILE_OPTIONS="toolchain/compile" scripts/compile.sh m
-RUN COMPILE_OPTIONS="prepare" scripts/compile.sh m
-RUN COMPILE_OPTIONS="target/compile" scripts/compile.sh m
-RUN COMPILE_OPTIONS="package/compile" scripts/compile.sh m
-RUN scripts/compile.sh m
+RUN COMPILE_OPTIONS="prepare" scripts/compile.sh m \
+  || COMPILE_OPTIONS="prepare" scripts/compile.sh s
+RUN scripts/compile.sh m || scripts/compile.sh s
 
-FROM download AS scompile
-COPY --chown=builder:builder scripts/compile.sh ./scripts/compile.sh
-RUN COMPILE_OPTIONS="tools/compile" scripts/compile.sh s
-RUN COMPILE_OPTIONS="toolchain/compile" scripts/compile.sh s
-RUN COMPILE_OPTIONS="prepare" scripts/compile.sh s
-RUN COMPILE_OPTIONS="target/compile" scripts/compile.sh s
-RUN COMPILE_OPTIONS="package/compile" scripts/compile.sh s
-RUN scripts/compile.sh s

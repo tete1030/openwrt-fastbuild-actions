@@ -22,18 +22,8 @@ RUN CONFIG_FILE="${CONFIG_FILE}" NONSTRICT_PATCH=1 scripts/customize.sh
 FROM custom AS download
 RUN scripts/download.sh
 
-FROM download AS mcompile
-RUN COMPILE_OPTIONS="tools/compile" scripts/compile.sh m
-RUN COMPILE_OPTIONS="toolchain/compile" scripts/compile.sh m
-RUN COMPILE_OPTIONS="prepare" scripts/compile.sh m
-RUN COMPILE_OPTIONS="target/compile" scripts/compile.sh m
-RUN COMPILE_OPTIONS="package/compile" scripts/compile.sh m
-RUN scripts/compile.sh m
-
-FROM download AS scompile
-RUN COMPILE_OPTIONS="tools/compile" scripts/compile.sh s
-RUN COMPILE_OPTIONS="toolchain/compile" scripts/compile.sh s
-RUN COMPILE_OPTIONS="prepare" scripts/compile.sh s
-RUN COMPILE_OPTIONS="target/compile" scripts/compile.sh s
-RUN COMPILE_OPTIONS="package/compile" scripts/compile.sh s
-RUN scripts/compile.sh s
+FROM download AS compile
+COPY --chown=builder:builder scripts/compile.sh ./scripts/compile.sh
+RUN COMPILE_OPTIONS="prepare" scripts/compile.sh m \
+  || COMPILE_OPTIONS="prepare" scripts/compile.sh s
+RUN scripts/compile.sh m || scripts/compile.sh s

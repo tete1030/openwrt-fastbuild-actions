@@ -107,23 +107,11 @@ jobs:
     - name: Print disk space size
       run: df -h
 
-    - name: Multi-thread compile
-      id: mtcompile
-      continue-on-error: true
-      run: |
-        echo "::set-output name=started::yes"
-        . docker.sh
-        build_image mcompile
-        echo "::set-env name=LAST_BUILD_STAGE::mcompile"
-        echo "::set-output name=success::yes"
-
-    # previous failure will cause current job failure
-    - name: Single-thread compile
-      if: steps.mtcompile.outputs.started == 'yes' && steps.mtcompile.outputs.success != 'yes'
+    - name: Compile
       run: |
         . docker.sh
-        build_image scompile
-        echo "::set-env name=LAST_BUILD_STAGE::scompile"
+        build_image compile
+        echo "::set-env name=LAST_BUILD_STAGE::compile"
 
     - name: Print disk space size
       run: df -h
@@ -251,23 +239,11 @@ jobs:
     - name: Print disk space size
       run: df -h
 
-    - name: Multi-thread compile
-      id: mtcompile
-      continue-on-error: true
-      run: |
-        echo "::set-output name=started::yes"
-        . docker.sh
-        build_image mcompile
-        echo "::set-env name=LAST_BUILD_STAGE::mcompile"
-        echo "::set-output name=success::yes"
-
-    # previous failure will cause current job failure
-    - name: Single-thread compile
-      if: steps.mtcompile.outputs.started == 'yes' && steps.mtcompile.outputs.success != 'yes'
+    - name: Compile
       run: |
         . docker.sh
-        build_image scompile
-        echo "::set-env name=LAST_BUILD_STAGE::scompile"
+        build_image compile
+        echo "::set-env name=LAST_BUILD_STAGE::compile"
 
     - name: Print disk space size
       run: df -h
@@ -394,29 +370,11 @@ jobs:
     - name: Print disk space size
       run: df -h
 
-    - name: Multi-thread compile
-      id: mtcompile
-      continue-on-error: true
-      env:
-        USE_DOCKER_BUILD: 1
-        SQUASH: 1
-      run: |
-        echo "::set-output name=started::yes"
-        . docker.sh
-        build_image mcompile
-        echo "::set-env name=LAST_BUILD_STAGE::mcompile"
-        echo "::set-output name=success::yes"
-
-    # previous failure will cause current job failure
-    - name: Single-thread compile
-      if: steps.mtcompile.outputs.started == 'yes' && steps.mtcompile.outputs.success != 'yes'
-      env:
-        USE_DOCKER_BUILD: 1
-        SQUASH: 1
+    - name: Compile
       run: |
         . docker.sh
-        build_image scompile
-        echo "::set-env name=LAST_BUILD_STAGE::scompile"
+        build_image compile
+        echo "::set-env name=LAST_BUILD_STAGE::compile"
 
     - name: Print disk space size
       run: df -h
