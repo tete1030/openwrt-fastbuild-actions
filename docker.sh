@@ -190,14 +190,23 @@ build_image() {
 
   declare -a build_other_opts
   if [ ! -z "${OUTPUT}" ]; then
+    if [ "x${USE_DOCKER_BUILD}" = "x1" ]; then
+      echo "Warning: docker build command may not support this output type" >&2
+    fi
     build_other_opts+=( "--output=${OUTPUT}" )
   else
     if [ "x${NO_PUSH}" = "x1" ]; then
       if [ "x${BUILDX_DRIVER}" != "xdocker" ]; then
         echo "Warning: buildx driver '${BUILDX_DRIVER}' does not support image management. Images may lose when not pushing." >&2
       fi
-      build_other_opts+=( --output=type=image,push=false )
+      if [ "x${USE_DOCKER_BUILD}" != "x1" ]; then
+        build_other_opts+=( --output=type=image,push=false )
+      fi
     else
+      if [ "x${USE_DOCKER_BUILD}" = "x1" ]; then
+        echo "Docker build does not support build-time push" >&2
+        exit 1
+      fi
       build_other_opts+=( --push )
     fi
   fi
@@ -261,6 +270,7 @@ copy_files() {
     docker cp builder:"$1" "$2"
     docker stop builder
   else
+    # When built image is large, this process can be extremely slow
     COPY_CACHE_DIR="cache/buildresult"
     BUILDRESULT_IMAGE_DIR="/buildresult"
     TMP_DOCKERFILE_DIR="/tmp"
