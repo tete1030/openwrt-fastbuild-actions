@@ -1,3 +1,10 @@
+#=================================================
+# https://github.com/tete1030/openwrt-fastbuild-actions
+# Description: FAST building OpenWrt with Github Actions and Docker!
+# Lisence: MIT
+# Author: Texot
+#=================================================
+
 ARG IMAGE_BASE
 FROM ${IMAGE_BASE} AS updateclone
 ARG UPDATE_REPO

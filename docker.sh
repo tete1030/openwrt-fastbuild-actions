@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 
+#=================================================
+# https://github.com/tete1030/openwrt-fastbuild-actions
+# Description: FAST building OpenWrt with Github Actions and Docker!
+# Lisence: MIT
+# Author: Texot
+#=================================================
+
+# WARNING: Do not try to modify this file if you don't understand it as
+# this script is not very robust.
+
 if [ "x$NO_FAILEXIT" != "x1" ]; then
   set -eo pipefail
 fi
@@ -41,6 +51,7 @@ configure_docker() {
   configure_docker_buildx
 }
 
+# Texot:
 # Why buildx? Why different driver? Why complicated copying strategy?
 # 
 # The reason I use Docker BuildKit instead of original docker is that

@@ -1,3 +1,10 @@
+#=================================================
+# https://github.com/tete1030/openwrt-fastbuild-actions
+# Description: FAST building OpenWrt with Github Actions and Docker!
+# Lisence: MIT
+# Author: Texot
+#=================================================
+
 FROM ubuntu:18.04 AS init-env
 RUN useradd -ms /bin/bash builder \
   && apt-get -qq update && apt-get -qq install sudo \

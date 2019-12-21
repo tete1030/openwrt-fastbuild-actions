@@ -2,9 +2,22 @@
 # https://github.com/P3TERX/Actions-OpenWrt
 # Description: Build OpenWrt using GitHub Actions
 # Lisence: MIT
-# Author: P3TERX
+# Author: P3TERX (for direct-build job)
 # Blog: https://p3terx.com
 #=================================================
+
+#=================================================
+# https://github.com/tete1030/openwrt-fastbuild-actions
+# Description: FAST building OpenWrt with Github Actions and Docker!
+# Lisence: MIT
+# Author: Texot (for docker-* jobs)
+#=================================================
+
+# Texot:
+# If you want to tweak the options, please be sure you understand them.
+# Some options are correlated across jobs, e.g. the IMAGE_NAME, IMAGE_BASE, IMAGE_TAG.
+# IMAGE_BASE in docker-build-inc and docker-build-package need to conform "IMAGE_NAME:IMAGE_TAG" used in docker-build or docker-build-inc
+# Sorry for the complicated settings. Please ask any question in the issue
 
 name: Build OpenWrt
 

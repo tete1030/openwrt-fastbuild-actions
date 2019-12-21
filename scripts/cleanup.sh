@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Copyright (c) 2019 P3TERX
 # From https://github.com/P3TERX/Actions-OpenWrt
 
 echo "Deleting files, please wait ..."

@@ -1,6 +1,10 @@
 MIT License
 
-Copyright (c) 2019 P3TERX
+Copyright for original idea and some files are held by P3TERX as part of
+project P3TERX/Actions-OpenWrt. All other copyright for project
+tete1030/openwrt-fastbuild-actions are held by tete1030 (Texot).
+
+Copyright (c) 2019 Texot
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

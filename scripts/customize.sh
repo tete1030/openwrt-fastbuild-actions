@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Copyright (c) 2019 tete1030
+# From https://github.com/tete1030/openwrt-fastbuild-actions
+
 set -eo pipefail
 
 [ -e "${CONFIG_FILE}" ] && cp "${CONFIG_FILE}" openwrt/.config
