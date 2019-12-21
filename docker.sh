@@ -185,6 +185,10 @@ build_image() {
     build_other_opts+=( "--tag=$(_get_full_image_name):${IMAGE_TAG}-build" )
   fi
 
+  if [ "x${SQUASH}" = "x1" ]; then
+    build_other_opts+=( "--squash" )
+  fi
+
   DOCKERFILE_FULL=${DOCKERFILE_FULL:-${CONTEXT}/${DOCKERFILE}}
 
   if [ "x${DOCKERFILE_STDIN}" = "x1" ]; then

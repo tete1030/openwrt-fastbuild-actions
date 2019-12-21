@@ -186,6 +186,7 @@ jobs:
       CONFIG_FILE: 'config.diff'
       NO_REMOTE_CACHE: 1
       NO_PUSH: 1
+      SQUASH: 1
       BUILD_ARGS: 'CONFIG_FILE IMAGE_BASE UPDATE_REPO UPDATE_FEEDS'
 
     steps:
@@ -330,6 +331,7 @@ jobs:
       CONFIG_FILE: 'config.diff'
       NO_REMOTE_CACHE: 1
       NO_PUSH: 1
+      SQUASH: 1
       BUILD_ARGS: 'CONFIG_FILE IMAGE_BASE UPDATE_FEEDS'
 
     steps:
