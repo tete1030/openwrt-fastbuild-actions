@@ -49,7 +49,9 @@ configure_docker() {
     "experimental": true
   }' | sudo tee /etc/docker/daemon.json
   sudo service docker restart
-  configure_docker_buildx
+  docker buildx rm builder || true
+  docker buildx create --use --name builder --node builder0 --driver docker-container ${EXTRA_BUILDX_CREATE_OPTS}
+  reconfigure_docker_buildx
 }
 
 # Texot:
@@ -74,15 +76,14 @@ configure_docker() {
 # There are also many other tricky parts in this project. To learn more,
 # feel free to raise an issue in github.com/tete1030/Actions_OpenWrt
 
-configure_docker_buildx() {
+reconfigure_docker_buildx() {
   if [ -z "${BUILDX_DRIVER}" ]; then
     echo "BUILDX_DRIVER not specified" >&2
     exit 1
   fi
-  docker buildx rm builder || true
   if [ "x${BUILDX_DRIVER}" = "xdocker-container" ]; then
     echo "Use buildx driver: docker-container"
-    docker buildx create --use --name builder --node builder0 --driver docker-container ${EXTRA_BUILDX_CREATE_OPTS}
+    docker buildx use builder
   elif [ "x${BUILDX_DRIVER}" = "xdocker" ]; then
     echo "Use buildx driver: docker"
     docker buildx use default
