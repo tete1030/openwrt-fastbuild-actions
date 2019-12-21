@@ -53,7 +53,7 @@ jobs:
       with:
         version: latest
 
-    - name: Configure docker
+    - name: Init and configure docker
       run: |
         scripts/cleanup.sh
         . docker.sh
@@ -110,7 +110,7 @@ jobs:
         echo "::set-env name=LAST_BUILD_STAGE::scompile"
 
     - name: Push image and cache
-      if: (!cancelled()) && !(failure() && github.event_name == 'repository_dispatch' && github.event.client_payload.disable_push_when_fail == true)
+      if: (!cancelled()) && (!failure() || github.event_name == 'repository_dispatch' && github.event.client_payload.push_when_fail == true)
       run: |
         . docker.sh
         push_image_and_cache
@@ -180,12 +180,14 @@ jobs:
         version: latest
 
     - name: Init and configure docker
-      env:
-        UPDATE_FEEDS: ${{ github.event.client_payload.update_feeds }}
-        UPDATE_REPO: ${{ github.event.client_payload.update_repo }}
       run: |
+        UPDATE_FEEDS=0
+        [ "x${{ github.event.client_payload.update_feeds }}" != "xtrue" ] || UPDATE_FEEDS=1
         echo "::set-env name=UPDATE_FEEDS::${UPDATE_FEEDS}"
+        UPDATE_REPO=0
+        [ "x${{ github.event.client_payload.update_repo }}" != "xtrue" ] || UPDATE_REPO=1
         echo "::set-env name=UPDATE_REPO::${UPDATE_REPO}"
+        
         scripts/cleanup.sh
         . docker.sh
         configure_docker
@@ -246,7 +248,7 @@ jobs:
         echo "::set-env name=LAST_BUILD_STAGE::scompile"
 
     - name: Push image
-      if: (!cancelled()) && !(failure() && github.event_name == 'repository_dispatch' && github.event.client_payload.disable_push_when_fail == true)
+      if: (!cancelled()) && (!failure() || github.event_name == 'repository_dispatch' && github.event.client_payload.push_when_fail == true)
       run: |
         . docker.sh
         push_image
@@ -316,9 +318,9 @@ jobs:
         version: latest
 
     - name: Init and configure docker
-      env:
-        UPDATE_FEEDS: ${{ github.event.client_payload.update_feeds }}
       run: |
+        UPDATE_FEEDS=0
+        [ "x${{ github.event.client_payload.update_feeds }}" != "xtrue" ] || UPDATE_FEEDS=1
         echo "::set-env name=UPDATE_FEEDS::${UPDATE_FEEDS}"
         scripts/cleanup.sh
         . docker.sh
@@ -329,12 +331,12 @@ jobs:
     - name: Use latest base image
       if: github.event_name == 'repository_dispatch' && ( github.event.client_payload.use_latest == true || github.event.client_payload.use_latest_inc == true )
       env:
-        USE_LATEST: ${{ github.event.client_payload.use_latest }}
-        USE_LATEST_INC: ${{ github.event.client_payload.use_latest_inc }}
+        BOOL_USE_LATEST: ${{ github.event.client_payload.use_latest }}
+        BOOL_USE_LATEST_INC: ${{ github.event.client_payload.use_latest_inc }}
       run: |
         . docker.sh
-        if [ "x${USE_LATEST}" = "x1" ]; then
-          test "x${USE_LATEST}" != "x1"
+        if [ "x${BOOL_USE_LATEST}" = "xtrue" ]; then
+          test "x${BOOL_USE_LATEST_INC}" != "xtrue"
           create_tag_alias ${IMAGE_NAME}:latest ${IMAGE_BASE}
         else
           create_tag_alias ${IMAGE_NAME}:latest-inc ${IMAGE_BASE}
@@ -383,7 +385,7 @@ jobs:
         echo "::set-env name=LAST_BUILD_STAGE::scompile"
 
     - name: Push image
-      if: (!cancelled()) && !(failure() && github.event_name == 'repository_dispatch' && github.event.client_payload.disable_push_when_fail == true)
+      if: (!cancelled()) && (!failure() || github.event_name == 'repository_dispatch' && github.event.client_payload.push_when_fail == true)
       run: |
         . docker.sh
         push_image
