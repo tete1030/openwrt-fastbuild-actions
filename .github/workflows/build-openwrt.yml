@@ -355,6 +355,12 @@ jobs:
         TIMEOUT_MIN: 5
       uses: tete1030/debugger-action@my
 
+    - name: Update repo and packages
+      run: |
+        . docker.sh
+        build_image updateclone
+        echo "::set-env name=LAST_BUILD_STAGE::updateclone"
+
     - name: Apply customizations
       run: |
         . docker.sh
