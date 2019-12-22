@@ -70,7 +70,7 @@ jobs:
         - mode: test
           title: test-docker-build
     env:
-      # No recommended to change as they are already in optimal condition
+      # Not recommended to change as they are already in optimal condition
       # 不推荐修改，已处在最优状态
       # Using docker-container driver because it allows full exporting of cache.
       # However, its file copying process can be tricky and slow.
@@ -210,7 +210,7 @@ jobs:
         - mode: test
           title: test-docker-build-inc
     env:
-      # No recommended to change as they are already in optimal condition
+      # Not recommended to change as they are already in optimal condition
       # 不推荐修改，已处在最优状态
       # Using docker driver instead of docker-container because we don't need cache
       # 由于不需要缓存，这里使用docker而非docker-container
@@ -375,7 +375,7 @@ jobs:
         - mode: test
           title: test-docker-build-package
     env:
-      # No recommended to change as they are already in optimal condition
+      # Not recommended to change as they are already in optimal condition
       # 不推荐修改，已处在最优状态
       # Using docker driver instead of docker-container because we don't need cache
       # 由于不需要缓存，这里使用docker而非docker-container
