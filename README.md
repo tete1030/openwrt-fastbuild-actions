@@ -192,6 +192,14 @@ To trigger rebuilding base builder,
     - `OpenWrt_packages`: all packages
     - `OpenWrt_new_packages`: only new produced packages from building of this time (by comparing modified time)
 
+## FAQs
+
+### Docker Hub: Tags not retrieved
+
+Caused by known of buildx:
+- https://github.com/docker/hub-feedback/issues/1906
+- https://github.com/docker/buildx/issues/173
+
 ## Todo
 
 - [ ] Automatically trigger building base image
