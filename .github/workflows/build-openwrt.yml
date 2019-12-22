@@ -13,11 +13,31 @@
 # Author: Texot (for docker-* jobs)
 #=================================================
 
-# Texot:
 # If you want to tweak the options, please be sure you understand them.
-# Some options are correlated across jobs, e.g. the IMAGE_NAME, IMAGE_BASE, IMAGE_TAG.
-# IMAGE_BASE in docker-build-inc and docker-build-package need to conform "IMAGE_NAME:IMAGE_TAG" used in docker-build or docker-build-inc
-# Sorry for the complicated settings. Please ask any question in the issue
+# 如果你想更改参数，确保在理解它们的前提下进行
+env:
+  # Specify here the name and tag you want to use for the builders
+  # 在这里自定义你想使用的Builder名和默认Tag
+  BUILDER_NAME: openwrt_x86_64
+  BUILDER_TAG: latest
+  # Specify here the OpenWrt Repo URL and Branch
+  # 在这里指定你的OpenWrt的Repo URL和Branch
+  REPO_URL: https://github.com/coolsnowwolf/lede
+  REPO_BRANCH: master
+  # Specify here your config file
+  # 在这里指定你的配置文件名
+  CONFIG_FILE: 'config.diff'
+  # Leave it empty if you are using the default Docker Hub
+  # 如果你想使用默认的Docker Hub，此处留空
+  DK_REGISTRY: ''
+  # DO NOT CHANGE the following here, set them only in forked repo's Settings->Secrets page
+  # 安全起见以下参数请不要在此更改，在你Fork的repo中，Settings->Secrets页面更改
+  DK_USERNAME: ${{secrets.docker_username}}
+  DK_PASSWORD: ${{secrets.docker_password}}
+  SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
+  # Not recommended to change unless you understand how it is used
+  # 以下参数不推荐修改
+  DK_CONTEXT: .
 
 name: Build OpenWrt
 
@@ -30,21 +50,10 @@ on:
     - README.md
     - LICENSE
     - .dockerignore
-
 #  schedule:
 #    - cron: 0 8 * * 5
 #  watch:
 #    types: [started]
-
-env:
-  SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
-  DK_USERNAME: ${{secrets.docker_username}}
-  DK_PASSWORD: ${{secrets.docker_password}}
-  BUILDER_NAME: openwrt_x86_64
-  BUILDER_TAG: latest
-  DK_CONTEXT: .
-  REPO_URL: https://github.com/coolsnowwolf/lede
-  REPO_BRANCH: master
 
 jobs:
   docker-build:
@@ -61,9 +70,15 @@ jobs:
         - mode: test
           title: test-docker-build
     env:
+      # No recommended to change as they are already in optimal condition
+      # 不推荐修改，已处在最优状态
+      # Using docker-container driver because it allows full exporting of cache.
+      # However, its file copying process can be tricky and slow.
+      # If using docker as driver, the rebuilding will largely slow down.
+      # 使用docker-container是因为它允许完全导出缓存，加速下一次构建过程，然而它会让文件拷贝麻烦且缓慢
+      # 如果使用docker作为driver，重建过程会变得非常缓慢
       DK_BUILDX_DRIVER: docker-container
       DK_DOCKERFILE: Dockerfile
-      CONFIG_FILE: 'config.diff'
       BUILD_ARGS: 'REPO_URL REPO_BRANCH CONFIG_FILE'
 
     steps:
@@ -195,9 +210,12 @@ jobs:
         - mode: test
           title: test-docker-build-inc
     env:
+      # No recommended to change as they are already in optimal condition
+      # 不推荐修改，已处在最优状态
+      # Using docker driver instead of docker-container because we don't need cache
+      # 由于不需要缓存，这里使用docker而非docker-container
       DK_BUILDX_DRIVER: docker
       DK_DOCKERFILE: Dockerfile-inc
-      CONFIG_FILE: 'config.diff'
       NO_REMOTE_CACHE: 1
       NO_BUILDTIME_PUSH: 1
       BUILD_ARGS: 'CONFIG_FILE IMAGE_BASE UPDATE_REPO UPDATE_FEEDS'
@@ -357,9 +375,12 @@ jobs:
         - mode: test
           title: test-docker-build-package
     env:
+      # No recommended to change as they are already in optimal condition
+      # 不推荐修改，已处在最优状态
+      # Using docker driver instead of docker-container because we don't need cache
+      # 由于不需要缓存，这里使用docker而非docker-container
       DK_BUILDX_DRIVER: docker
       DK_DOCKERFILE: Dockerfile-package
-      CONFIG_FILE: 'config.diff'
       NO_REMOTE_CACHE: 1
       NO_BUILDTIME_PUSH: 1
       BUILD_ARGS: 'CONFIG_FILE IMAGE_BASE UPDATE_FEEDS'
@@ -541,8 +562,6 @@ jobs:
         UPDATE_FEEDS=1 scripts/update_feeds.sh
 
     - name: Load custom configuration
-      env:
-        CONFIG_FILE: 'config.diff'
       run: scripts/customize.sh
 
     # Allow intermediate customization
