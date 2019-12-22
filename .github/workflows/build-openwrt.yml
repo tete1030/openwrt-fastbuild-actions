@@ -242,11 +242,19 @@ jobs:
         configure_docker
         login_to_registry
 
-    - name: Use latest base image
-      if: github.event_name == 'repository_dispatch' && github.event.client_payload.use_latest == true
+    - name: Check if use latest base image
+      env:
+        BOOL_USE_LATEST: ${{ github.event.client_payload.use_latest }}
       run: |
         . docker.sh
-        create_remote_tag_alias "${IMAGE_LATEST}" "${IMAGE_BASE}"
+        set +eo pipefail
+        docker buildx imagetools inspect "${IMAGE_BASE}"
+        ret_val=$?
+        set -eo pipefail
+        if [ "x${BOOL_USE_LATEST}" = "xtrue" -o "x${ret_val}" != "x0" ]; then
+          echo "Creating '${IMAGE_BASE}' from '${IMAGE_LATEST}'"
+          create_remote_tag_alias "${IMAGE_LATEST}" "${IMAGE_BASE}"
+        fi
 
     - name: Pull base image
       run: |
@@ -393,18 +401,27 @@ jobs:
         login_to_registry
         touch .start_timestamp
 
-    - name: Use latest base image
-      if: github.event_name == 'repository_dispatch' && ( github.event.client_payload.use_latest == true || github.event.client_payload.use_latest_inc == true )
+    - name: Check if use latest base image
       env:
         BOOL_USE_LATEST: ${{ github.event.client_payload.use_latest }}
         BOOL_USE_LATEST_INC: ${{ github.event.client_payload.use_latest_inc }}
       run: |
         . docker.sh
-        if [ "x${BOOL_USE_LATEST}" = "xtrue" ]; then
-          test "x${BOOL_USE_LATEST_INC}" != "xtrue"
-          create_remote_tag_alias "${IMAGE_LATEST}" "${IMAGE_BASE}"
-        else
-          create_remote_tag_alias "${IMAGE_LATEST_INC}" "${IMAGE_BASE}"
+        set +eo pipefail
+        docker buildx imagetools inspect "${IMAGE_BASE}"
+        ret_val=$?
+        set -eo pipefail
+        if [ "x${BOOL_USE_LATEST}" = "xtrue" -o "x${BOOL_USE_LATEST_INC}" = "xtrue" -o "x${ret_val}" != "x0" ]; then
+          IMAGE_SELECTED="${IMAGE_LATEST}"
+          if [ "x${BOOL_USE_LATEST_INC}" = "xtrue" ]; then
+            if [ "x${BOOL_USE_LATEST}" = "xtrue" ]; then
+              echo "You cannot use both 'use_latest' and 'use_latest_inc'" >&2
+              exit 1
+            fi
+            IMAGE_SELECTED="${IMAGE_LATEST_INC}"
+          fi
+          echo "Creating '${IMAGE_BASE}' from '${IMAGE_SELECTED}'"
+          create_remote_tag_alias "${IMAGE_SELECTED}" "${IMAGE_BASE}"
         fi
 
     - name: Pull base image
