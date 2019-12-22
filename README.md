@@ -20,6 +20,8 @@ This project uses Docker Hub for storing previous building process, allowing inc
   - `docker-build-inc`: Incrementally building firmware (every push, short period)
   - `docker-build-package`: Incrementally building only packages (every push, short period, useful when only enabling a package module)
 
+----
+
 - 在Docker Hub加载和存储OpenWrt编译状态
 - 在Docker Hub加载和存储Docker Image的构建缓存（当前只有极少情况被使用）
 - 三个编译模式平行进行
@@ -30,57 +32,68 @@ This project uses Docker Hub for storing previous building process, allowing inc
 ## Mechanism 原理
 
 For convenience, assume docker image for storing builder
-- `IMAGE_NAME=tete1030/openwrt_x86_64`
+- `IMAGE_NAME=tete1030/openwrt_x86_64` (abbreviated to `t/o`)
 - `IMAGE_TAG=latest`
   
-The three building modes function as following description:
+The **three building modes** function as following description:
 
-- For every release, the `docker-build` mode setups "base builder" and builds OpenWrt freshly. It produces a firmware and a builder. The builder is named as `tete1030/openwrt_x86_64:latest` and stored in Docker Hub.<sup>1</sup>
-- For every push, the `docker-build-inc` mode setups "new builder `tete1030/openwrt_x86_64:latest-inc`" based on itself's "previous builder `tete1030/openwrt_x86_64:latest-inc`" (same name), and it builds new firmware. Then it saves back the new builder to Docker Hub.
-- For every push, the `docker-build-package` mode setups "new builder `tete1030/openwrt_x86_64:latest-package`" based on itself's "previous builder `tete1030/openwrt_x86_64:latest-package`" (same name), and it builds new packages (*.ipkg). Then it saves back the new builder to Docker Hub.
+- For every release, the `docker-build` mode setups "base builder" and builds OpenWrt freshly. It produces a firmware and "base builder". The builder is named as `t/o:latest` and stored in Docker Hub.<sup>1</sup><sup>2</sup>
+- For every push, the `docker-build-inc` mode setups "new builder `t/o:latest-inc`" based on itself's "previous builder `t/o:latest-inc`" (same name), and it builds new firmware. Then it saves back the new builder to Docker Hub.<sup>2</sup>
+- For every push, the `docker-build-package` mode setups "new builder `t/o:latest-package`" based on itself's "previous builder `t/o:latest-package`" (same name), and it builds new packages (*.ipkg). Then it saves back the new builder to Docker Hub.<sup>2</sup>
 
-<sup>[1] *For `docker-build` mode, there are also an intermediate builder `tete1030/openwrt_x86_64:latest-build` and cache `tete1030/openwrt_x86_64:latest-buildcache`、`tete1030/openwrt_x86_64:latest-cache`. You don't need to care them.*</sup>
+<sup>[1] *For `docker-build` mode, there are also an intermediate builder `t/o:latest-build` and cache `t/o:latest-buildcache`、`t/o:latest-cache`. You don't need to care them.*</sup>
+<sup>[2] *For all modes, there are also test builders `t/o:test-latest*`. You don't need to care them.*</sup>
 
-You may notice there are gaps between the three builders. YES. The latter two builders relies on pulling from the first builder:
+You may notice there are gaps between the three builders. YES. The latter two builders relies on pulling from the first builder (_They are already addressed automatically, you don't need to follow these steps unless you want to manually trigger them_):
 
-- For first time usage of `docker-build-inc` mode, we need to make it use the `*:latest` builder instead of the `*:latest-inc` (Because currently it doesn't exist). The method is described in [Usage](#usage-使用).
+- For first time usage of `docker-build-inc` mode, we need to make it use the `t/o:latest` builder as basis builder instead of the default basis `t/o:latest-inc` (Because by the time it doesn't exist). The method is described in [Usage](#usage-使用).
 
-- For first time usage of `docker-build-package` mode, we need to make it use the `*:latest` builder or the `*:latest-inc` builder instead of the `*:latest-package` (Because currently it doesn't exist). The method is described in [Usage](#usage-用法).
+- For first time usage of `docker-build-package` mode, we need to make it use the `t/o:latest` builder or the `t/o:latest-inc` builder as basis builder instead of the default basis `t/o:latest-package` (Because by the time it doesn't exist). The method is described in [Usage](#usage-用法).
+
+---
 
 为了简便，假设用于存储编译状态的Docker image为
-- `IMAGE_NAME=tete1030/openwrt_x86_64`
+- `IMAGE_NAME=tete1030/openwrt_x86_64`（用`t/o`简略)
 - `IMAGE_TAG=latest`
-  
-这三种编译模式按照以下方式工作：
-- 每次release，`docker-build`自动建立“基础编译环境”。该模式产生固件和编译状态，并将改编译状态命名为`tete1030/openwrt_x86_64:latest`存储在Docker Hub上
-- 每次push，`docker-build-inc`自动建立“新编译环境`tete1030/openwrt_x86_64:latest-inc`”，基于“旧编译环境`tete1030/openwrt_x86_64:latest-inc`”（同名）。该模式也产生固件，“新编译环境”最终被保存至Docker Hub
-- 每次push，`docker-build-package`自动建立“新编译环境`tete1030/openwrt_x86_64:latest-package`，基于“旧编译环境`tete1030/openwrt_x86_64:latest-package`”（同名）。该模式仅产生可安装软件包（*.ipkg)。“新编译环境”最终被保存至Docker Hub
 
-<sup>[1] *对于`docker-build`模式，一些“中间编译环境`tete1030/openwrt_x86_64:latest-build`”和“缓存`tete1030/openwrt_x86_64:latest-buildcache`、`tete1030/openwrt_x86_64:latest-cache`”也会产生。不用管。*</sup>
+**三种编译模式**按照以下方式工作：
+- 每次release，`docker-build`自动建立“基础编译环境”。该模式产生固件和“基础编译环境”，并将该编译环境命名为`t/o:latest`存储在Docker Hub上<sup>1</sup><sup>2</sup>
+- 每次push，`docker-build-inc`自动基于“旧编译环境`t/o:latest-inc`”建立“新编译环境`t/o:latest-inc`”（同名）。该模式也产生固件，“新编译环境”最终被保存回Docker Hub<sup>2</sup>
+- 每次push，`docker-build-package`自动基于“旧编译环境`t/o:latest-package`”建立“新编译环境`t/o:latest-package`（同名）。该模式仅产生可安装软件包（*.ipkg)。“新编译环境”最终被保存至Docker Hub<sup>2</sup>
 
-你可能会注意到，三种编译环境之间没有建立任何联系。确实，后两个编译环境需要从第一个编译环境拉取：
-- 第一次使用`docker-build-inc`模式时，我们需要让该模式使用`*:latest`作为基础，而不是默认的`*:latest-inc`环境（因为此时它还不存在）。使用方法在下面[用法](#usage-用法)章节描述。
-- 第一次使用`docker-build-package`模式时，我们需要让该模式使用`*:latest`或`*:latest-inc`作为基础，而不是默认的`*:latest-package`环境（因为此时它还不存在）。使用方法在下面[用法](#usage-用法)章节描述。
+<sup>[1] *对于`docker-build`模式，一些“中间编译环境`t/o:latest-build`”和“缓存`t/o:latest-buildcache`、`t/o:latest-cache`”也会产生。不用管。*</sup>
+<sup>[2] *对于所有模式，一些测试环境`t/o:test-latest*`会产生在Docker Hub上。同样不需要理睬。*</sup>
+
+你可能会注意到，三种编译环境之间没有建立任何联系。确实，后两个编译环境需要从第一个编译环境拉取（_这两个步骤已经被自动化完成，除非你想手动触发这个过程，你不需要执行以下步骤_）：
+- 第一次使用`docker-build-inc`模式时，我们需要让该模式使用`t/o:latest`作为基础，而不是默认的`t/o:latest-inc`环境（因为此时它还不存在）。使用方法在下面[用法](#usage-用法)章节描述。
+- 第一次使用`docker-build-package`模式时，我们需要让该模式使用`t/o:latest`或`t/o:latest-inc`作为基础，而不是默认的`t/o:latest-package`环境（因为此时它还不存在）。使用方法在下面[用法](#usage-用法)章节描述。
 
 ## Usage 用法
 
 ### First time building 第一次编译
 
+These step is for making a base builder. When you need a fresh rebuilding of everything, you can execute this by publishing a new release or use [tete1030/github-repo-dispatcher](https://github.com/tete1030/github-repo-dispatcher) to mannually trigger a rebuilding with parameters `Type`: `docker-build` and empty `Client Payload`.
+
+The building process generally takes 1.5~3 hours depending on your config.
+
 1. Sign up for [GitHub Actions](https://github.com/features/actions/signup)
-2. Register a Docker Hub account
-3. Fork this repo
-4. Get your Docker Hub personal access token. Paste your username and the generated token to the forked repo's Settings->Secrets page. Use `docker_username` for your username and `docker_password` for your token.
-5. (Optional, not very useful) If you want a debug message to be sent to Slack, you can generate a Slack Webhook URL and set the url as `SLACK_WEBHOOK_URL` in the Secrets page. Search in Google if you don't know how to do it.
-6. Generate your `.config` and rename it to `config.diff`. Put the file in the root dir of your forked repo.
-7. Customize optional packages you want to download in `scripts/update_feeds.sh`
-8. Put any patch you want to `patches` dir. The patches are applied after `update_feeds.sh` and before `download.sh`.
-9. Commit and push your changes. 
-10. Publish a release the first time you use. Or you can use [tete1030/github-repo-dispatcher](https://github.com/tete1030/github-repo-dispatcher) to start the building. (`Type`: `docker-build`, `Payload`: leave it empty)
-11. Wait for `docker-build` job to finish. This is for full building of base builder.
-12. After `docker-build` finished, use [tete1030/github-repo-dispatcher](https://github.com/tete1030/github-repo-dispatcher) to mark this builder as the builder used for incremental building. (`Type`: `docker-build-inc`, `Payload`: `{"use_latest": true}`) and (`Type`: `docker-build-package`, `Payload`: `{"use_latest": true}`)
-13. Collect your files in the `docker-build` job's `Artifacts` menu
+2. Register a **Docker Hub** account
+3. **Fork** this repo
+4. Get your Docker Hub **personal access token**. Paste your username and the generated token to the forked repo's **Settings->Secrets** page. Use `docker_username` for your username and `docker_password` for your token.
+5. *(Optional, not very useful)* If you want a debug message to be sent to **Slack**, you can generate a Slack Webhook URL and set the url as `SLACK_WEBHOOK_URL` in the Secrets page. Search in Google if you don't know how to do it.
+6. *(Optional)* Customize `.github/workflows/build-openwrt.yml` to **change builder's name and other options**.
+7. **Generate your `.config`** and rename it to `config.diff`. Put the file in the root dir of your forked repo.
+8. *(Optional)* Customize `scripts/update_feeds.sh` for **additional packages** you want to download.
+9. *(Optional)* Put any **patch** you want to `patches` dir. The patches are applied after `update_feeds.sh` and before `download.sh`.
+10. **Commit and push** your changes. This will automatically trigger an incremental building. However, it will fail as you haven't built base builder. **Just let it fail** or cancel it in the Actions page.
+11. **Publish** a release. This is for full building of base builder. Or you can use [tete1030/github-repo-dispatcher](https://github.com/tete1030/github-repo-dispatcher) to manually trigger the building. (`Type`: `docker-build`, `Payload`: leave it empty)
+12. Wait for `docker-build` job to finish.
+13. ~~Link this base builder to incremental builders for following building process.~~ This step is not necessary anymore, it will be automatically executed when running following building. <del>After `docker-build` finished, use [tete1030/github-repo-dispatcher](https://github.com/tete1030/github-repo-dispatcher) to mark this builder as the builder used for incremental building. Parameters are: `Type`: `docker-build-inc`, `Payload`: `{"use_latest": true}` ; and (`Type`: `docker-build-package`, `Payload`: `{"use_latest": true}`)</del>
+14. Collect your files in the `docker-build` job's `Artifacts` menu
 
 ### Following building 后续编译
+
+After the base builder has been made, you only need the following step to build your firmware and packages when you want to change your config. The building process generally only takes 20 minutes to 1 hour depending on the extent your config has changed.
 
 1. Commit and push your changes
 2. Wait for `docker-build-inc` or `docker-build-package` to finish
@@ -88,11 +101,15 @@ You may notice there are gaps between the three builders. YES. The latter two bu
 
 ### Remake your `docker-build-inc` builder or `docker-build-package` builder 重建编译环境
 
-If the builder `docker-build-inc` or `docker-build-package` falls into some wrong state, you can remake them by
+Because the `docker-build-inc` builder and `docker-build-package` builder are reusing previous building state, the builder image may grow larger and larger. The builder itself may fall into some wrong state. If so, you can remake them from the base builder.
 
 1. Use [tete1030/github-repo-dispatcher](https://github.com/tete1030/github-repo-dispatcher) to mark the latest base builder as the builder used for incremental building. (`Type`: `docker-build-inc` or `docker-build-package`, `Payload`: `{"use_latest": true}`)
 2. Wait for `docker-build-inc` or `docker-build-package` to finish
 3. Collect your files in the `docker-build-inc` or `docker-build-package` job's `Artifacts` menu
+
+### Building options
+
+
 
 ## Details
 
@@ -100,7 +117,9 @@ If the builder `docker-build-inc` or `docker-build-package` falls into some wron
 
 To be finished
 
-### `docker-build` building process
+### Building process explained
+
+#### `docker-build` building process
 
 1. `cleanup.sh`: Clean for extra disk space
 2. `initenv.sh`: Install building environment
@@ -114,9 +133,9 @@ To be finished
     - `OpenWrt_bin`: all binaries files, packages and firmwares
     - `OpenWrt_firmware`: firmware only
 
-### `docker-build-inc` building process
+#### `docker-build-inc` building process
 
-1. Pull from Docker Hub `${IMAGE_NAME}:${IMAGE_TAG}-inc` (or `${IMAGE_NAME}:${IMAGE_TAG}` when `github.event.client_payload.use_latest` is set)
+1. Pull from Docker Hub `${IMAGE_NAME}:${IMAGE_TAG}-inc`. If not existing, set `${IMAGE_NAME}:${IMAGE_TAG}` to `${IMAGE_NAME}:${IMAGE_TAG}-inc` (or when `github.event.client_payload.use_latest` is set)
 2. `update_repo.sh`, only when `github.event.client_payload.update_repo` is set
 3. `update_feeds.sh`, do `git pull` for existing packages only when `github.event.client_payload.update_feeds` is set
 4. `customize.sh`, apply patches only when patch is detected as not applied
@@ -127,10 +146,10 @@ To be finished
     - `OpenWrt_bin`: all binaries files, packages and firmwares
     - `OpenWrt_firmware`: firmware only
 
-### `docker-build-inc` building process
+#### `docker-build-inc` building process
 
-1. Pull from Docker Hub `${IMAGE_NAME}:${IMAGE_TAG}-package` (or `${IMAGE_NAME}:${IMAGE_TAG}` when `github.event.client_payload.use_latest` is set, `${IMAGE_NAME}:${IMAGE_TAG}-inc` when `github.event.client_payload.use_latest_inc` is set)
-2. No `update_repo.sh`
+1. Pull from Docker Hub `${IMAGE_NAME}:${IMAGE_TAG}-package`. If not existing, set `${IMAGE_NAME}:${IMAGE_TAG}` to `${IMAGE_NAME}:${IMAGE_TAG}-package` (or when `github.event.client_payload.use_latest` is set, or set `${IMAGE_NAME}:${IMAGE_TAG}-inc` to `${IMAGE_NAME}:${IMAGE_TAG}-package` when `github.event.client_payload.use_latest_inc` is set)
+2. Unlike other building processes, `update_repo.sh` is not run
 3. `update_feeds.sh`, do `git pull` for existing packages only when `github.event.client_payload.update_feeds` is set
 4. `customize.sh`, apply patches only when patch is detected as not applied
 5. `download.sh`, download/update packages if any thing changed when `update_repo.sh` or `update_feeds.sh`
@@ -143,6 +162,7 @@ To be finished
 ## Todo
 
 - [ ] Automate the trigger of building base image
+- [-] Automatically pulling from base image
 - [ ] Optimize README
   - [ ] Describe mechanism
   - [ ] Describe building process
