@@ -199,7 +199,7 @@ jobs:
       DK_DOCKERFILE: Dockerfile-inc
       CONFIG_FILE: 'config.diff'
       NO_REMOTE_CACHE: 1
-      NO_PUSH: 1
+      NO_BUILDTIME_PUSH: 1
       BUILD_ARGS: 'CONFIG_FILE IMAGE_BASE UPDATE_REPO UPDATE_FEEDS'
 
     steps:
@@ -361,7 +361,7 @@ jobs:
       DK_DOCKERFILE: Dockerfile-package
       CONFIG_FILE: 'config.diff'
       NO_REMOTE_CACHE: 1
-      NO_PUSH: 1
+      NO_BUILDTIME_PUSH: 1
       BUILD_ARGS: 'CONFIG_FILE IMAGE_BASE UPDATE_FEEDS'
 
     steps:
