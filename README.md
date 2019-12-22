@@ -16,6 +16,7 @@ Github Actions和Actions-Openwrt让我们可以很方便地自动化编译OpenWr
   - [Mechanism 原理](#mechanism-%e5%8e%9f%e7%90%86)
   - [Usage 用法](#usage-%e7%94%a8%e6%b3%95)
     - [First-time building 第一次编译](#first-time-building-%e7%ac%ac%e4%b8%80%e6%ac%a1%e7%bc%96%e8%af%91)
+      - [Secrets page](#secrets-page)
     - [Following building 后续编译](#following-building-%e5%90%8e%e7%bb%ad%e7%bc%96%e8%af%91)
     - [Re-link your builders 重建编译环境](#re-link-your-builders-%e9%87%8d%e5%bb%ba%e7%bc%96%e8%af%91%e7%8e%af%e5%a2%83)
     - [Manually trigger building and its options](#manually-trigger-building-and-its-options)
@@ -24,12 +25,15 @@ Github Actions和Actions-Openwrt让我们可以很方便地自动化编译OpenWr
       - [For docker-build-package](#for-docker-build-package)
       - [Examples](#examples)
   - [Details](#details)
+    - [Building log examples](#building-log-examples)
     - [Building process explained](#building-process-explained)
       - [docker-build building process](#docker-build-building-process)
       - [docker-build-inc building process](#docker-build-inc-building-process)
       - [docker-build-package building process](#docker-build-package-building-process)
   - [FAQs](#faqs)
     - [Docker Hub: Tags not retrieved](#docker-hub-tags-not-retrieved)
+    - [Spend so much time on &quot;Copy out bin directory&quot; in docker-build](#spend-so-much-time-on-quotcopy-out-bin-directoryquot-in-docker-build)
+    - [What are test-docker-build* jobs?](#what-are-test-docker-build-jobs)
   - [Todo](#todo)
   - [Acknowledgments](#acknowledgments)
   - [License](#license)
@@ -97,25 +101,31 @@ You may notice there are gaps between the three builders. YES. The latter two bu
 
 Check out my own configuration in ["sample" branch](https://github.com/tete1030/openwrt-fastbuild-actions/tree/sample).
 
+**The configuration uses [coolsnowwolf/lede](https://github.com/coolsnowwolf/lede) as the default OpenWrt Repo** (popular in China). Configuration for official OpenWrt 19.07 is in ["openwrt_official" branch](https://github.com/tete1030/openwrt-fastbuild-actions/tree/openwrt_official). It's just changes of `REPO_URL` and `REPO_BRANCH` in `.github/workflows/build-openwrt.yml`.
+
 ### First-time building 第一次编译
 
-These step is for making a base builder. When you need a fresh rebuilding of everything, you can execute this by publishing a new release or use [tete1030/github-repo-dispatcher](https://github.com/tete1030/github-repo-dispatcher) to mannually trigger a rebuilding with parameters `Type`: `docker-build` and empty `Client Payload`.
+These step is for making a base builder. When you need a fresh rebuilding of everything, you can execute this by publishing a new release or use [tete1030/github-repo-dispatcher](https://github.com/tete1030/github-repo-dispatcher) to mannually trigger a rebuilding with parameters "Type/Task": `docker-build` and empty "Client Payload".
 
 The building process generally takes **1.5~3 hours** depending on your config.
 
 1. Sign up for [GitHub Actions](https://github.com/features/actions/signup)
 2. Register a **Docker Hub** account
 3. **Fork** this repo
-4. Get your Docker Hub **personal access token**. Paste your username and the generated token to the forked repo's **Settings->Secrets** page. Use `docker_username` for your username and `docker_password` for your token.
+4. Get your Docker Hub **personal access token**. Paste your username and the generated token to the forked repo's **Settings->Secrets** page. Use `docker_username` for your username and `docker_password` for your token. Check [Secrets page](#secrets-page) for correct settings.
 5. *(Optional, not very useful)* If you want a debug message to be sent to **Slack**, you can generate a Slack Webhook URL and set the url as `SLACK_WEBHOOK_URL` in the Secrets page. Search in Google if you don't know how to do it.
 6. *(Optional)* Customize `.github/workflows/build-openwrt.yml` to **change builder's name and other options**.
 7. **Generate your `.config`** and rename it to `config.diff`. Put the file in the root dir of your forked repo.
 8. *(Optional)* Customize `scripts/update_feeds.sh` for **additional packages** you want to download.
 9. *(Optional)* Put any **patch** you want to `patches` dir. The patches are applied after `update_feeds.sh` and before `download.sh`.
 10. **Commit and push** your changes. This will automatically trigger an incremental building. However, it will fail as you haven't built base builder. **Just let it fail** or cancel it in the Actions page.
-11. **Publish** a release. This is for full building of base builder. Or you can use [tete1030/github-repo-dispatcher](https://github.com/tete1030/github-repo-dispatcher) to manually trigger the building. (`Type`: `docker-build`, `Payload`: leave it empty)
+11. **Publish** a release. This is for full building of base builder. Or you can use [tete1030/github-repo-dispatcher](https://github.com/tete1030/github-repo-dispatcher) to manually trigger the building. ("Type/Task": `docker-build`, "Payload": leave it empty)
 12. Wait for `docker-build` job to finish.
 13. Collect your files in the `docker-build` job's `Artifacts` menu
+
+#### Secrets page
+
+![Secrets page](imgs/secrets.png)
 
 ### Following building 后续编译
 
@@ -131,10 +141,10 @@ Because the `docker-build-inc` builder and `docker-build-package` builder are re
 
 1. Use [tete1030/github-repo-dispatcher](https://github.com/tete1030/github-repo-dispatcher) to link the latest base builder to the builder used for incremental building.
    - For `docker-build-inc`, use parameters:
-     - Type: `docker-build-inc` 
+     - Type/Task: `docker-build-inc` 
      - Client Payload: `{"use_latest": true}`
    - For `docker-build-package`, use parameters:
-     - Type: `docker-build-package`
+     - Type/Task: `docker-build-package`
      - Payload:
        - `{"use_latest": true}` if you want to use the base builder from `docker-build`
        - `{"use_latest_inc": true}` if you want to use the incremental builder from `docker-build-inc`
@@ -144,6 +154,12 @@ Because the `docker-build-inc` builder and `docker-build-package` builder are re
 ### Manually trigger building and its options
 
 The following options are only usable when triggering building from [tete1030/github-repo-dispatcher](https://github.com/tete1030/github-repo-dispatcher)
+
+The project support both "Repo Dispatch" and "Deploy" trigger. When using "Repo Dispatch", using "Type" to specify your job name. When using "Deploy", using "Task" to specify your job name.
+
+Using "Payload" to specify you options.
+
+If you want to trigger a job in other branches than "master", you can only use the "Deploy" trigger to specify your branch.
 
 #### Global
 
@@ -166,12 +182,23 @@ The following options are only usable when triggering building from [tete1030/gi
 
 To trigger rebuilding base builder,
 1. Open your forked repo
-2. Click "Repo Dispatch" at the top right corner (left of the "Watch" button)
-3. Fill `docker-build` for "Type" prompt
-4. Fill `{"debug": true}` for "Client Payload" prompt
-5. Open the job's log page, wait for the SSH command shown up
+2. Click "Repo Dispatch" or "Deploy" at the top right corner (left of the "Watch" button)
+3. If using "Deploy" trigger, fill your branch/tag/commit for "Ref" prompt (e.g. `master`)
+4. Fill `docker-build` for "Type/Task" prompt
+5. Fill `{"debug": true}` for "Payload" prompt
+6. Open the job's log page, wait for the SSH command shown up (when debugging, you are allowed to SSH into the jobs with tmate.io)
 
 ## Details
+
+### Building log examples
+
+coolsnowwolf/lede:
+- [`docker-build` build log](https://github.com/tete1030/openwrt-fastbuild-actions/runs/359974704)
+- [`docker-build-inc` build log](https://github.com/tete1030/openwrt-fastbuild-actions/runs/360084146)
+- [`docker-build-package` build log](https://github.com/tete1030/openwrt-fastbuild-actions/runs/360084313)
+
+openwrt/openwrt;openwrt-19.07:
+- [`docker-build` build log](https://github.com/tete1030/openwrt-fastbuild-actions/commit/7757f6741a804b84f2f6fa6c03272e322ce6a8e9/checks?check_suite_id=370526615)
 
 ### Building process explained
 
@@ -222,6 +249,18 @@ To trigger rebuilding base builder,
 Caused by known of buildx:
 - https://github.com/docker/hub-feedback/issues/1906
 - https://github.com/docker/buildx/issues/173
+
+### Spend so much time on "Copy out bin directory" in `docker-build`
+
+Indeed. Due to the use of `docker-container` driver of `docker buildx` command for only `docker-build` job, we can not directly use `docker cp`. Instead, I have to use a multi-stage hack to export out files, in order to in the same time keep the ability of exporting cache and builder image to Docker Hub. When the image is large, this method can spend much time in unpacking the image.
+
+`docker-build-inc` and `docker-build-package` are not affected.
+
+I have tried many methods to workaround this. Currently this setting is the best trade-off I can achieve. If you are interested or have better idea, feel free to open an issue for discussion.
+
+### What are `test-docker-build*` jobs?
+
+They are for fast checking of Github Actions and Docker settings. Typically they only spend less than 5 minutes. When they fail, its sibling job will be stopped. Fix the problem it reported.
 
 ## Todo
 
