@@ -38,13 +38,18 @@ on:
 
 env:
   SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
-  USERNAME: ${{secrets.docker_username}}
-  PASSWORD: ${{secrets.docker_password}}
+  DOCKER_USERNAME: ${{secrets.docker_username}}
+  DOCKER_PASSWORD: ${{secrets.docker_password}}
+  BUILDER_NAME: ${{secrets.docker_username}}/openwrt_x86_64
+  BUILDER_TAG: latest
+  DOCKER_CONTEXT: .
+  REPO_URL: https://github.com/coolsnowwolf/lede
+  REPO_BRANCH: master
 
 jobs:
   docker-build:
     runs-on: ubuntu-18.04
-    if: github.event_name == 'release' || (github.event_name == 'repository_dispatch' && github.event.action == 'docker')
+    if: github.event_name == 'release' || (github.event_name == 'repository_dispatch' && github.event.action == 'docker-build')
     name: ${{matrix.title}}
     strategy:
       fail-fast: true
@@ -56,13 +61,8 @@ jobs:
         - mode: test
           title: test-docker-build
     env:
-      IMAGE_NAME: ${{secrets.docker_username}}/openwrt_x86_64
-      IMAGE_TAG: latest
       BUILDX_DRIVER: docker-container
-      CONTEXT: .
       DOCKERFILE: Dockerfile
-      REPO_URL: https://github.com/coolsnowwolf/lede
-      REPO_BRANCH: master
       CONFIG_FILE: 'config.diff'
       BUILD_ARGS: 'REPO_URL REPO_BRANCH CONFIG_FILE'
 
@@ -70,12 +70,18 @@ jobs:
     - name: Checkout
       uses: actions/checkout@master
 
-    - name: Set up test env
+    - name: Init test env
       if: matrix.mode == 'test'
       run: |
         echo "::set-env name=DOCKERFILE::tests/${DOCKERFILE}"
-        echo "::set-env name=IMAGE_TAG::${IMAGE_TAG}-test"
+        echo "::set-env name=BUILDER_TAG::test-${BUILDER_TAG}"
         echo "::set-env name=TEST::1"
+
+    - name: Init build env
+      run: |
+        echo "::set-env name=IMAGE_NAME::${BUILDER_NAME}"
+        echo "::set-env name=IMAGE_TAG::${BUILDER_TAG}"
+        scripts/cleanup.sh
 
     - name: Set up Docker Buildx
       id: buildx
@@ -83,9 +89,8 @@ jobs:
       with:
         version: latest
 
-    - name: Init and configure docker
+    - name: Configure docker
       run: |
-        scripts/cleanup.sh
         . docker.sh
         configure_docker
         login_to_registry
@@ -178,7 +183,7 @@ jobs:
 
   docker-build-inc:
     runs-on: ubuntu-18.04
-    if: github.event_name == 'push' || (github.event_name == 'repository_dispatch' && github.event.action == 'docker-inc')
+    if: github.event_name == 'push' || (github.event_name == 'repository_dispatch' && github.event.action == 'docker-build-inc')
     name: ${{matrix.title}}
     strategy:
       fail-fast: true
@@ -190,14 +195,8 @@ jobs:
         - mode: test
           title: test-docker-build-inc
     env:
-      IMAGE_BASE: ${{secrets.docker_username}}/openwrt_x86_64:latest-inc
-      IMAGE_NAME: ${{secrets.docker_username}}/openwrt_x86_64
-      IMAGE_TAG: latest-inc
-      CONTEXT: .
       BUILDX_DRIVER: docker
       DOCKERFILE: Dockerfile-inc
-      REPO_URL: https://github.com/coolsnowwolf/lede
-      REPO_BRANCH: master
       CONFIG_FILE: 'config.diff'
       NO_REMOTE_CACHE: 1
       NO_PUSH: 1
@@ -207,12 +206,29 @@ jobs:
     - name: Checkout
       uses: actions/checkout@master
 
-    - name: Set up test env
+    - name: Init test env
       if: matrix.mode == 'test'
       run: |
         echo "::set-env name=DOCKERFILE::tests/${DOCKERFILE}"
-        echo "::set-env name=IMAGE_TAG::${IMAGE_TAG}-test"
+        echo "::set-env name=BUILDER_TAG::test-${BUILDER_TAG}"
         echo "::set-env name=TEST::1"
+
+    - name: Init build env
+      run: |
+        export IMAGE_TAG=${BUILDER_TAG}-inc
+        echo "::set-env name=IMAGE_NAME::${BUILDER_NAME}"
+        echo "::set-env name=IMAGE_TAG::${IMAGE_TAG}"
+        echo "::set-env name=IMAGE_BASE::${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}${IMAGE_NAME}:${IMAGE_TAG}"
+        echo "::set-env name=IMAGE_LATEST::${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}${IMAGE_NAME}:${BUILDER_TAG}"
+
+        UPDATE_FEEDS=0
+        [ "x${{ github.event.client_payload.update_feeds }}" != "xtrue" ] || UPDATE_FEEDS=1
+        echo "::set-env name=UPDATE_FEEDS::${UPDATE_FEEDS}"
+        UPDATE_REPO=0
+        [ "x${{ github.event.client_payload.update_repo }}" != "xtrue" ] || UPDATE_REPO=1
+        echo "::set-env name=UPDATE_REPO::${UPDATE_REPO}"
+
+        scripts/cleanup.sh
 
     - name: Set up Docker Buildx
       id: buildx
@@ -220,16 +236,8 @@ jobs:
       with:
         version: latest
 
-    - name: Init and configure docker
+    - name: Configure docker
       run: |
-        UPDATE_FEEDS=0
-        [ "x${{ github.event.client_payload.update_feeds }}" != "xtrue" ] || UPDATE_FEEDS=1
-        echo "::set-env name=UPDATE_FEEDS::${UPDATE_FEEDS}"
-        UPDATE_REPO=0
-        [ "x${{ github.event.client_payload.update_repo }}" != "xtrue" ] || UPDATE_REPO=1
-        echo "::set-env name=UPDATE_REPO::${UPDATE_REPO}"
-        
-        scripts/cleanup.sh
         . docker.sh
         configure_docker
         login_to_registry
@@ -238,7 +246,7 @@ jobs:
       if: github.event_name == 'repository_dispatch' && github.event.client_payload.use_latest == true
       run: |
         . docker.sh
-        create_tag_alias ${IMAGE_NAME}:latest ${IMAGE_BASE}
+        create_remote_tag_alias "${IMAGE_LATEST}" "${IMAGE_BASE}"
 
     - name: Pull base image
       run: |
@@ -327,7 +335,7 @@ jobs:
 
   docker-build-package:
     runs-on: ubuntu-18.04
-    if: github.event_name == 'push' || (github.event_name == 'repository_dispatch' && github.event.action == 'docker-package')
+    if: github.event_name == 'push' || (github.event_name == 'repository_dispatch' && github.event.action == 'docker-build-package')
     name: ${{matrix.title}}
     strategy:
       fail-fast: true
@@ -339,14 +347,8 @@ jobs:
         - mode: test
           title: test-docker-build-package
     env:
-      IMAGE_BASE: ${{secrets.docker_username}}/openwrt_x86_64:latest-package
-      IMAGE_NAME: ${{secrets.docker_username}}/openwrt_x86_64
-      IMAGE_TAG: latest-package
-      CONTEXT: .
       BUILDX_DRIVER: docker
       DOCKERFILE: Dockerfile-package
-      REPO_URL: https://github.com/coolsnowwolf/lede
-      REPO_BRANCH: master
       CONFIG_FILE: 'config.diff'
       NO_REMOTE_CACHE: 1
       NO_PUSH: 1
@@ -356,12 +358,27 @@ jobs:
     - name: Checkout
       uses: actions/checkout@master
 
-    - name: Set up test env
+    - name: Init test env
       if: matrix.mode == 'test'
       run: |
         echo "::set-env name=DOCKERFILE::tests/${DOCKERFILE}"
-        echo "::set-env name=IMAGE_TAG::${IMAGE_TAG}-test"
+        echo "::set-env name=BUILDER_TAG::test-${BUILDER_TAG}"
         echo "::set-env name=TEST::1"
+
+    - name: Init build env
+      run: |
+        export IMAGE_TAG=${BUILDER_TAG}-package
+        echo "::set-env name=IMAGE_NAME::${BUILDER_NAME}"
+        echo "::set-env name=IMAGE_TAG::${IMAGE_TAG}"
+        echo "::set-env name=IMAGE_BASE::${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}${IMAGE_NAME}:${IMAGE_TAG}"
+        echo "::set-env name=IMAGE_LATEST::${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}${IMAGE_NAME}:${BUILDER_TAG}"
+        echo "::set-env name=IMAGE_LATEST_INC::${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}${IMAGE_NAME}:${BUILDER_TAG}-inc"
+
+        UPDATE_FEEDS=0
+        [ "x${{ github.event.client_payload.update_feeds }}" != "xtrue" ] || UPDATE_FEEDS=1
+        echo "::set-env name=UPDATE_FEEDS::${UPDATE_FEEDS}"
+
+        scripts/cleanup.sh
 
     - name: Set up Docker Buildx
       id: buildx
@@ -369,12 +386,8 @@ jobs:
       with:
         version: latest
 
-    - name: Init and configure docker
+    - name: Configure docker
       run: |
-        UPDATE_FEEDS=0
-        [ "x${{ github.event.client_payload.update_feeds }}" != "xtrue" ] || UPDATE_FEEDS=1
-        echo "::set-env name=UPDATE_FEEDS::${UPDATE_FEEDS}"
-        scripts/cleanup.sh
         . docker.sh
         configure_docker
         login_to_registry
@@ -389,9 +402,9 @@ jobs:
         . docker.sh
         if [ "x${BOOL_USE_LATEST}" = "xtrue" ]; then
           test "x${BOOL_USE_LATEST_INC}" != "xtrue"
-          create_tag_alias ${IMAGE_NAME}:latest ${IMAGE_BASE}
+          create_remote_tag_alias "${IMAGE_LATEST}" "${IMAGE_BASE}"
         else
-          create_tag_alias ${IMAGE_NAME}:latest-inc ${IMAGE_BASE}
+          create_remote_tag_alias "${IMAGE_LATEST_INC}" "${IMAGE_BASE}"
         fi
 
     - name: Pull base image
@@ -488,7 +501,7 @@ jobs:
 
   direct-build:
     runs-on: ubuntu-18.04
-    if: github.event_name == 'repository_dispatch' && github.event.action == 'direct'
+    if: github.event_name == 'repository_dispatch' && github.event.action == 'direct-build'
     steps:
     - name: Checkout
       uses: actions/checkout@master

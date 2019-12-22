@@ -25,20 +25,32 @@ _exit_if_empty() {
 }
 
 _get_full_image_name() {
-  echo ${REGISTRY:+$REGISTRY/}${IMAGE_NAME}
+  echo ${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}${IMAGE_NAME}
 }
 
-_get_full_image_tag() {
+_get_full_image_name_tag() {
   echo "$(_get_full_image_name):${IMAGE_TAG}"
+}
+
+_get_full_image_name_tag_for_build() {
+  echo "$(_get_full_image_name_tag)-build"
+}
+
+_get_full_image_name_tag_for_build_cache() {
+  echo "$(_get_full_image_name_tag)-buildcache"
+}
+
+_get_full_image_name_tag_for_cache() {
+  echo "$(_get_full_image_name_tag)-cache"
 }
 
 # action steps
 check_required_input() {
-  _exit_if_empty USERNAME "${USERNAME}"
-  _exit_if_empty PASSWORD "${PASSWORD}"
+  _exit_if_empty DOCKER_USERNAME "${DOCKER_USERNAME}"
+  _exit_if_empty DOCKER_PASSWORD "${DOCKER_PASSWORD}"
   _exit_if_empty IMAGE_NAME "${IMAGE_NAME}"
   _exit_if_empty IMAGE_TAG "${IMAGE_TAG}"
-  _exit_if_empty CONTEXT "${CONTEXT}"
+  _exit_if_empty DOCKER_CONTEXT "${DOCKER_CONTEXT}"
   _exit_if_empty DOCKERFILE "${DOCKERFILE}"
 }
 
@@ -94,7 +106,7 @@ reconfigure_docker_buildx() {
 }
 
 login_to_registry() {
-  echo "${PASSWORD}" | docker login -u "${USERNAME}" --password-stdin "${REGISTRY}"
+  echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin "${DOCKER_REGISTRY}"
 }
 
 pull_image() {
@@ -142,7 +154,7 @@ build_image() {
         exit 1
       fi
     else
-      cache_from+=( "--cache-from=type=registry,ref=$(_get_full_image_name):${IMAGE_TAG}-build" )
+      cache_from+=( "--cache-from=type=registry,ref=$(_get_full_image_name_tag_for_build)" )
       if [ "x${USE_DOCKER_BUILD}" = "x1" ]; then
         cache_to+=( --build-arg BUILDKIT_INLINE_CACHE=1 )
       else
@@ -162,9 +174,9 @@ build_image() {
     # 'buildcache' is for cache from current build
     # This is to prevent overriding cache during multi-stage building
     # We will eventually rename 'buildcache' to 'cache'. At initial and final stage, they are the same
-    cache_from+=( "--cache-from=type=registry,ref=$(_get_full_image_name):${IMAGE_TAG}-cache" )
-    cache_from+=( "--cache-from=type=registry,ref=$(_get_full_image_name):${IMAGE_TAG}-buildcache" )
-    cache_to+=( "--cache-to=type=registry,ref=$(_get_full_image_name):${IMAGE_TAG}-buildcache,mode=max" )
+    cache_from+=( "--cache-from=type=registry,ref=$(_get_full_image_name_tag_for_cache)" )
+    cache_from+=( "--cache-from=type=registry,ref=$(_get_full_image_name_tag_for_build_cache)" )
+    cache_to+=( "--cache-to=type=registry,ref=$(_get_full_image_name_tag_for_build_cache),mode=max" )
   fi
   echo "From cache: ${cache_from[@]}"
   if [ "x${NO_CACHE_TO}" = "x1" ]; then
@@ -212,7 +224,7 @@ build_image() {
     fi
   fi
   if [ "x${NO_TAG}" != "x1" ]; then
-    build_other_opts+=( "--tag=$(_get_full_image_name):${IMAGE_TAG}-build" )
+    build_other_opts+=( "--tag=$(_get_full_image_name_tag_for_build)" )
   fi
 
   if [ "x${SQUASH}" = "x1" ]; then
@@ -230,7 +242,7 @@ build_image() {
     BUILD_COMMAND="build"
   fi
 
-  DOCKERFILE_FULL=${DOCKERFILE_FULL:-${CONTEXT}/${DOCKERFILE}}
+  DOCKERFILE_FULL=${DOCKERFILE_FULL:-${DOCKER_CONTEXT}/${DOCKERFILE}}
 
   if [ "x${DOCKERFILE_STDIN}" = "x1" ]; then
     (
@@ -243,7 +255,7 @@ build_image() {
         "${build_other_opts[@]}" \
         ${EXTRA_BUILDX_BUILD_OPTS} \
         --file=- \
-        "${CONTEXT}" < "${DOCKERFILE_FULL}"
+        "${DOCKER_CONTEXT}" < "${DOCKERFILE_FULL}"
     )
   else
     (
@@ -256,7 +268,7 @@ build_image() {
         "${build_other_opts[@]}" \
         ${EXTRA_BUILDX_BUILD_OPTS} \
         "--file=${DOCKERFILE_FULL}" \
-        "${CONTEXT}"
+        "${DOCKER_CONTEXT}"
     )
   fi
 
@@ -264,7 +276,7 @@ build_image() {
 }
 
 copy_files() {
-  SOURCE_IMAGE="$(_get_full_image_name):${IMAGE_TAG}-build"
+  SOURCE_IMAGE="$(_get_full_image_name_tag_for_build)"
   if [ "x${BUILDX_DRIVER}" = "xdocker" ]; then
     echo "Buildx driver 'docker', using direct copying method"
     docker run -d -i --rm --name builder "${SOURCE_IMAGE}"
@@ -292,7 +304,7 @@ copy_files() {
 
     echo "Building copy task Dockerfile"
     DOCKERFILE_FULL="${TMP_DOCKERFILE_DIR}/Dockerfile.tmp"
-    cp "${CONTEXT}/${DOCKERFILE}" "${TMP_DOCKERFILE_DIR}/Dockerfile.tmp"
+    cp "${DOCKER_CONTEXT}/${DOCKERFILE}" "${TMP_DOCKERFILE_DIR}/Dockerfile.tmp"
     cat >> "${TMP_DOCKERFILE_DIR}/Dockerfile.tmp" << EOF
 FROM scratch AS buildresult
 WORKDIR "${BUILDRESULT_IMAGE_DIR}"
@@ -320,19 +332,19 @@ push_git_tag() {
   local git_tag=${GITHUB_REF##*/tags/}
   local image_with_git_tag
   image_with_git_tag="$(_get_full_image_name):gittag-$git_tag"
-  # docker tag "$(_get_full_image_name):${IMAGE_TAG}" "$image_with_git_tag"
+  # docker tag "$(_get_full_image_name_tag)" "$image_with_git_tag"
   # docker push "$image_with_git_tag"
-  docker buildx imagetools create -t "$image_with_git_tag" "$(_get_full_image_name):${IMAGE_TAG}"
+  create_remote_tag_alias "$(_get_full_image_name_tag)" "$image_with_git_tag" 
 }
 
-create_tag_alias() {
+create_remote_tag_alias() {
   docker buildx imagetools create -t "${2}" "${1}"
 }
 
 push_image() {
   if [ "x${NO_PUSH}" = "x1" ]; then
     if [ "x${BUILDX_DRIVER}" = "xdocker" ]; then
-      docker push "$(_get_full_image_name):${IMAGE_TAG}-build"
+      docker push "$(_get_full_image_name_tag_for_build)"
     else
       echo "Warning: separated pushing in '${BUILDX_DRIVER}' driver can be slow, because final image needs to be rebuilt from previous cache"
       if [ -z "${LAST_BUILD_STAGE}" ]; then
@@ -343,8 +355,8 @@ push_image() {
     fi
   fi
   # push image
-  # docker push "$(_get_full_image_name):${IMAGE_TAG}"
-  create_tag_alias "$(_get_full_image_name):${IMAGE_TAG}-build" "$(_get_full_image_name):${IMAGE_TAG}" 
+  # docker push "$(_get_full_image_name_tag)"
+  create_remote_tag_alias "$(_get_full_image_name_tag_for_build)" "$(_get_full_image_name_tag)" 
   # push_git_tag
 }
 
@@ -353,7 +365,7 @@ push_cache() {
     echo "NO_REMOTE_CACHE is set, no cache to push" >&2
     exit 1
   fi
-  create_tag_alias "$(_get_full_image_name):${IMAGE_TAG}-buildcache" "$(_get_full_image_name):${IMAGE_TAG}-cache" 
+  create_remote_tag_alias "$(_get_full_image_name_tag_for_build_cache)" "$(_get_full_image_name_tag_for_cache)" 
 }
 
 push_image_and_cache() {
@@ -362,7 +374,7 @@ push_image_and_cache() {
 }
 
 logout_from_registry() {
-  docker logout "${REGISTRY}"
+  docker logout "${DOCKER_REGISTRY}"
 }
 
 check_required_input
