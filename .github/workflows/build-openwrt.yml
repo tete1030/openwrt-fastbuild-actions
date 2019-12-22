@@ -40,7 +40,7 @@ env:
   SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
   DK_USERNAME: ${{secrets.docker_username}}
   DK_PASSWORD: ${{secrets.docker_password}}
-  BUILDER_NAME: ${{secrets.docker_username}}/openwrt_x86_64
+  BUILDER_NAME: openwrt_x86_64
   BUILDER_TAG: latest
   DK_CONTEXT: .
   REPO_URL: https://github.com/coolsnowwolf/lede
@@ -79,7 +79,7 @@ jobs:
 
     - name: Init build env
       run: |
-        echo "::set-env name=IMAGE_NAME::${BUILDER_NAME}"
+        echo "::set-env name=IMAGE_NAME::${DK_USERNAME}/${BUILDER_NAME}"
         echo "::set-env name=IMAGE_TAG::${BUILDER_TAG}"
         scripts/cleanup.sh
 
@@ -216,7 +216,7 @@ jobs:
     - name: Init build env
       run: |
         # set-env command does not export env for current shell
-        export IMAGE_NAME=${BUILDER_NAME}
+        export IMAGE_NAME="${DK_USERNAME}/${BUILDER_NAME}"
         export IMAGE_TAG=${BUILDER_TAG}-inc
         echo "::set-env name=IMAGE_NAME::${IMAGE_NAME}"
         echo "::set-env name=IMAGE_TAG::${IMAGE_TAG}"
@@ -378,7 +378,7 @@ jobs:
     - name: Init build env
       run: |
         # set-env command does not export env for current shell
-        export IMAGE_NAME=${BUILDER_NAME}
+        export IMAGE_NAME="${DK_USERNAME}/${BUILDER_NAME}"
         export IMAGE_TAG=${BUILDER_TAG}-package
         echo "::set-env name=IMAGE_NAME::${IMAGE_NAME}"
         echo "::set-env name=IMAGE_TAG::${IMAGE_TAG}"
