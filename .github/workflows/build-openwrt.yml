@@ -38,11 +38,11 @@ on:
 
 env:
   SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
-  DOCKER_USERNAME: ${{secrets.docker_username}}
-  DOCKER_PASSWORD: ${{secrets.docker_password}}
+  DK_USERNAME: ${{secrets.docker_username}}
+  DK_PASSWORD: ${{secrets.docker_password}}
   BUILDER_NAME: ${{secrets.docker_username}}/openwrt_x86_64
   BUILDER_TAG: latest
-  DOCKER_CONTEXT: .
+  DK_CONTEXT: .
   REPO_URL: https://github.com/coolsnowwolf/lede
   REPO_BRANCH: master
 
@@ -61,8 +61,8 @@ jobs:
         - mode: test
           title: test-docker-build
     env:
-      BUILDX_DRIVER: docker-container
-      DOCKERFILE: Dockerfile
+      DK_BUILDX_DRIVER: docker-container
+      DK_DOCKERFILE: Dockerfile
       CONFIG_FILE: 'config.diff'
       BUILD_ARGS: 'REPO_URL REPO_BRANCH CONFIG_FILE'
 
@@ -73,7 +73,7 @@ jobs:
     - name: Init test env
       if: matrix.mode == 'test'
       run: |
-        echo "::set-env name=DOCKERFILE::tests/${DOCKERFILE}"
+        echo "::set-env name=DK_DOCKERFILE::tests/${DK_DOCKERFILE}"
         echo "::set-env name=BUILDER_TAG::test-${BUILDER_TAG}"
         echo "::set-env name=TEST::1"
 
@@ -99,13 +99,13 @@ jobs:
       run: |
         . docker.sh
         build_image init-env
-        echo "::set-env name=LAST_BUILD_STAGE::init-env"
+        echo "::set-env name=STATE_LAST_BUILD_STAGE::init-env"
 
     - name: Clone all source code
       run: |
         . docker.sh
         build_image clone
-        echo "::set-env name=LAST_BUILD_STAGE::clone"
+        echo "::set-env name=STATE_LAST_BUILD_STAGE::clone"
 
     # Allow intermediate customization
     - name: SSH connection to Actions
@@ -118,13 +118,13 @@ jobs:
       run: |
         . docker.sh
         build_image custom
-        echo "::set-env name=LAST_BUILD_STAGE::custom"
+        echo "::set-env name=STATE_LAST_BUILD_STAGE::custom"
 
     - name: Download package
       run: |
         . docker.sh
         build_image download
-        echo "::set-env name=LAST_BUILD_STAGE::download"
+        echo "::set-env name=STATE_LAST_BUILD_STAGE::download"
 
     - name: Print disk space size
       run: df -h
@@ -133,7 +133,7 @@ jobs:
       run: |
         . docker.sh
         build_image compile
-        echo "::set-env name=LAST_BUILD_STAGE::compile"
+        echo "::set-env name=STATE_LAST_BUILD_STAGE::compile"
 
     - name: Print disk space size
       run: df -h
@@ -195,8 +195,8 @@ jobs:
         - mode: test
           title: test-docker-build-inc
     env:
-      BUILDX_DRIVER: docker
-      DOCKERFILE: Dockerfile-inc
+      DK_BUILDX_DRIVER: docker
+      DK_DOCKERFILE: Dockerfile-inc
       CONFIG_FILE: 'config.diff'
       NO_REMOTE_CACHE: 1
       NO_PUSH: 1
@@ -209,7 +209,7 @@ jobs:
     - name: Init test env
       if: matrix.mode == 'test'
       run: |
-        echo "::set-env name=DOCKERFILE::tests/${DOCKERFILE}"
+        echo "::set-env name=DK_DOCKERFILE::tests/${DK_DOCKERFILE}"
         echo "::set-env name=BUILDER_TAG::test-${BUILDER_TAG}"
         echo "::set-env name=TEST::1"
 
@@ -218,8 +218,8 @@ jobs:
         export IMAGE_TAG=${BUILDER_TAG}-inc
         echo "::set-env name=IMAGE_NAME::${BUILDER_NAME}"
         echo "::set-env name=IMAGE_TAG::${IMAGE_TAG}"
-        echo "::set-env name=IMAGE_BASE::${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}${IMAGE_NAME}:${IMAGE_TAG}"
-        echo "::set-env name=IMAGE_LATEST::${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}${IMAGE_NAME}:${BUILDER_TAG}"
+        echo "::set-env name=IMAGE_BASE::${DK_REGISTRY:+$DK_REGISTRY/}${IMAGE_NAME}:${IMAGE_TAG}"
+        echo "::set-env name=IMAGE_LATEST::${DK_REGISTRY:+$DK_REGISTRY/}${IMAGE_NAME}:${BUILDER_TAG}"
 
         UPDATE_FEEDS=0
         [ "x${{ github.event.client_payload.update_feeds }}" != "xtrue" ] || UPDATE_FEEDS=1
@@ -264,19 +264,19 @@ jobs:
       run: |
         . docker.sh
         build_image updateclone
-        echo "::set-env name=LAST_BUILD_STAGE::updateclone"
+        echo "::set-env name=STATE_LAST_BUILD_STAGE::updateclone"
 
     - name: Apply customizations
       run: |
         . docker.sh
         build_image custom
-        echo "::set-env name=LAST_BUILD_STAGE::custom"
+        echo "::set-env name=STATE_LAST_BUILD_STAGE::custom"
 
     - name: Download package
       run: |
         . docker.sh
         build_image download
-        echo "::set-env name=LAST_BUILD_STAGE::download"
+        echo "::set-env name=STATE_LAST_BUILD_STAGE::download"
 
     - name: Print disk space size
       run: df -h
@@ -285,7 +285,7 @@ jobs:
       run: |
         . docker.sh
         build_image compile
-        echo "::set-env name=LAST_BUILD_STAGE::compile"
+        echo "::set-env name=STATE_LAST_BUILD_STAGE::compile"
 
     - name: Print disk space size
       run: df -h
@@ -347,8 +347,8 @@ jobs:
         - mode: test
           title: test-docker-build-package
     env:
-      BUILDX_DRIVER: docker
-      DOCKERFILE: Dockerfile-package
+      DK_BUILDX_DRIVER: docker
+      DK_DOCKERFILE: Dockerfile-package
       CONFIG_FILE: 'config.diff'
       NO_REMOTE_CACHE: 1
       NO_PUSH: 1
@@ -361,7 +361,7 @@ jobs:
     - name: Init test env
       if: matrix.mode == 'test'
       run: |
-        echo "::set-env name=DOCKERFILE::tests/${DOCKERFILE}"
+        echo "::set-env name=DK_DOCKERFILE::tests/${DK_DOCKERFILE}"
         echo "::set-env name=BUILDER_TAG::test-${BUILDER_TAG}"
         echo "::set-env name=TEST::1"
 
@@ -370,9 +370,9 @@ jobs:
         export IMAGE_TAG=${BUILDER_TAG}-package
         echo "::set-env name=IMAGE_NAME::${BUILDER_NAME}"
         echo "::set-env name=IMAGE_TAG::${IMAGE_TAG}"
-        echo "::set-env name=IMAGE_BASE::${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}${IMAGE_NAME}:${IMAGE_TAG}"
-        echo "::set-env name=IMAGE_LATEST::${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}${IMAGE_NAME}:${BUILDER_TAG}"
-        echo "::set-env name=IMAGE_LATEST_INC::${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}${IMAGE_NAME}:${BUILDER_TAG}-inc"
+        echo "::set-env name=IMAGE_BASE::${DK_REGISTRY:+$DK_REGISTRY/}${IMAGE_NAME}:${IMAGE_TAG}"
+        echo "::set-env name=IMAGE_LATEST::${DK_REGISTRY:+$DK_REGISTRY/}${IMAGE_NAME}:${BUILDER_TAG}"
+        echo "::set-env name=IMAGE_LATEST_INC::${DK_REGISTRY:+$DK_REGISTRY/}${IMAGE_NAME}:${BUILDER_TAG}-inc"
 
         UPDATE_FEEDS=0
         [ "x${{ github.event.client_payload.update_feeds }}" != "xtrue" ] || UPDATE_FEEDS=1
@@ -423,19 +423,19 @@ jobs:
       run: |
         . docker.sh
         build_image updateclone
-        echo "::set-env name=LAST_BUILD_STAGE::updateclone"
+        echo "::set-env name=STATE_LAST_BUILD_STAGE::updateclone"
 
     - name: Apply customizations
       run: |
         . docker.sh
         build_image custom
-        echo "::set-env name=LAST_BUILD_STAGE::custom"
+        echo "::set-env name=STATE_LAST_BUILD_STAGE::custom"
 
     - name: Download package
       run: |
         . docker.sh
         build_image download
-        echo "::set-env name=LAST_BUILD_STAGE::download"
+        echo "::set-env name=STATE_LAST_BUILD_STAGE::download"
 
     - name: Print disk space size
       run: df -h
@@ -444,7 +444,7 @@ jobs:
       run: |
         . docker.sh
         build_image compile
-        echo "::set-env name=LAST_BUILD_STAGE::compile"
+        echo "::set-env name=STATE_LAST_BUILD_STAGE::compile"
 
     - name: Print disk space size
       run: df -h

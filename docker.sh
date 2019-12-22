@@ -25,7 +25,7 @@ _exit_if_empty() {
 }
 
 _get_full_image_name() {
-  echo ${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}${IMAGE_NAME}
+  echo ${DK_REGISTRY:+$DK_REGISTRY/}${IMAGE_NAME}
 }
 
 _get_full_image_name_tag() {
@@ -46,12 +46,12 @@ _get_full_image_name_tag_for_cache() {
 
 # action steps
 check_required_input() {
-  _exit_if_empty DOCKER_USERNAME "${DOCKER_USERNAME}"
-  _exit_if_empty DOCKER_PASSWORD "${DOCKER_PASSWORD}"
+  _exit_if_empty DK_USERNAME "${DK_USERNAME}"
+  _exit_if_empty DK_PASSWORD "${DK_PASSWORD}"
   _exit_if_empty IMAGE_NAME "${IMAGE_NAME}"
   _exit_if_empty IMAGE_TAG "${IMAGE_TAG}"
-  _exit_if_empty DOCKER_CONTEXT "${DOCKER_CONTEXT}"
-  _exit_if_empty DOCKERFILE "${DOCKERFILE}"
+  _exit_if_empty DK_CONTEXT "${DK_CONTEXT}"
+  _exit_if_empty DK_DOCKERFILE "${DK_DOCKERFILE}"
 }
 
 configure_docker() {
@@ -62,7 +62,7 @@ configure_docker() {
   }' | sudo tee /etc/docker/daemon.json
   sudo service docker restart
   docker buildx rm builder || true
-  docker buildx create --use --name builder --node builder0 --driver docker-container ${EXTRA_BUILDX_CREATE_OPTS}
+  docker buildx create --use --name builder --node builder0 --driver docker-container ${DK_BUILDX_EXTRA_CREATE_OPTS}
   reconfigure_docker_buildx
 }
 
@@ -89,14 +89,14 @@ configure_docker() {
 # feel free to raise an issue in github.com/tete1030/Actions_OpenWrt
 
 reconfigure_docker_buildx() {
-  if [ -z "${BUILDX_DRIVER}" ]; then
-    echo "BUILDX_DRIVER not specified" >&2
+  if [ -z "${DK_BUILDX_DRIVER}" ]; then
+    echo "DK_BUILDX_DRIVER not specified" >&2
     exit 1
   fi
-  if [ "x${BUILDX_DRIVER}" = "xdocker-container" ]; then
+  if [ "x${DK_BUILDX_DRIVER}" = "xdocker-container" ]; then
     echo "Use buildx driver: docker-container"
     docker buildx use builder
-  elif [ "x${BUILDX_DRIVER}" = "xdocker" ]; then
+  elif [ "x${DK_BUILDX_DRIVER}" = "xdocker" ]; then
     echo "Use buildx driver: docker"
     docker buildx use default
   else
@@ -106,12 +106,12 @@ reconfigure_docker_buildx() {
 }
 
 login_to_registry() {
-  echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin "${DOCKER_REGISTRY}"
+  echo "${DK_PASSWORD}" | docker login -u "${DK_USERNAME}" --password-stdin "${DK_REGISTRY}"
 }
 
 pull_image() {
-  if [ "x${BUILDX_DRIVER}" != "xdocker" ]; then
-    echo "Buildx driver '${BUILDX_DRIVER}' does not support pulling and image management" >&2
+  if [ "x${DK_BUILDX_DRIVER}" != "xdocker" ]; then
+    echo "Buildx driver '${DK_BUILDX_DRIVER}' does not support pulling and image management" >&2
     exit 1
   fi
   # docker pull --all-tags "$(_get_full_image_name)" 2> /dev/null || true
@@ -130,7 +130,7 @@ build_image() {
   declare -a cache_to
 
   if [ "x${USE_DOCKER_BUILD}" = "x1" ]; then
-    if [ "x${BUILDX_DRIVER}" != "xdocker" ]; then
+    if [ "x${DK_BUILDX_DRIVER}" != "xdocker" ]; then
       echo "Docker build command does not support other drivers than 'docker'" >&2
       exit 1
     fi
@@ -138,7 +138,7 @@ build_image() {
 
   if [ "x${NO_REMOTE_CACHE}" = "x1" ]; then
     if [ "x${NO_INLINE_CACHE}" = "x1" ]; then
-      if [ "x${BUILDX_DRIVER}" = "xdocker" ]; then
+      if [ "x${DK_BUILDX_DRIVER}" = "xdocker" ]; then
         echo "Buildx driver 'docker' does not support local cache" >&2
         exit 1
       fi
@@ -162,7 +162,7 @@ build_image() {
       fi
     fi
   else
-    if [ "x${BUILDX_DRIVER}" = "xdocker" ]; then
+    if [ "x${DK_BUILDX_DRIVER}" = "xdocker" ]; then
       echo "Buildx driver 'docker' does not support registry cache" >&2
       exit 1
     fi
@@ -209,8 +209,8 @@ build_image() {
     build_other_opts+=( "--output=${OUTPUT}" )
   else
     if [ "x${NO_PUSH}" = "x1" ]; then
-      if [ "x${BUILDX_DRIVER}" != "xdocker" ]; then
-        echo "Warning: buildx driver '${BUILDX_DRIVER}' does not support image management. Images may lose when not pushing." >&2
+      if [ "x${DK_BUILDX_DRIVER}" != "xdocker" ]; then
+        echo "Warning: buildx driver '${DK_BUILDX_DRIVER}' does not support image management. Images may lose when not pushing." >&2
       fi
       if [ "x${USE_DOCKER_BUILD}" != "x1" ]; then
         build_other_opts+=( --output=type=image,push=false )
@@ -242,9 +242,9 @@ build_image() {
     BUILD_COMMAND="build"
   fi
 
-  DOCKERFILE_FULL=${DOCKERFILE_FULL:-${DOCKER_CONTEXT}/${DOCKERFILE}}
+  DK_DOCKERFILE_FULL=${DK_DOCKERFILE_FULL:-${DK_CONTEXT}/${DK_DOCKERFILE}}
 
-  if [ "x${DOCKERFILE_STDIN}" = "x1" ]; then
+  if [ "x${DK_DOCKERFILE_STDIN}" = "x1" ]; then
     (
       set -x
       docker ${BUILD_COMMAND} \
@@ -253,9 +253,9 @@ build_image() {
         "${cache_from[@]}" \
         "${cache_to[@]}" \
         "${build_other_opts[@]}" \
-        ${EXTRA_BUILDX_BUILD_OPTS} \
+        ${DK_BUILDX_EXTRA_BUILD_OPTS} \
         --file=- \
-        "${DOCKER_CONTEXT}" < "${DOCKERFILE_FULL}"
+        "${DK_CONTEXT}" < "${DK_DOCKERFILE_FULL}"
     )
   else
     (
@@ -266,9 +266,9 @@ build_image() {
         "${cache_from[@]}" \
         "${cache_to[@]}" \
         "${build_other_opts[@]}" \
-        ${EXTRA_BUILDX_BUILD_OPTS} \
-        "--file=${DOCKERFILE_FULL}" \
-        "${DOCKER_CONTEXT}"
+        ${DK_BUILDX_EXTRA_BUILD_OPTS} \
+        "--file=${DK_DOCKERFILE_FULL}" \
+        "${DK_CONTEXT}"
     )
   fi
 
@@ -277,7 +277,7 @@ build_image() {
 
 copy_files() {
   SOURCE_IMAGE="$(_get_full_image_name_tag_for_build)"
-  if [ "x${BUILDX_DRIVER}" = "xdocker" ]; then
+  if [ "x${DK_BUILDX_DRIVER}" = "xdocker" ]; then
     echo "Buildx driver 'docker', using direct copying method"
     docker run -d -i --rm --name builder "${SOURCE_IMAGE}"
     docker cp builder:"$1" "$2"
@@ -288,13 +288,13 @@ copy_files() {
     BUILDRESULT_IMAGE_DIR="/buildresult"
     TMP_DOCKERFILE_DIR="/tmp"
     
-    echo "Buildx driver '${BUILDX_DRIVER}', using indirect copying method"
-    LAST_BUILD_STAGE="${3:-${LAST_BUILD_STAGE}}"
-    if [ -z "${LAST_BUILD_STAGE}" ]; then
-      echo "LAST_BUILD_STAGE not set" >&2
+    echo "Buildx driver '${DK_BUILDX_DRIVER}', using indirect copying method"
+    STATE_LAST_BUILD_STAGE="${3:-${STATE_LAST_BUILD_STAGE}}"
+    if [ -z "${STATE_LAST_BUILD_STAGE}" ]; then
+      echo "STATE_LAST_BUILD_STAGE not set" >&2
       exit 1
     fi
-    echo "Using LAST_BUILD_STAGE='${LAST_BUILD_STAGE}'"
+    echo "Using STATE_LAST_BUILD_STAGE='${STATE_LAST_BUILD_STAGE}'"
     if [ -d "${COPY_CACHE_DIR}" -a ! -z "$(eval ls -A \"${COPY_CACHE_DIR}\" 2>/dev/null)" ]; then
       echo "Error: \'${COPY_CACHE_DIR}\' directory already exists and not empty" >&2
       exit
@@ -303,12 +303,12 @@ copy_files() {
     mkdir -p "${TMP_DOCKERFILE_DIR}" || true
 
     echo "Building copy task Dockerfile"
-    DOCKERFILE_FULL="${TMP_DOCKERFILE_DIR}/Dockerfile.tmp"
-    cp "${DOCKER_CONTEXT}/${DOCKERFILE}" "${TMP_DOCKERFILE_DIR}/Dockerfile.tmp"
+    DK_DOCKERFILE_FULL="${TMP_DOCKERFILE_DIR}/Dockerfile.tmp"
+    cp "${DK_CONTEXT}/${DK_DOCKERFILE}" "${TMP_DOCKERFILE_DIR}/Dockerfile.tmp"
     cat >> "${TMP_DOCKERFILE_DIR}/Dockerfile.tmp" << EOF
 FROM scratch AS buildresult
 WORKDIR "${BUILDRESULT_IMAGE_DIR}"
-COPY --from="${LAST_BUILD_STAGE}" "${1}" ./copied
+COPY --from="${STATE_LAST_BUILD_STAGE}" "${1}" ./copied
 EOF
 
     echo "Building copy task image"
@@ -316,8 +316,8 @@ EOF
       export NO_CACHE_TO=1
       export NO_TAG=1
       export OUTPUT="type=local,dest=${COPY_CACHE_DIR}"
-      export DOCKERFILE_FULL
-      export DOCKERFILE_STDIN=1
+      export DK_DOCKERFILE_FULL
+      export DK_DOCKERFILE_STDIN=1
       build_image buildresult
     )
 
@@ -343,15 +343,15 @@ create_remote_tag_alias() {
 
 push_image() {
   if [ "x${NO_PUSH}" = "x1" ]; then
-    if [ "x${BUILDX_DRIVER}" = "xdocker" ]; then
+    if [ "x${DK_BUILDX_DRIVER}" = "xdocker" ]; then
       docker push "$(_get_full_image_name_tag_for_build)"
     else
-      echo "Warning: separated pushing in '${BUILDX_DRIVER}' driver can be slow, because final image needs to be rebuilt from previous cache"
-      if [ -z "${LAST_BUILD_STAGE}" ]; then
-        echo "LAST_BUILD_STAGE not set" >&2
+      echo "Warning: separated pushing in '${DK_BUILDX_DRIVER}' driver can be slow, because final image needs to be rebuilt from previous cache"
+      if [ -z "${STATE_LAST_BUILD_STAGE}" ]; then
+        echo "STATE_LAST_BUILD_STAGE not set" >&2
         exit 1
       fi
-      NO_PUSH=0 build_image "${LAST_BUILD_STAGE}"
+      NO_PUSH=0 build_image "${STATE_LAST_BUILD_STAGE}"
     fi
   fi
   # push image
@@ -374,7 +374,7 @@ push_image_and_cache() {
 }
 
 logout_from_registry() {
-  docker logout "${DOCKER_REGISTRY}"
+  docker logout "${DK_REGISTRY}"
 }
 
 check_required_input
