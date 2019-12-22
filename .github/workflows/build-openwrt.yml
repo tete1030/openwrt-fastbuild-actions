@@ -24,6 +24,8 @@ env:
   # 在这里指定你的OpenWrt的Repo URL和Branch
   REPO_URL: https://github.com/coolsnowwolf/lede
   REPO_BRANCH: master
+  # REPO_URL: https://github.com/openwrt/openwrt
+  # REPO_BRANCH: openwrt-19.07
   # Specify here your config file
   # 在这里指定你的配置文件名
   CONFIG_FILE: 'config.diff'
@@ -48,6 +50,7 @@ on:
   repository_dispatch:
   push:
     paths-ignore:
+    - imgs
     - README.md
     - LICENSE
     - .dockerignore

@@ -101,7 +101,7 @@ You may notice there are gaps between the three builders. YES. The latter two bu
 
 Check out my own configuration in ["sample" branch](https://github.com/tete1030/openwrt-fastbuild-actions/tree/sample).
 
-Configuration for official OpenWrt 19.07 is in ["openwrt_official" branch](https://github.com/tete1030/openwrt-fastbuild-actions/tree/openwrt_official). It is just a change of `REPO_URL`.
+**The configuration uses [coolsnowwolf/lede](https://github.com/coolsnowwolf/lede) as the default OpenWrt Repo** (popular in China). Configuration for official OpenWrt 19.07 is in ["openwrt_official" branch](https://github.com/tete1030/openwrt-fastbuild-actions/tree/openwrt_official). It's just changes of `REPO_URL` and `REPO_BRANCH` in `.github/workflows/build-openwrt.yml`.
 
 ### First-time building 第一次编译
 
