@@ -5,7 +5,7 @@
 # Author: Texot
 #=================================================
 
-# No recommended to change as they are already in optimal condition.
+# Not recommended to change as they are already in optimal condition.
 # If you insist to change the content, make sure the corresponding file
 # in the 'tests' dir is also changed in the same way.
 # 不推荐修改，已处在最优状态。如果仍要修改，确保tests文件夹中的对应文件以类似方式修改。
