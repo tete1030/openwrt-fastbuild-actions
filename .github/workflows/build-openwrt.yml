@@ -44,6 +44,7 @@ name: Build OpenWrt
 on:
   release:
     types: [published]
+  deployment:
   repository_dispatch:
   push:
     paths-ignore:
@@ -58,7 +59,14 @@ on:
 jobs:
   docker-build:
     runs-on: ubuntu-18.04
-    if: github.event_name == 'release' || (github.event_name == 'repository_dispatch' && github.event.action == 'docker-build')
+    if: |
+      github.event_name == 'release' || (
+        github.event_name == 'repository_dispatch' && 
+        github.event.action == 'docker-build'
+      ) || (
+        github.event_name == 'deployment' && 
+        github.event.deployment.task == 'docker-build'
+      )
     name: ${{matrix.title}}
     strategy:
       fail-fast: true
@@ -198,7 +206,14 @@ jobs:
 
   docker-build-inc:
     runs-on: ubuntu-18.04
-    if: github.event_name == 'push' || (github.event_name == 'repository_dispatch' && github.event.action == 'docker-build-inc')
+    if: | 
+      github.event_name == 'push' || (
+        github.event_name == 'repository_dispatch' && 
+        github.event.action == 'docker-build-inc'
+      ) || (
+        github.event_name == 'deployment' && 
+        github.event.deployment.task == 'docker-build-inc'
+      )
     name: ${{matrix.title}}
     strategy:
       fail-fast: true
@@ -363,7 +378,14 @@ jobs:
 
   docker-build-package:
     runs-on: ubuntu-18.04
-    if: github.event_name == 'push' || (github.event_name == 'repository_dispatch' && github.event.action == 'docker-build-package')
+    if: |
+      github.event_name == 'push' || (
+        github.event_name == 'repository_dispatch' && 
+        github.event.action == 'docker-build-package'
+      ) || (
+        github.event_name == 'deployment' && 
+        github.event.deployment.task == 'docker-build-package'
+      )
     name: ${{matrix.title}}
     strategy:
       fail-fast: true
