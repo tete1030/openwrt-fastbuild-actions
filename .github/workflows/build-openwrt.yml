@@ -18,7 +18,7 @@
 env:
   # Specify here the name and tag you want to use for the builders
   # 在这里自定义你想使用的Builder名和默认Tag
-  BUILDER_NAME: openwrt_x86_64
+  BUILDER_NAME: openwrt
   BUILDER_TAG: latest
   # Specify here the OpenWrt Repo URL and Branch
   # 在这里指定你的OpenWrt的Repo URL和Branch
@@ -618,44 +618,3 @@ jobs:
     - name: SSH connection to Actions
       if: failure() || (github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true)
       uses: tete1030/debugger-action@my
-
-# Base
-# * +mentohust
-# * -shadowsocksr
-# * -unblockmusic
-# * -v2ray
-# * -samba +samba4
-# * -adbyby
-# * -xlnetacc
-# * -mia
-# * -wifi_schedule
-# * -kms
-# * -zerotier
-# * +dockerce
-# * +curl
-# * +wget
-
-# Install
-# * autossh
-# * openclash
-# * fping
-# * netdata
-# * zsh
-# * tcpdump
-# * dmesg
-# * tmux
-# * vim-full
-# * strace
-# * htop
-
-# Change source
-# * Upgrade download_pl
-# * Add mentohust
-# * autossh.init
-# * transmission init.d
-# * netdata init.d upgrade
-# * netdata makefile upgrade for 1.19
-# * Add libJudy for netdata
-# * netdata add go.d.plugin
-# * openclash replace clashr
-# 

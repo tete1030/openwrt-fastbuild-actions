@@ -1,8 +1,0 @@
---- package/feeds/luci-app-mentohust/Makefile
-+++ package/feeds/luci-app-mentohust/Makefile
-@@ -49,4 +49,5 @@
- 	$(INSTALL_DATA) ./files/luci/controller/mentohust.lua $(1)/usr/lib/lua/luci/controller/mentohust.lua
- endef
- 
-+PKG_BUILD_DEPENDS += lua/host luci-base/host 
- $(eval $(call BuildPackage,luci-app-mentohust))
