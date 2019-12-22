@@ -45,6 +45,16 @@ jobs:
   docker-build:
     runs-on: ubuntu-18.04
     if: github.event_name == 'release' || (github.event_name == 'repository_dispatch' && github.event.action == 'docker')
+    name: ${{matrix.title}}
+    strategy:
+      fail-fast: true
+      matrix: 
+        mode: [normal, test]
+        include:
+        - mode: normal
+          title: docker-build
+        - mode: test
+          title: test-docker-build
     env:
       IMAGE_NAME: ${{secrets.docker_username}}/openwrt_x86_64
       IMAGE_TAG: latest
@@ -59,6 +69,13 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@master
+
+    - name: Set up test env
+      if: matrix.mode == 'test'
+      run: |
+        echo "::set-env name=DOCKERFILE::tests/${DOCKERFILE}"
+        echo "::set-env name=IMAGE_TAG::${IMAGE_TAG}-test"
+        echo "::set-env name=TEST::1"
 
     - name: Set up Docker Buildx
       id: buildx
@@ -162,6 +179,16 @@ jobs:
   docker-build-inc:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || (github.event_name == 'repository_dispatch' && github.event.action == 'docker-inc')
+    name: ${{matrix.title}}
+    strategy:
+      fail-fast: true
+      matrix:
+        mode: [normal, test]
+        include:
+        - mode: normal
+          title: docker-build-inc
+        - mode: test
+          title: test-docker-build-inc
     env:
       IMAGE_BASE: ${{secrets.docker_username}}/openwrt_x86_64:latest-inc
       IMAGE_NAME: ${{secrets.docker_username}}/openwrt_x86_64
@@ -179,6 +206,13 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@master
+
+    - name: Set up test env
+      if: matrix.mode == 'test'
+      run: |
+        echo "::set-env name=DOCKERFILE::tests/${DOCKERFILE}"
+        echo "::set-env name=IMAGE_TAG::${IMAGE_TAG}-test"
+        echo "::set-env name=TEST::1"
 
     - name: Set up Docker Buildx
       id: buildx
@@ -294,6 +328,16 @@ jobs:
   docker-build-package:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || (github.event_name == 'repository_dispatch' && github.event.action == 'docker-package')
+    name: ${{matrix.title}}
+    strategy:
+      fail-fast: true
+      matrix:
+        mode: [normal, test]
+        include:
+        - mode: normal
+          title: docker-build-package
+        - mode: test
+          title: test-docker-build-package
     env:
       IMAGE_BASE: ${{secrets.docker_username}}/openwrt_x86_64:latest-package
       IMAGE_NAME: ${{secrets.docker_username}}/openwrt_x86_64
@@ -311,6 +355,13 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@master
+
+    - name: Set up test env
+      if: matrix.mode == 'test'
+      run: |
+        echo "::set-env name=DOCKERFILE::tests/${DOCKERFILE}"
+        echo "::set-env name=IMAGE_TAG::${IMAGE_TAG}-test"
+        echo "::set-env name=TEST::1"
 
     - name: Set up Docker Buildx
       id: buildx

@@ -1,0 +1,31 @@
+#=================================================
+# https://github.com/tete1030/openwrt-fastbuild-actions
+# Description: FAST building OpenWrt with Github Actions and Docker!
+# Lisence: MIT
+# Author: Texot
+#=================================================
+
+ARG IMAGE_BASE
+FROM ${IMAGE_BASE} AS updateclone
+ARG UPDATE_REPO
+ARG UPDATE_FEEDS
+COPY --chown=builder:builder scripts ./scripts
+# RUN [ "x${UPDATE_REPO}" != "x1" ] || scripts/update_repo.sh
+# RUN UPDATE_FEEDS="${UPDATE_FEEDS}" scripts/update_feeds.sh
+
+FROM updateclone AS custom
+COPY --chown=builder:builder patches ./patches
+ARG CONFIG_FILE
+COPY --chown=builder:builder ${CONFIG_FILE} ./
+# RUN CONFIG_FILE="${CONFIG_FILE}" NONSTRICT_PATCH=1 scripts/customize.sh
+
+FROM custom AS download
+# RUN scripts/download.sh
+
+FROM download AS compile
+COPY --chown=builder:builder scripts/compile.sh ./scripts/compile.sh
+# RUN COMPILE_OPTIONS="prepare" scripts/compile.sh m \
+#   || COMPILE_OPTIONS="prepare" scripts/compile.sh s
+# RUN scripts/compile.sh m || scripts/compile.sh s
+
+RUN echo "Test Firmwares" > openwrt/bin/targets/x86/64/firmware.bin
