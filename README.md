@@ -25,12 +25,15 @@ Github Actions和Actions-Openwrt让我们可以很方便地自动化编译OpenWr
       - [For docker-build-package](#for-docker-build-package)
       - [Examples](#examples)
   - [Details](#details)
+    - [Building log examples](#building-log-examples)
     - [Building process explained](#building-process-explained)
       - [docker-build building process](#docker-build-building-process)
       - [docker-build-inc building process](#docker-build-inc-building-process)
       - [docker-build-package building process](#docker-build-package-building-process)
   - [FAQs](#faqs)
     - [Docker Hub: Tags not retrieved](#docker-hub-tags-not-retrieved)
+    - [Spend so much time on &quot;Copy out bin directory&quot; in docker-build](#spend-so-much-time-on-quotcopy-out-bin-directoryquot-in-docker-build)
+    - [What are test-docker-build* jobs?](#what-are-test-docker-build-jobs)
   - [Todo](#todo)
   - [Acknowledgments](#acknowledgments)
   - [License](#license)
@@ -187,6 +190,16 @@ To trigger rebuilding base builder,
 
 ## Details
 
+### Building log examples
+
+coolsnowwolf/lede:
+- [`docker-build` build log](https://github.com/tete1030/openwrt-fastbuild-actions/runs/359974704)
+- [`docker-build-inc` build log](https://github.com/tete1030/openwrt-fastbuild-actions/runs/360084146)
+- [`docker-build-package` build log](https://github.com/tete1030/openwrt-fastbuild-actions/runs/360084313)
+
+openwrt/openwrt;openwrt-19.07:
+- [`docker-build` build log](https://github.com/tete1030/openwrt-fastbuild-actions/commit/7757f6741a804b84f2f6fa6c03272e322ce6a8e9/checks?check_suite_id=370526615)
+
 ### Building process explained
 
 #### `docker-build` building process
@@ -236,6 +249,18 @@ To trigger rebuilding base builder,
 Caused by known of buildx:
 - https://github.com/docker/hub-feedback/issues/1906
 - https://github.com/docker/buildx/issues/173
+
+### Spend so much time on "Copy out bin directory" in `docker-build`
+
+Indeed. Due to the use of `docker-container` driver of `docker buildx` command for only `docker-build` job, we can not directly use `docker cp`. Instead, I have to use a multi-stage hack to export out files, in order to in the same time keep the ability of exporting cache and builder image to Docker Hub. When the image is large, this method can spend much time in unpacking the image.
+
+`docker-build-inc` and `docker-build-package` are not affected.
+
+I have tried many methods to workaround this. Currently this setting is the best trade-off I can achieve. If you are interested or have better idea, feel free to open an issue for discussion.
+
+### What are `test-docker-build*` jobs?
+
+They are for fast checking of Github Actions and Docker settings. Typically they only spend less than 5 minutes. When they fail, its sibling job will be stopped. Fix the problem it reported.
 
 ## Todo
 
