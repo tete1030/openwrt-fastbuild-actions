@@ -17,14 +17,20 @@ cd openwrt
 mkdir -p package/feeds || true
 cd package/feeds
 
-if [ -d mentohust ]; then
-  [ "x${UPDATE_FEEDS}" != "x1" ] || ( git -C mentohust reset --hard && git -C mentohust pull --ff )
-else
-  git clone https://github.com/KyleRicardo/MentoHUST-OpenWrt-ipk.git mentohust
-fi
+# install_package PACKAGE_DIR GIT_URL
+install_package() {
+  if (( $# != 2 )); then
+    echo "Wrong arguments for install_package" >&2
+    exit 1
+  fi
+  if [ -d "${1}" ]; then
+    [ "x${UPDATE_FEEDS}" != "x1" ] || ( git -C "${1}" reset --hard && git -C "${1}" pull --ff )
+  else
+    git clone "${2}" "${1}"
+  fi
+}
 
-if [ -d luci-app-mentohust ]; then
-  [ "x${UPDATE_FEEDS}" != "x1" ] || ( git -C luci-app-mentohust reset --hard && git -C luci-app-mentohust pull --ff )
-else
-  git clone https://github.com/BoringCat/luci-app-mentohust.git luci-app-mentohust
-fi
+# Customize here for any additional package you want to install/update
+# Note that to have it compiled, you also have to set its CONFIG_* options
+install_package mentohust https://github.com/KyleRicardo/MentoHUST-OpenWrt-ipk.git
+install_package luci-app-mentohust https://github.com/BoringCat/luci-app-mentohust.git

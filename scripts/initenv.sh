@@ -12,4 +12,5 @@ sudo -E apt-get -qq install build-essential asciidoc binutils bzip2 gawk gettext
 sudo -E apt-get -qq install tar wget curl nginx
 sudo -E apt-get -qq autoremove --purge
 sudo -E apt-get -qq clean
-sudo ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+sudo ln -sf /usr/share/zoneinfo/UTC /etc/localtime
+# sudo ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
