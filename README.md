@@ -199,6 +199,8 @@ coolsnowwolf/lede:
 
 openwrt/openwrt;openwrt-19.07:
 - [`docker-build` build log](https://github.com/tete1030/openwrt-fastbuild-actions/commit/7757f6741a804b84f2f6fa6c03272e322ce6a8e9/checks?check_suite_id=370526615)
+- [`docker-build-inc` build log](https://github.com/tete1030/openwrt-fastbuild-actions/runs/360106903)
+- [`docker-build-package` build log](https://github.com/tete1030/openwrt-fastbuild-actions/runs/360107046)
 
 ### Building process explained
 
