@@ -99,7 +99,7 @@ Check out my own configuration in ["sample" branch](https://github.com/tete1030/
 
 ### First-time building 第一次编译
 
-These step is for making a base builder. When you need a fresh rebuilding of everything, you can execute this by publishing a new release or use [tete1030/github-repo-dispatcher](https://github.com/tete1030/github-repo-dispatcher) to mannually trigger a rebuilding with parameters `Type`: `docker-build` and empty `Client Payload`.
+These step is for making a base builder. When you need a fresh rebuilding of everything, you can execute this by publishing a new release or use [tete1030/github-repo-dispatcher](https://github.com/tete1030/github-repo-dispatcher) to mannually trigger a rebuilding with parameters "Type/Task": `docker-build` and empty "Client Payload".
 
 The building process generally takes **1.5~3 hours** depending on your config.
 
@@ -113,7 +113,7 @@ The building process generally takes **1.5~3 hours** depending on your config.
 8. *(Optional)* Customize `scripts/update_feeds.sh` for **additional packages** you want to download.
 9. *(Optional)* Put any **patch** you want to `patches` dir. The patches are applied after `update_feeds.sh` and before `download.sh`.
 10. **Commit and push** your changes. This will automatically trigger an incremental building. However, it will fail as you haven't built base builder. **Just let it fail** or cancel it in the Actions page.
-11. **Publish** a release. This is for full building of base builder. Or you can use [tete1030/github-repo-dispatcher](https://github.com/tete1030/github-repo-dispatcher) to manually trigger the building. (`Type`: `docker-build`, `Payload`: leave it empty)
+11. **Publish** a release. This is for full building of base builder. Or you can use [tete1030/github-repo-dispatcher](https://github.com/tete1030/github-repo-dispatcher) to manually trigger the building. ("Type/Task": `docker-build`, "Payload": leave it empty)
 12. Wait for `docker-build` job to finish.
 13. Collect your files in the `docker-build` job's `Artifacts` menu
 
@@ -131,10 +131,10 @@ Because the `docker-build-inc` builder and `docker-build-package` builder are re
 
 1. Use [tete1030/github-repo-dispatcher](https://github.com/tete1030/github-repo-dispatcher) to link the latest base builder to the builder used for incremental building.
    - For `docker-build-inc`, use parameters:
-     - Type: `docker-build-inc` 
+     - Type/Task: `docker-build-inc` 
      - Client Payload: `{"use_latest": true}`
    - For `docker-build-package`, use parameters:
-     - Type: `docker-build-package`
+     - Type/Task: `docker-build-package`
      - Payload:
        - `{"use_latest": true}` if you want to use the base builder from `docker-build`
        - `{"use_latest_inc": true}` if you want to use the incremental builder from `docker-build-inc`
@@ -144,6 +144,12 @@ Because the `docker-build-inc` builder and `docker-build-package` builder are re
 ### Manually trigger building and its options
 
 The following options are only usable when triggering building from [tete1030/github-repo-dispatcher](https://github.com/tete1030/github-repo-dispatcher)
+
+The project support both "Repo Dispatch" and "Deploy" trigger. When using "Repo Dispatch", using "Type" to specify your job name. When using "Deploy", using "Task" to specify your job name.
+
+Using "Payload" to specify you options.
+
+If you want to trigger a job in other branches than "master", you can only use the "Deploy" trigger to specify your branch.
 
 #### Global
 
@@ -166,10 +172,11 @@ The following options are only usable when triggering building from [tete1030/gi
 
 To trigger rebuilding base builder,
 1. Open your forked repo
-2. Click "Repo Dispatch" at the top right corner (left of the "Watch" button)
-3. Fill `docker-build` for "Type" prompt
-4. Fill `{"debug": true}` for "Client Payload" prompt
-5. Open the job's log page, wait for the SSH command shown up
+2. Click "Repo Dispatch" or "Deploy" at the top right corner (left of the "Watch" button)
+3. If using "Deploy" trigger, fill your branch/tag/commit for "Ref" prompt (e.g. `master`)
+4. Fill `docker-build` for "Type/Task" prompt
+5. Fill `{"debug": true}` for "Payload" prompt
+6. Open the job's log page, wait for the SSH command shown up (when debugging, you are allowed to SSH into the jobs with tmate.io)
 
 ## Details
 
