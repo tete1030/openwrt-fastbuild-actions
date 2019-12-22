@@ -195,7 +195,8 @@ build_image() {
     for arg in ${BUILD_ARGS[@]};
     do
       if [ -z "${!arg}" ]; then
-        echo "Warning: variable \`${arg}\` is empty" >&2
+        echo "Error: for error free coding, please do not leave variable \`${arg}\` empty. You can assign it a meaningless value if not used." >&2
+        exit 1
       fi
       build_args+=( --build-arg "${arg}=${!arg}" )
     done

@@ -215,8 +215,10 @@ jobs:
 
     - name: Init build env
       run: |
+        # set-env command does not export env for current shell
+        export IMAGE_NAME=${BUILDER_NAME}
         export IMAGE_TAG=${BUILDER_TAG}-inc
-        echo "::set-env name=IMAGE_NAME::${BUILDER_NAME}"
+        echo "::set-env name=IMAGE_NAME::${IMAGE_NAME}"
         echo "::set-env name=IMAGE_TAG::${IMAGE_TAG}"
         echo "::set-env name=IMAGE_BASE::${DK_REGISTRY:+$DK_REGISTRY/}${IMAGE_NAME}:${IMAGE_TAG}"
         echo "::set-env name=IMAGE_LATEST::${DK_REGISTRY:+$DK_REGISTRY/}${IMAGE_NAME}:${BUILDER_TAG}"
@@ -375,8 +377,10 @@ jobs:
 
     - name: Init build env
       run: |
+        # set-env command does not export env for current shell
+        export IMAGE_NAME=${BUILDER_NAME}
         export IMAGE_TAG=${BUILDER_TAG}-package
-        echo "::set-env name=IMAGE_NAME::${BUILDER_NAME}"
+        echo "::set-env name=IMAGE_NAME::${IMAGE_NAME}"
         echo "::set-env name=IMAGE_TAG::${IMAGE_TAG}"
         echo "::set-env name=IMAGE_BASE::${DK_REGISTRY:+$DK_REGISTRY/}${IMAGE_NAME}:${IMAGE_TAG}"
         echo "::set-env name=IMAGE_LATEST::${DK_REGISTRY:+$DK_REGISTRY/}${IMAGE_NAME}:${BUILDER_TAG}"
