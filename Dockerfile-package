@@ -21,7 +21,6 @@ FROM custom AS download
 RUN scripts/download.sh
 
 FROM download AS compile
-ARG BUILD_WHOLE
 RUN (COMPILE_OPTIONS="package/compile" scripts/compile.sh m \
     || COMPILE_OPTIONS="package/compile" scripts/compile.sh s) \
   && (COMPILE_OPTIONS="package/index" scripts/compile.sh m \
