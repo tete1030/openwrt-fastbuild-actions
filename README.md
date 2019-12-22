@@ -11,7 +11,28 @@ Github Actions和Actions-Openwrt让我们可以很方便地自动化编译OpenWr
 
 本项目使用Docker Hub或任何Docker Registry存储编译状态，使得后续的编译可以增量进行。
 
-[TOC]
+- [Building OpenWrt with GitHub Actions and Docker](#building-openwrt-with-github-actions-and-docker)
+  - [Features 特点](#features-%e7%89%b9%e7%82%b9)
+  - [Mechanism 原理](#mechanism-%e5%8e%9f%e7%90%86)
+  - [Usage 用法](#usage-%e7%94%a8%e6%b3%95)
+    - [First-time building 第一次编译](#first-time-building-%e7%ac%ac%e4%b8%80%e6%ac%a1%e7%bc%96%e8%af%91)
+    - [Following building 后续编译](#following-building-%e5%90%8e%e7%bb%ad%e7%bc%96%e8%af%91)
+    - [Re-link your builders 重建编译环境](#re-link-your-builders-%e9%87%8d%e5%bb%ba%e7%bc%96%e8%af%91%e7%8e%af%e5%a2%83)
+    - [Manually trigger building and its options](#manually-trigger-building-and-its-options)
+      - [Global](#global)
+      - [For docker-build-inc](#for-docker-build-inc)
+      - [For docker-build-package](#for-docker-build-package)
+      - [Examples](#examples)
+  - [Details](#details)
+    - [Building process explained](#building-process-explained)
+      - [docker-build building process](#docker-build-building-process)
+      - [docker-build-inc building process](#docker-build-inc-building-process)
+      - [docker-build-package building process](#docker-build-package-building-process)
+  - [FAQs](#faqs)
+    - [Docker Hub: Tags not retrieved](#docker-hub-tags-not-retrieved)
+  - [Todo](#todo)
+  - [Acknowledgments](#acknowledgments)
+  - [License](#license)
 
 ## Features 特点
 
