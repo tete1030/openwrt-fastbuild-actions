@@ -151,6 +151,13 @@ To be finished
 - [ ] Optimize comments in `build-openwrt.yml` and `docker.sh`
 - [ ] Optimize `build-openwrt.yml`, making options cleaner
 - [ ] Allow deterministic building (by fixing commit of main repo and feeds)
+- [ ] Utilize `jobs.<job_id>.container` instead of docker commands if possible
+  - [ ] For `docker-build`
+    - Problem: not able to use cache, wouldn't able to push
+  - [ ] For `docker-build`'s upload stage
+    - Probably very useful. Currently it consumes a lot of time due to repeat uncompressing image
+  - [ ] For `docker-build-inc` and `docker-build-package`
+    - Problem: wouldn't able to push
 
 ## Acknowledgments
 
