@@ -95,6 +95,8 @@ You may notice there are gaps between the three builders. YES. The latter two bu
 
 ## Usage 用法
 
+Check out my own configuration in ["sample" branch](https://github.com/tete1030/openwrt-fastbuild-actions/tree/sample).
+
 ### First-time building 第一次编译
 
 These step is for making a base builder. When you need a fresh rebuilding of everything, you can execute this by publishing a new release or use [tete1030/github-repo-dispatcher](https://github.com/tete1030/github-repo-dispatcher) to mannually trigger a rebuilding with parameters `Type`: `docker-build` and empty `Client Payload`.
