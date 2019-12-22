@@ -1,7 +1,11 @@
 #!/bin/bash
 
-# Copyright (c) 2019 tete1030
-# From https://github.com/tete1030/openwrt-fastbuild-actions
+#=================================================
+# https://github.com/tete1030/openwrt-fastbuild-actions
+# Description: FAST building OpenWrt with Github Actions and Docker!
+# Lisence: MIT
+# Author: Texot
+#=================================================
 
 set -eo pipefail
 
