@@ -16,6 +16,7 @@ Github Actions和Actions-Openwrt让我们可以很方便地自动化编译OpenWr
   - [Mechanism 原理](#mechanism-%e5%8e%9f%e7%90%86)
   - [Usage 用法](#usage-%e7%94%a8%e6%b3%95)
     - [First-time building 第一次编译](#first-time-building-%e7%ac%ac%e4%b8%80%e6%ac%a1%e7%bc%96%e8%af%91)
+      - [Secrets page](#secrets-page)
     - [Following building 后续编译](#following-building-%e5%90%8e%e7%bb%ad%e7%bc%96%e8%af%91)
     - [Re-link your builders 重建编译环境](#re-link-your-builders-%e9%87%8d%e5%bb%ba%e7%bc%96%e8%af%91%e7%8e%af%e5%a2%83)
     - [Manually trigger building and its options](#manually-trigger-building-and-its-options)
@@ -97,6 +98,8 @@ You may notice there are gaps between the three builders. YES. The latter two bu
 
 Check out my own configuration in ["sample" branch](https://github.com/tete1030/openwrt-fastbuild-actions/tree/sample).
 
+Configuration for official OpenWrt 19.07 is in ["openwrt_official" branch](https://github.com/tete1030/openwrt-fastbuild-actions/tree/openwrt_official). It is just a change of `REPO_URL`.
+
 ### First-time building 第一次编译
 
 These step is for making a base builder. When you need a fresh rebuilding of everything, you can execute this by publishing a new release or use [tete1030/github-repo-dispatcher](https://github.com/tete1030/github-repo-dispatcher) to mannually trigger a rebuilding with parameters "Type/Task": `docker-build` and empty "Client Payload".
@@ -106,7 +109,7 @@ The building process generally takes **1.5~3 hours** depending on your config.
 1. Sign up for [GitHub Actions](https://github.com/features/actions/signup)
 2. Register a **Docker Hub** account
 3. **Fork** this repo
-4. Get your Docker Hub **personal access token**. Paste your username and the generated token to the forked repo's **Settings->Secrets** page. Use `docker_username` for your username and `docker_password` for your token.
+4. Get your Docker Hub **personal access token**. Paste your username and the generated token to the forked repo's **Settings->Secrets** page. Use `docker_username` for your username and `docker_password` for your token. Check [Secrets page](#secrets-page) for correct settings.
 5. *(Optional, not very useful)* If you want a debug message to be sent to **Slack**, you can generate a Slack Webhook URL and set the url as `SLACK_WEBHOOK_URL` in the Secrets page. Search in Google if you don't know how to do it.
 6. *(Optional)* Customize `.github/workflows/build-openwrt.yml` to **change builder's name and other options**.
 7. **Generate your `.config`** and rename it to `config.diff`. Put the file in the root dir of your forked repo.
@@ -116,6 +119,10 @@ The building process generally takes **1.5~3 hours** depending on your config.
 11. **Publish** a release. This is for full building of base builder. Or you can use [tete1030/github-repo-dispatcher](https://github.com/tete1030/github-repo-dispatcher) to manually trigger the building. ("Type/Task": `docker-build`, "Payload": leave it empty)
 12. Wait for `docker-build` job to finish.
 13. Collect your files in the `docker-build` job's `Artifacts` menu
+
+#### Secrets page
+
+![Secrets page](imgs/secrets.png)
 
 ### Following building 后续编译
 
