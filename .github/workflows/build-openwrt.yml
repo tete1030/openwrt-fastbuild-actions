@@ -40,7 +40,7 @@ env:
   # Not recommended to change unless you understand how it is used
   # 以下参数不推荐修改
   DK_CONTEXT: .
-  
+
 name: Build OpenWrt
 
 on:
@@ -58,7 +58,7 @@ jobs:
     if: |
       (
         github.event_name == 'push' &&
-        contains(github.event.commits[github.event.commits.length-1].message, '#build#')
+        contains(github.event.commits[0].message, '#build#')
       ) || (
         github.event_name == 'repository_dispatch' && 
         github.event.action == 'docker-build'
