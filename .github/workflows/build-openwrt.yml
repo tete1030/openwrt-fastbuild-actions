@@ -53,6 +53,13 @@ on:
 #    types: [started]
 
 jobs:
+  test-event:
+    runs-on: ubuntu-18.04
+    steps:
+    - name: Print context
+      run: |
+        echo "${{toJSON(github)}}"
+
   docker-build:
     runs-on: ubuntu-18.04
     if: |
