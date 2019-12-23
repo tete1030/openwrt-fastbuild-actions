@@ -83,12 +83,9 @@ jobs:
     env:
       # Not recommended to change as they are already in optimal condition
       # 不推荐修改，已处在最优状态
-      # Using docker-container driver because it allows full exporting of cache.
-      # However, its file copying process can be tricky and slow.
-      # If using docker as driver, the rebuilding will largely slow down.
-      # 使用docker-container是因为它允许完全导出缓存，加速下一次构建过程，然而它会让文件拷贝麻烦且缓慢
-      # 如果使用docker作为driver，重建过程会变得非常缓慢
-      DK_BUILDX_DRIVER: docker-container
+      NO_REMOTE_CACHE: 1
+      NO_BUILDTIME_PUSH: 1
+      DK_BUILDX_DRIVER: docker
       DK_DOCKERFILE: Dockerfile
       BUILD_ARGS: 'REPO_URL REPO_BRANCH CONFIG_FILE'
 
