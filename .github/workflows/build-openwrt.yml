@@ -350,7 +350,7 @@ jobs:
         )
       run: |
         . docker.sh
-        push_image
+        push_image_and_cache
 
     - name: Copy out bin directory
       id: copydir
@@ -533,7 +533,7 @@ jobs:
       if: (!cancelled()) && (success() || github.event.client_payload.push_when_fail == true || github.event.deployment.payload.push_when_fail == true)
       run: |
         . docker.sh
-        push_image
+        push_image_and_cache
 
     - name: Copy out bin directory
       id: copydir
