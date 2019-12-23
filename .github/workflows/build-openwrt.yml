@@ -54,10 +54,13 @@ on:
     - README.md
     - LICENSE
     - .dockerignore
-#  schedule:
-#    - cron: 0 8 * * 5
-#  watch:
-#    types: [started]
+  # For now, 'watch', 'schedule' or other events are not supported by all the jobs' `if` condition.
+  # If you want to use these events, make sure you have also changed each job's `if` condition if you understand how to use them.
+  # Example:
+  #   if: github.event_name == 'watch' && github.event.action == 'started'
+  # or
+  #   if: github.event_name == 'schedule'
+  # For `github.event` structures, see: https://developer.github.com/v3/activity/events/types/
 
 jobs:
   docker-build:
