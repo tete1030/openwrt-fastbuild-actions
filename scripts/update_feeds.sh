@@ -14,8 +14,8 @@ cd openwrt
 [ "x${UPDATE_FEEDS}" != "x1" ] || ./scripts/feeds update -a
 ./scripts/feeds install -a
 
-mkdir -p package/feeds || true
-cd package/feeds
+mkdir -p package/z-last-build-packages || true
+cd package/z-last-build-packages
 
 # install_package PACKAGE_DIR GIT_URL
 install_package() {

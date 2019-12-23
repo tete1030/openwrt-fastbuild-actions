@@ -52,10 +52,13 @@ on:
     - README.md
     - LICENSE
     - .dockerignore
-#  schedule:
-#    - cron: 0 8 * * 5
-#  watch:
-#    types: [started]
+  # For now, 'watch', 'schedule' or other events are not supported by all the jobs' `if` condition.
+  # If you want to use these events, make sure you have also changed each job's `if` condition if you understand how to use them.
+  # Example:
+  #   if: github.event_name == 'watch' && github.event.action == 'started'
+  # or
+  #   if: github.event_name == 'schedule'
+  # For `github.event` structures, see: https://developer.github.com/v3/activity/events/types/
 
 jobs:
   docker-build:
@@ -77,16 +80,13 @@ jobs:
         - mode: normal
           title: docker-build
         - mode: test
-          title: test-docker-build
+          title: Fast checking for docker-build
     env:
       # Not recommended to change as they are already in optimal condition
       # 不推荐修改，已处在最优状态
-      # Using docker-container driver because it allows full exporting of cache.
-      # However, its file copying process can be tricky and slow.
-      # If using docker as driver, the rebuilding will largely slow down.
-      # 使用docker-container是因为它允许完全导出缓存，加速下一次构建过程，然而它会让文件拷贝麻烦且缓慢
-      # 如果使用docker作为driver，重建过程会变得非常缓慢
-      DK_BUILDX_DRIVER: docker-container
+      NO_REMOTE_CACHE: 1
+      NO_BUILDTIME_PUSH: 1
+      DK_BUILDX_DRIVER: docker
       DK_DOCKERFILE: Dockerfile
       BUILD_ARGS: 'REPO_URL REPO_BRANCH CONFIG_FILE'
 
@@ -132,7 +132,7 @@ jobs:
         echo "::set-env name=STATE_LAST_BUILD_STAGE::clone"
 
     # Allow intermediate customization
-    - name: SSH connection to Actions
+    - name: Debug set, wait for SSH connection
       if: github.event.client_payload.debug == true || github.event.deployment.payload.debug == true
       env:
         TIMEOUT_MIN: 5
@@ -206,7 +206,7 @@ jobs:
         path: ${{ env.FIRMWARE }}
 
     # failure checking
-    - name: SSH connection to Actions
+    - name: Failed/debug set, wait for SSH connection ( you are safe to cancel the job now )
       if: |
         failure() ||
         github.event.client_payload.debug == true ||
@@ -232,7 +232,7 @@ jobs:
         - mode: normal
           title: docker-build-inc
         - mode: test
-          title: test-docker-build-inc
+          title: Fast checking for docker-build-inc
     env:
       # Not recommended to change as they are already in optimal condition
       # 不推荐修改，已处在最优状态
@@ -306,7 +306,7 @@ jobs:
         pull_image
 
     # Allow intermediate customization
-    - name: SSH connection to Actions
+    - name: Debug set, wait for SSH connection
       if: github.event.client_payload.debug == true || github.event.deployment.payload.debug == true
       env:
         TIMEOUT_MIN: 5
@@ -351,7 +351,7 @@ jobs:
         )
       run: |
         . docker.sh
-        push_image
+        push_image_and_cache
 
     - name: Copy out bin directory
       id: copydir
@@ -386,7 +386,7 @@ jobs:
         path: ${{ env.FIRMWARE }}
 
     # failure checking
-    - name: SSH connection to Actions
+    - name: Failed/debug set, wait for SSH connection ( you are safe to cancel the job now )
       if: |
         failure() ||
         github.event.client_payload.debug == true ||
@@ -412,7 +412,7 @@ jobs:
         - mode: normal
           title: docker-build-package
         - mode: test
-          title: test-docker-build-package
+          title: Fast checking for docker-build-package
     env:
       # Not recommended to change as they are already in optimal condition
       # 不推荐修改，已处在最优状态
@@ -494,7 +494,7 @@ jobs:
         pull_image
 
     # Allow intermediate customization
-    - name: SSH connection to Actions
+    - name: Debug set, wait for SSH connection
       if: github.event.client_payload.debug == true || github.event.deployment.payload.debug == true
       env:
         TIMEOUT_MIN: 5
@@ -534,7 +534,7 @@ jobs:
       if: (!cancelled()) && (success() || github.event.client_payload.push_when_fail == true || github.event.deployment.payload.push_when_fail == true)
       run: |
         . docker.sh
-        push_image
+        push_image_and_cache
 
     - name: Copy out bin directory
       id: copydir
@@ -576,7 +576,7 @@ jobs:
         path: openwrt/bin
 
     # failure checking
-    - name: SSH connection to Actions
+    - name: Failed/debug set, wait for SSH connection ( you are safe to cancel the job now )
       if: failure() || github.event.client_payload.debug == true || github.event.deployment.payload.debug == true
       uses: tete1030/debugger-action@my
 
@@ -610,7 +610,7 @@ jobs:
       run: scripts/customize.sh
 
     # Allow intermediate customization
-    - name: SSH connection to Actions
+    - name: Debug set, wait for SSH connection
       if: github.event.client_payload.debug == true || github.event.deployment.payload.debug == true
       env:
         TIMEOUT_MIN: 5
@@ -660,6 +660,6 @@ jobs:
         path: ${{ env.FIRMWARE }}
 
     # failure checking
-    - name: SSH connection to Actions
+    - name: Failed/debug set, wait for SSH connection ( you are safe to cancel the job now )
       if: failure() || github.event.client_payload.debug == true || github.event.deployment.payload.debug == true
       uses: tete1030/debugger-action@my
