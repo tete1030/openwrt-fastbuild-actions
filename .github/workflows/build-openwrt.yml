@@ -19,7 +19,7 @@ env:
   # Specify here the name and tag you want to use for the builders
   # 在这里自定义你想使用的Builder名和默认Tag
   BUILDER_NAME: openwrt
-  BUILDER_TAG: latest
+  BUILDER_TAG: dev
   # Specify here the OpenWrt Repo URL and Branch
   # 在这里指定你的OpenWrt的Repo URL和Branch
   REPO_URL: https://github.com/coolsnowwolf/lede
