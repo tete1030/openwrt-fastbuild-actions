@@ -364,9 +364,9 @@ push_image() {
 push_cache() {
   if [ "x${NO_REMOTE_CACHE}" = "x1" ]; then
     echo "NO_REMOTE_CACHE is set, no cache to push" >&2
-    exit 1
+  else
+    create_remote_tag_alias "$(_get_full_image_name_tag_for_build_cache)" "$(_get_full_image_name_tag_for_cache)" 
   fi
-  create_remote_tag_alias "$(_get_full_image_name_tag_for_build_cache)" "$(_get_full_image_name_tag_for_cache)" 
 }
 
 push_image_and_cache() {
