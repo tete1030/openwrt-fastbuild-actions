@@ -44,8 +44,6 @@ env:
 name: Build OpenWrt
 
 on:
-  release:
-    types: [published]
   deployment:
   repository_dispatch:
   push:
@@ -63,7 +61,10 @@ jobs:
   docker-build:
     runs-on: ubuntu-18.04
     if: |
-      github.event_name == 'release' || (
+      (
+        github.event_name == 'push' &&
+        contains(github.event.commits[github.event.commits.length-1].message, '#build#')
+      ) || (
         github.event_name == 'repository_dispatch' && 
         github.event.action == 'docker-build'
       ) || (
@@ -215,7 +216,10 @@ jobs:
   docker-build-inc:
     runs-on: ubuntu-18.04
     if: | 
-      github.event_name == 'push' || (
+      (
+        github.event_name == 'push' &&
+        contains(github.event.commits[github.event.commits.length-1].message, '#build-inc#')
+      ) || (
         github.event_name == 'repository_dispatch' && 
         github.event.action == 'docker-build-inc'
       ) || (
@@ -395,7 +399,10 @@ jobs:
   docker-build-package:
     runs-on: ubuntu-18.04
     if: |
-      github.event_name == 'push' || (
+      (
+        github.event_name == 'push' &&
+        contains(github.event.commits[github.event.commits.length-1].message, '#build-package#')
+      ) || (
         github.event_name == 'repository_dispatch' && 
         github.event.action == 'docker-build-package'
       ) || (
