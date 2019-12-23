@@ -53,10 +53,11 @@ on:
 #    types: [started]
 
 jobs:
-  test-event:
+  context:
+    name: Current run context
     runs-on: ubuntu-18.04
     steps:
-    - name: Print context
+    - name: Dump github context
       run: |
         cat << 'EOF'
         ${{toJSON(github)}}
