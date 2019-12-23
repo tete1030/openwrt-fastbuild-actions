@@ -56,7 +56,7 @@ on:
 #    - cron: 0 8 * * 5
 #  watch:
 #    types: [started]
- 
+
 jobs:
   docker-build:
     runs-on: ubuntu-18.04
