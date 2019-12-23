@@ -79,7 +79,7 @@ jobs:
         - mode: normal
           title: docker-build
         - mode: test
-          title: test-docker-build
+          title: Fast checking for docker-build
     env:
       # Not recommended to change as they are already in optimal condition
       # 不推荐修改，已处在最优状态
@@ -134,7 +134,7 @@ jobs:
         echo "::set-env name=STATE_LAST_BUILD_STAGE::clone"
 
     # Allow intermediate customization
-    - name: SSH connection to Actions
+    - name: Debug set, wait for SSH connection
       if: github.event.client_payload.debug == true || github.event.deployment.payload.debug == true
       env:
         TIMEOUT_MIN: 5
@@ -208,7 +208,7 @@ jobs:
         path: ${{ env.FIRMWARE }}
 
     # failure checking
-    - name: SSH connection to Actions
+    - name: Failed/debug set, wait for SSH connection ( you are safe to cancel the job now )
       if: |
         failure() ||
         github.event.client_payload.debug == true ||
@@ -234,7 +234,7 @@ jobs:
         - mode: normal
           title: docker-build-inc
         - mode: test
-          title: test-docker-build-inc
+          title: Fast checking for docker-build-inc
     env:
       # Not recommended to change as they are already in optimal condition
       # 不推荐修改，已处在最优状态
@@ -308,7 +308,7 @@ jobs:
         pull_image
 
     # Allow intermediate customization
-    - name: SSH connection to Actions
+    - name: Debug set, wait for SSH connection
       if: github.event.client_payload.debug == true || github.event.deployment.payload.debug == true
       env:
         TIMEOUT_MIN: 5
@@ -388,7 +388,7 @@ jobs:
         path: ${{ env.FIRMWARE }}
 
     # failure checking
-    - name: SSH connection to Actions
+    - name: Failed/debug set, wait for SSH connection ( you are safe to cancel the job now )
       if: |
         failure() ||
         github.event.client_payload.debug == true ||
@@ -414,7 +414,7 @@ jobs:
         - mode: normal
           title: docker-build-package
         - mode: test
-          title: test-docker-build-package
+          title: Fast checking for docker-build-package
     env:
       # Not recommended to change as they are already in optimal condition
       # 不推荐修改，已处在最优状态
@@ -496,7 +496,7 @@ jobs:
         pull_image
 
     # Allow intermediate customization
-    - name: SSH connection to Actions
+    - name: Debug set, wait for SSH connection
       if: github.event.client_payload.debug == true || github.event.deployment.payload.debug == true
       env:
         TIMEOUT_MIN: 5
@@ -578,7 +578,7 @@ jobs:
         path: openwrt/bin
 
     # failure checking
-    - name: SSH connection to Actions
+    - name: Failed/debug set, wait for SSH connection ( you are safe to cancel the job now )
       if: failure() || github.event.client_payload.debug == true || github.event.deployment.payload.debug == true
       uses: tete1030/debugger-action@my
 
@@ -612,7 +612,7 @@ jobs:
       run: scripts/customize.sh
 
     # Allow intermediate customization
-    - name: SSH connection to Actions
+    - name: Debug set, wait for SSH connection
       if: github.event.client_payload.debug == true || github.event.deployment.payload.debug == true
       env:
         TIMEOUT_MIN: 5
@@ -662,6 +662,6 @@ jobs:
         path: ${{ env.FIRMWARE }}
 
     # failure checking
-    - name: SSH connection to Actions
+    - name: Failed/debug set, wait for SSH connection ( you are safe to cancel the job now )
       if: failure() || github.event.client_payload.debug == true || github.event.deployment.payload.debug == true
       uses: tete1030/debugger-action@my
