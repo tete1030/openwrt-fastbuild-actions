@@ -47,16 +47,10 @@ on:
   deployment:
   repository_dispatch:
   push:
-    paths-ignore:
-    - imgs
-    - README.md
-    - LICENSE
-    - .dockerignore
 #  schedule:
 #    - cron: 0 8 * * 5
 #  watch:
 #    types: [started]
-
 jobs:
   docker-build:
     runs-on: ubuntu-18.04
