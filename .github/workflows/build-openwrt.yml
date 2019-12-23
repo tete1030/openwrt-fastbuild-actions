@@ -68,7 +68,7 @@ jobs:
     if: |
       (
         github.event_name == 'push' &&
-        contains(github.event.commits[0].message, '#build#')
+        contains(github.event.head_commit.message, '#build#')
       ) || (
         github.event_name == 'repository_dispatch' && 
         github.event.action == 'docker-build'
@@ -223,7 +223,7 @@ jobs:
     if: | 
       (
         github.event_name == 'push' &&
-        contains(github.event.commits[github.event.commits.length-1].message, '#build-inc#')
+        contains(github.event.head_commit.message, '#build-inc#')
       ) || (
         github.event_name == 'repository_dispatch' && 
         github.event.action == 'docker-build-inc'
@@ -406,7 +406,7 @@ jobs:
     if: |
       (
         github.event_name == 'push' &&
-        contains(github.event.commits[github.event.commits.length-1].message, '#build-package#')
+        contains(github.event.head_commit.message, '#build-package#')
       ) || (
         github.event_name == 'repository_dispatch' && 
         github.event.action == 'docker-build-package'
