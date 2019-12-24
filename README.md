@@ -61,8 +61,8 @@ Github Actions和Actions-Openwrt让我们可以很方便地自动化编译OpenWr
 [TODO] Probably a figure is better
 
 For convenience, assume docker image for storing builder
-- `DK_IMAGE_NAME=tete1030/openwrt_x86_64` (abbreviated to `t/o`)
-- `DK_IMAGE_TAG=latest`
+- `IMAGE_NAME=tete1030/openwrt_x86_64` (abbreviated to `t/o`)
+- `IMAGE_TAG=latest`
 
 The **three building modes** function as following description:
 
@@ -82,8 +82,8 @@ You may notice there are gaps between the three builders. YES. The latter two bu
 ---
 
 为了简便，假设用于存储编译状态的Docker image为
-- `DK_IMAGE_NAME=tete1030/openwrt_x86_64`（用`t/o`简略)
-- `DK_IMAGE_TAG=latest`
+- `IMAGE_NAME=tete1030/openwrt_x86_64`（用`t/o`简略)
+- `IMAGE_TAG=latest`
 
 **三种编译模式**按照以下方式工作：
 - 每次release，`docker-build`自动建立“基础编译环境”。该模式产生固件和“基础编译环境”，并将该编译环境命名为`t/o:latest`存储在Docker Hub上<sup>1</sup><sup>2</sup>
