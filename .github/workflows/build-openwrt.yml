@@ -496,6 +496,7 @@ jobs:
         export BUILDER_ID_PACKAGE="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG_PACKAGE}"
         echo "::set-env name=BUILDER_ID_BASE::${BUILDER_ID_BASE}"
         echo "::set-env name=BUILDER_ID_INC::${BUILDER_ID_INC}"
+        echo "::set-env name=BUILDER_ID_PACKAGE::${BUILDER_ID_PACKAGE}"
 
         echo "::set-env name=DK_IMAGE_BASE::${BUILDER_ID_PACKAGE}"
         echo "::set-env name=DK_IMAGE_NAME::${BUILDER_NAME}"
