@@ -6,14 +6,14 @@
 #=================================================
 
 ARG IMAGE_BASE
-FROM ${IMAGE_BASE} AS updateclone
+FROM ${IMAGE_BASE} AS clone
 ARG UPDATE_REPO
 ARG UPDATE_FEEDS
 COPY --chown=builder:builder scripts ./scripts
 # RUN [ "x${UPDATE_REPO}" != "x1" ] || scripts/update_repo.sh
 # RUN UPDATE_FEEDS="${UPDATE_FEEDS}" scripts/update_feeds.sh
 
-FROM updateclone AS custom
+FROM clone AS custom
 COPY --chown=builder:builder patches ./patches
 ARG CONFIG_FILE
 COPY --chown=builder:builder ${CONFIG_FILE} ./

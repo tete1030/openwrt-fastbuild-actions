@@ -108,7 +108,12 @@ jobs:
 
     - name: Init build env
       run: |
-        echo "::set-env name=IMAGE_NAME::${DK_USERNAME}/${BUILDER_NAME}"
+        export BUILDER_NAME="${DK_USERNAME}/${BUILDER_NAME}"
+        export BUILDER_ID_BASE="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG}"
+        echo "::set-env name=BUILDER_NAME::${BUILDER_NAME}"
+        echo "::set-env name=BUILDER_ID_BASE::${BUILDER_ID_BASE}"
+
+        echo "::set-env name=IMAGE_NAME::${BUILDER_NAME}"
         echo "::set-env name=IMAGE_TAG::${BUILDER_TAG}"
         echo "::set-env name=DK_DOCKERFILE::Dockerfiles/${DK_DOCKERFILE}"
         scripts/cleanup.sh
@@ -125,7 +130,7 @@ jobs:
         configure_docker
         login_to_registry
 
-    - name: Initialize environment
+    - name: Initialize environment for base builder
       run: |
         . docker.sh
         build_image init-env
@@ -250,6 +255,7 @@ jobs:
       # Using docker driver instead of docker-container because we don't need cache
       # 由于不需要缓存，这里使用docker而非docker-container
       DK_DOCKERFILE: Dockerfile-inc
+      DK_DOCKERFILE_BASE: Dockerfile
       BUILD_ARGS: 'CONFIG_FILE IMAGE_BASE UPDATE_REPO UPDATE_FEEDS'
 
     steps:
@@ -265,13 +271,18 @@ jobs:
 
     - name: Init build env
       run: |
-        # set-env command does not export env for current shell
-        export IMAGE_NAME="${DK_USERNAME}/${BUILDER_NAME}"
-        export IMAGE_TAG=${BUILDER_TAG}-inc
-        echo "::set-env name=IMAGE_NAME::${IMAGE_NAME}"
-        echo "::set-env name=IMAGE_TAG::${IMAGE_TAG}"
-        echo "::set-env name=IMAGE_BASE::${DK_REGISTRY:+$DK_REGISTRY/}${IMAGE_NAME}:${IMAGE_TAG}"
-        echo "::set-env name=IMAGE_LATEST::${DK_REGISTRY:+$DK_REGISTRY/}${IMAGE_NAME}:${BUILDER_TAG}"
+        export BUILDER_NAME="${DK_USERNAME}/${BUILDER_NAME}"
+        export BUILDER_TAG_INC="${BUILDER_TAG}-inc"
+        export BUILDER_ID_BASE="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG}"
+        export BUILDER_ID_INC="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG_INC}"
+        export BUILDER_ID_PACKAGE="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG}-package"
+        echo "::set-env name=BUILDER_ID_BASE::${BUILDER_ID_BASE}"
+        echo "::set-env name=BUILDER_ID_INC::${BUILDER_ID_INC}"
+
+        echo "::set-env name=IMAGE_BASE::${BUILDER_ID_INC}"
+        echo "::set-env name=IMAGE_NAME::${BUILDER_NAME}"
+        echo "::set-env name=IMAGE_TAG::${BUILDER_TAG_INC}"
+
         echo "::set-env name=DK_DOCKERFILE::Dockerfiles/${DK_DOCKERFILE}"
 
         UPDATE_FEEDS=0
@@ -295,35 +306,56 @@ jobs:
         configure_docker
         login_to_registry
 
-    - name: Check if using latest base builder
+    - name: Check status of builders
       env:
         BOOL_USE_LATEST: ${{ github.event.client_payload.use_latest || github.event.deployment.payload.use_latest }}
       run: |
         . docker.sh
         # temporarily disable failure guarder
         set +eo pipefail
-        docker buildx imagetools inspect "${IMAGE_BASE}"
-        ret_val=$?
+          docker buildx imagetools inspect "${BUILDER_ID_INC}" 2>&1 >/dev/null
+          builder_inc_ret_val=$?
         set -eo pipefail
-        if [ "x${BOOL_USE_LATEST}" = "xtrue" -o "x${ret_val}" != "x0" ]; then
-          echo "Creating incremental builder '${IMAGE_BASE}' from base builder '${IMAGE_LATEST}'"
 
+        BUILD_BASE=0
+        if [ "x${BOOL_USE_LATEST}" = "xtrue" -o "x${builder_inc_ret_val}" != "x0" ]; then
           set +eo pipefail
-          docker buildx imagetools inspect "${IMAGE_LATEST}"
-          ret_val=$?
+            docker buildx imagetools inspect "${BUILDER_ID_BASE}" 2>&1 >/dev/null
+            builder_base_ret_val=$?
           set -eo pipefail
-          if [ "x${ret_val}" != "x0" ]; then
-            echo "::error::Base builder '${IMAGE_LATEST}' does not exist, please run 'docker-build' job" >&2
-            exit 1
+          if [ "x${builder_base_ret_val}" != "x0" ]; then
+            echo "Base builder '${BUILDER_ID_BASE}' does not exist, creating one"
+            BUILD_BASE=1
+          else
+            echo "Creating incremental builder '${BUILDER_ID_INC}' from base builder '${BUILDER_ID_BASE}'"
+            create_remote_tag_alias "${BUILDER_ID_BASE}" "${BUILDER_ID_INC}"
           fi
-
-          create_remote_tag_alias "${IMAGE_LATEST}" "${IMAGE_BASE}"
         fi
 
+        if [ "x${BUILD_BASE}" = "x1" ]; then
+          echo "::set-env name=DK_DOCKERFILE::${DK_DOCKERFILE_BASE}"
+        fi
+        echo "::set-env name=BUILD_BASE::${BUILD_BASE}"
+
     - name: Download last incremental builder
+      if: env.BUILD_BASE == '0'
       run: |
         . docker.sh
         pull_image
+
+    - name: Initialize environment for base builder
+      if: env.BUILD_BASE == '1'
+      run: |
+        . docker.sh
+        build_image init-env
+        echo "::set-env name=STATE_LAST_BUILD_STAGE::init-env"
+
+    - name: Clone/update source codes
+      if: env.BUILD_BASE == '1'
+      run: |
+        . docker.sh
+        build_image clone
+        echo "::set-env name=STATE_LAST_BUILD_STAGE::clone"
 
     # Allow intermediate customization
     - name: Debug set, wait for SSH connection
@@ -331,12 +363,6 @@ jobs:
       env:
         TIMEOUT_MIN: 5
       uses: tete1030/debugger-action@my
-
-    - name: Update repo and packages
-      run: |
-        . docker.sh
-        build_image updateclone
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::updateclone"
 
     - name: Apply customizations
       run: |
@@ -372,6 +398,9 @@ jobs:
       run: |
         . docker.sh
         push_image_and_cache
+        if [ "x${BUILD_BASE}" = "x1" ]; then
+          create_remote_tag_alias "${BUILDER_ID_INC}" "${BUILDER_ID_BASE}"
+        fi
 
     - name: Copy out bin directory
       id: copydir
@@ -459,16 +488,20 @@ jobs:
 
     - name: Init build env
       run: |
-        # set-env command does not export env for current shell
-        export IMAGE_NAME="${DK_USERNAME}/${BUILDER_NAME}"
-        export IMAGE_TAG=${BUILDER_TAG}-package
-        echo "::set-env name=IMAGE_NAME::${IMAGE_NAME}"
-        echo "::set-env name=IMAGE_TAG::${IMAGE_TAG}"
-        echo "::set-env name=IMAGE_BASE::${DK_REGISTRY:+$DK_REGISTRY/}${IMAGE_NAME}:${IMAGE_TAG}"
-        echo "::set-env name=IMAGE_LATEST::${DK_REGISTRY:+$DK_REGISTRY/}${IMAGE_NAME}:${BUILDER_TAG}"
-        echo "::set-env name=IMAGE_LATEST_INC::${DK_REGISTRY:+$DK_REGISTRY/}${IMAGE_NAME}:${BUILDER_TAG}-inc"
-        echo "::set-env name=DK_DOCKERFILE::Dockerfiles/${DK_DOCKERFILE}"
+        export BUILDER_NAME="${DK_USERNAME}/${BUILDER_NAME}"
+        export BUILDER_TAG_PACKAGE="${BUILDER_TAG}-package"
+        export BUILDER_ID_BASE="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG}"
+        export BUILDER_ID_INC="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG}-inc"
+        export BUILDER_ID_PACKAGE="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG_PACKAGE}"
+        echo "::set-env name=BUILDER_ID_BASE::${BUILDER_ID_BASE}"
+        echo "::set-env name=BUILDER_ID_INC::${BUILDER_ID_INC}"
 
+        echo "::set-env name=IMAGE_BASE::${BUILDER_ID_PACKAGE}"
+        echo "::set-env name=IMAGE_NAME::${BUILDER_NAME}"
+        echo "::set-env name=IMAGE_TAG::${BUILDER_TAG_PACKAGE}"
+
+        echo "::set-env name=DK_DOCKERFILE::Dockerfiles/${DK_DOCKERFILE}"
+        
         UPDATE_FEEDS=0
         [ "x${{ github.event.client_payload.update_feeds || github.event.deployment.payload.update_feeds }}" != "xtrue" ] || UPDATE_FEEDS=1
         echo "::set-env name=UPDATE_FEEDS::${UPDATE_FEEDS}"
@@ -496,30 +529,30 @@ jobs:
         . docker.sh
         # temporarily disable failure guarder
         set +eo pipefail
-        docker buildx imagetools inspect "${IMAGE_BASE}"
-        ret_val=$?
+          docker buildx imagetools inspect "${BUILDER_ID_PACKAGE}"
+          ret_val=$?
         set -eo pipefail
         if [ "x${BOOL_USE_LATEST}" = "xtrue" -o "x${BOOL_USE_LATEST_INC}" = "xtrue" -o "x${ret_val}" != "x0" ]; then
-          IMAGE_SELECTED="${IMAGE_LATEST}"
+          BUILDER_ID_SELECTED="${BUILDER_ID_BASE}"
           if [ "x${BOOL_USE_LATEST_INC}" = "xtrue" ]; then
             if [ "x${BOOL_USE_LATEST}" = "xtrue" ]; then
               echo "::error::You cannot use both 'use_latest' and 'use_latest_inc'" >&2
               exit 1
             fi
-            IMAGE_SELECTED="${IMAGE_LATEST_INC}"
+            BUILDER_ID_SELECTED="${BUILDER_ID_INC}"
           fi
-          echo "Creating incremental builder '${IMAGE_BASE}' from '${IMAGE_SELECTED}'"
 
+          echo "Creating incremental builder '${BUILDER_ID_PACKAGE}' from '${BUILDER_ID_SELECTED}'"
           set +eo pipefail
-          docker buildx imagetools inspect "${IMAGE_SELECTED}"
-          ret_val=$?
+            docker buildx imagetools inspect "${BUILDER_ID_SELECTED}"
+            ret_val=$?
           set -eo pipefail
           if [ "x${ret_val}" != "x0" ]; then
-            echo "::error::Base/incremental builder '${IMAGE_SELECTED}' does not exist, please run 'docker-build' job" >&2
+            echo "::error::Base/incremental builder '${BUILDER_ID_SELECTED}' does not exist, please run 'docker-build'/'docker-build-inc' job" >&2
             exit 1
           fi
 
-          create_remote_tag_alias "${IMAGE_SELECTED}" "${IMAGE_BASE}"
+          create_remote_tag_alias "${BUILDER_ID_SELECTED}" "${BUILDER_ID_PACKAGE}"
         fi
 
     - name: Download last incremental builder
@@ -537,8 +570,8 @@ jobs:
     - name: Update repo and packages
       run: |
         . docker.sh
-        build_image updateclone
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::updateclone"
+        build_image clone
+        echo "::set-env name=STATE_LAST_BUILD_STAGE::clone"
 
     - name: Apply customizations
       run: |
