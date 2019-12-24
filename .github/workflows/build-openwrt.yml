@@ -259,7 +259,7 @@ jobs:
       # 不推荐修改，已处在最优状态
       # Using docker driver instead of docker-container because we don't need cache
       # 由于不需要缓存，这里使用docker而非docker-container
-      DK_BUILD_ARGS: 'CONFIG_FILE DK_IMAGE_BASE OPT_UPDATE_REPO OPT_UPDATE_FEEDS'
+      DK_BUILD_ARGS: 'REPO_URL REPO_BRANCH CONFIG_FILE DK_IMAGE_BASE OPT_UPDATE_REPO OPT_UPDATE_FEEDS'
 
     steps:
     - name: Checkout
