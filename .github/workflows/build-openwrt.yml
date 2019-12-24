@@ -39,7 +39,10 @@ env:
   SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
   # Not recommended to change unless you understand how it is used
   # 以下参数不推荐修改
+  DK_BUILDX_DRIVER: docker
   DK_CONTEXT: .
+  NO_REMOTE_CACHE: 1
+  NO_BUILDTIME_PUSH: 1
 
 name: Build OpenWrt
 
@@ -89,9 +92,6 @@ jobs:
     env:
       # Not recommended to change as they are already in optimal condition
       # 不推荐修改，已处在最优状态
-      NO_REMOTE_CACHE: 1
-      NO_BUILDTIME_PUSH: 1
-      DK_BUILDX_DRIVER: docker
       DK_DOCKERFILE: Dockerfile
       BUILD_ARGS: 'REPO_URL REPO_BRANCH CONFIG_FILE'
 
@@ -249,10 +249,7 @@ jobs:
       # 不推荐修改，已处在最优状态
       # Using docker driver instead of docker-container because we don't need cache
       # 由于不需要缓存，这里使用docker而非docker-container
-      DK_BUILDX_DRIVER: docker
       DK_DOCKERFILE: Dockerfile-inc
-      NO_REMOTE_CACHE: 1
-      NO_BUILDTIME_PUSH: 1
       BUILD_ARGS: 'CONFIG_FILE IMAGE_BASE UPDATE_REPO UPDATE_FEEDS'
 
     steps:
@@ -446,10 +443,7 @@ jobs:
       # 不推荐修改，已处在最优状态
       # Using docker driver instead of docker-container because we don't need cache
       # 由于不需要缓存，这里使用docker而非docker-container
-      DK_BUILDX_DRIVER: docker
       DK_DOCKERFILE: Dockerfile-package
-      NO_REMOTE_CACHE: 1
-      NO_BUILDTIME_PUSH: 1
       BUILD_ARGS: 'CONFIG_FILE IMAGE_BASE UPDATE_FEEDS'
 
     steps:
