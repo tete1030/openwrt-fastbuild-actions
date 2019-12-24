@@ -21,7 +21,7 @@ ARG REPO_BRANCH
 COPY --chown=builder:builder scripts/update_repo.sh ./scripts/update_repo.sh
 COPY --chown=builder:builder scripts/update_feeds.sh ./scripts/update_feeds.sh
 # RUN REPO_URL="${REPO_URL}" REPO_BRANCH="${REPO_BRANCH}" scripts/update_repo.sh
-# RUN UPDATE_FEEDS=1 scripts/update_feeds.sh
+# RUN OPT_UPDATE_FEEDS=1 scripts/update_feeds.sh
 RUN mkdir openwrt
 
 FROM clone AS custom

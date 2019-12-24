@@ -251,7 +251,7 @@ jobs:
       # 由于不需要缓存，这里使用docker而非docker-container
       DK_DOCKERFILE: Dockerfile-inc
       DK_DOCKERFILE_BASE: Dockerfile
-      DK_BUILD_ARGS: 'CONFIG_FILE DK_IMAGE_BASE UPDATE_REPO UPDATE_FEEDS'
+      DK_BUILD_ARGS: 'CONFIG_FILE DK_IMAGE_BASE OPT_UPDATE_REPO OPT_UPDATE_FEEDS'
 
     steps:
     - name: Checkout
@@ -280,12 +280,12 @@ jobs:
 
         echo "::set-env name=DK_DOCKERFILE::Dockerfiles/${DK_DOCKERFILE}"
 
-        UPDATE_FEEDS=0
-        [ "x${{ github.event.client_payload.update_feeds || github.event.deployment.payload.update_feeds }}" != "xtrue" ] || UPDATE_FEEDS=1
-        echo "::set-env name=UPDATE_FEEDS::${UPDATE_FEEDS}"
-        UPDATE_REPO=0
-        [ "x${{ github.event.client_payload.update_repo || github.event.deployment.payload.update_repo }}" != "xtrue" ] || UPDATE_REPO=1
-        echo "::set-env name=UPDATE_REPO::${UPDATE_REPO}"
+        OPT_UPDATE_FEEDS=0
+        [ "x${{ github.event.client_payload.update_feeds || github.event.deployment.payload.update_feeds }}" != "xtrue" ] || OPT_UPDATE_FEEDS=1
+        echo "::set-env name=OPT_UPDATE_FEEDS::${OPT_UPDATE_FEEDS}"
+        OPT_UPDATE_REPO=0
+        [ "x${{ github.event.client_payload.update_repo || github.event.deployment.payload.update_repo }}" != "xtrue" ] || OPT_UPDATE_REPO=1
+        echo "::set-env name=OPT_UPDATE_REPO::${OPT_UPDATE_REPO}"
 
         scripts/cleanup.sh
 
@@ -463,7 +463,7 @@ jobs:
       # Using docker driver instead of docker-container because we don't need cache
       # 由于不需要缓存，这里使用docker而非docker-container
       DK_DOCKERFILE: Dockerfile-package
-      DK_BUILD_ARGS: 'CONFIG_FILE DK_IMAGE_BASE UPDATE_FEEDS'
+      DK_BUILD_ARGS: 'CONFIG_FILE DK_IMAGE_BASE OPT_UPDATE_FEEDS'
 
     steps:
     - name: Checkout
@@ -492,9 +492,9 @@ jobs:
 
         echo "::set-env name=DK_DOCKERFILE::Dockerfiles/${DK_DOCKERFILE}"
         
-        UPDATE_FEEDS=0
-        [ "x${{ github.event.client_payload.update_feeds || github.event.deployment.payload.update_feeds }}" != "xtrue" ] || UPDATE_FEEDS=1
-        echo "::set-env name=UPDATE_FEEDS::${UPDATE_FEEDS}"
+        OPT_UPDATE_FEEDS=0
+        [ "x${{ github.event.client_payload.update_feeds || github.event.deployment.payload.update_feeds }}" != "xtrue" ] || OPT_UPDATE_FEEDS=1
+        echo "::set-env name=OPT_UPDATE_FEEDS::${OPT_UPDATE_FEEDS}"
 
         scripts/cleanup.sh
 
@@ -661,7 +661,7 @@ jobs:
         REPO_BRANCH: master
       run:
         scripts/update_repo.sh
-        UPDATE_FEEDS=1 scripts/update_feeds.sh
+        OPT_UPDATE_FEEDS=1 scripts/update_feeds.sh
 
     - name: Load custom configuration
       run: scripts/customize.sh
