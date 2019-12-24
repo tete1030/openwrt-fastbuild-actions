@@ -1,6 +1,10 @@
 Building OpenWrt with GitHub Actions and Docker
 ============================================================================
 
+> Due to the complexity of using, I'm creating an auto mode to cover most use cases. 
+> 由于本项目用起来稍显复杂，正在创建一个全自动模式以迎合大多数情况的需求。
+> More information: [#4](https://github.com/tete1030/openwrt-fastbuild-actions/issues/4)
+
 This project is inspired by [P3TERX's Actions-Openwrt](https://github.com/P3TERX/Actions-OpenWrt).
 
 With Github Actions and Actions-Openwrt, it is easy to build an OpenWrt firmware without running locally. However, Github Actions do not store cache and building files. This means it has to completely rebuild from source each time, even if it is a small change.
@@ -276,12 +280,13 @@ The problem should no longer exist. I disabled building cache by default, as it 
 
 ## Todo
 
-- [ ] Automatically trigger creating base builder
+- [ ] Merge three building modes into one to simplify the process
+- [ ] SSH into docker container instead of just the runner (for `make menuconfig`)
 - [ ] Allow customizing trigger event
 - [ ] Allow specify building job in commit message (comming soon)
-- [ ] Simplfy documentation
 - [x] Automatically linking from base builder to builders for `docker-build-inc` and `docker-build-package` when not existing
 - [ ] Optimize README
+  - [ ] Simplfy documentation
   - [ ] Add Chinese version of "Usage"
   - [ ] Add a figure to "Mechanism"
   - [x] Describe mechanism
