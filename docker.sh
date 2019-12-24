@@ -25,11 +25,11 @@ _exit_if_empty() {
 }
 
 _get_full_image_name() {
-  echo ${DK_REGISTRY:+$DK_REGISTRY/}${IMAGE_NAME}
+  echo ${DK_REGISTRY:+$DK_REGISTRY/}${DK_IMAGE_NAME}
 }
 
 _get_full_image_name_tag() {
-  echo "$(_get_full_image_name):${IMAGE_TAG}"
+  echo "$(_get_full_image_name):${DK_IMAGE_TAG}"
 }
 
 _get_full_image_name_tag_for_build() {
@@ -48,8 +48,8 @@ _get_full_image_name_tag_for_cache() {
 check_required_input() {
   _exit_if_empty DK_USERNAME "${DK_USERNAME}"
   _exit_if_empty DK_PASSWORD "${DK_PASSWORD}"
-  _exit_if_empty IMAGE_NAME "${IMAGE_NAME}"
-  _exit_if_empty IMAGE_TAG "${IMAGE_TAG}"
+  _exit_if_empty DK_IMAGE_NAME "${DK_IMAGE_NAME}"
+  _exit_if_empty DK_IMAGE_TAG "${DK_IMAGE_TAG}"
   _exit_if_empty DK_CONTEXT "${DK_CONTEXT}"
   _exit_if_empty DK_DOCKERFILE "${DK_DOCKERFILE}"
 }
@@ -115,10 +115,10 @@ pull_image() {
     exit 1
   fi
   # docker pull --all-tags "$(_get_full_image_name)" 2> /dev/null || true
-  if [ ! -z "${IMAGE_BASE}" ]; then
-    docker pull "${IMAGE_BASE}" 2> /dev/null || true
+  if [ ! -z "${DK_IMAGE_BASE}" ]; then
+    docker pull "${DK_IMAGE_BASE}" 2> /dev/null || true
   else
-    echo "No IMAGE_BASE configured for pulling" >&2
+    echo "No DK_IMAGE_BASE configured for pulling" >&2
     exit 1
   fi
 }
