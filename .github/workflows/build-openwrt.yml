@@ -82,7 +82,7 @@ jobs:
         - mode: normal
           title: docker-build
         - mode: test
-          title: Fast checking for docker-build
+          title: Fast checking docker-build
     env:
       # Not recommended to change as they are already in optimal condition
       # 不推荐修改，已处在最优状态
@@ -146,25 +146,25 @@ jobs:
         build_image custom
         echo "::set-env name=STATE_LAST_BUILD_STAGE::custom"
 
-    - name: Download package
+    - name: Download packages
       run: |
         . docker.sh
         build_image download
         echo "::set-env name=STATE_LAST_BUILD_STAGE::download"
 
-    - name: Print disk space size
+    - name: Print disk space
       run: df -h
 
-    - name: Compile
+    - name: Compile firmware and packages
       run: |
         . docker.sh
         build_image compile
         echo "::set-env name=STATE_LAST_BUILD_STAGE::compile"
 
-    - name: Print disk space size
+    - name: Print disk space
       run: df -h
 
-    - name: Push image and cache
+    - name: Upload current builder
       if: |
         !cancelled() && (
           success() ||
@@ -234,7 +234,7 @@ jobs:
         - mode: normal
           title: docker-build-inc
         - mode: test
-          title: Fast checking for docker-build-inc
+          title: Fast checking docker-build-inc
     env:
       # Not recommended to change as they are already in optimal condition
       # 不推荐修改，已处在最优状态
@@ -288,21 +288,32 @@ jobs:
         configure_docker
         login_to_registry
 
-    - name: Check if use latest base image
+    - name: Check if using latest base builder
       env:
         BOOL_USE_LATEST: ${{ github.event.client_payload.use_latest || github.event.deployment.payload.use_latest }}
       run: |
         . docker.sh
+        # temporarily disable failure guarder
         set +eo pipefail
         docker buildx imagetools inspect "${IMAGE_BASE}"
         ret_val=$?
         set -eo pipefail
         if [ "x${BOOL_USE_LATEST}" = "xtrue" -o "x${ret_val}" != "x0" ]; then
-          echo "Creating '${IMAGE_BASE}' from '${IMAGE_LATEST}'"
+          echo "Creating incremental builder '${IMAGE_BASE}' from base builder '${IMAGE_LATEST}'"
+
+          set +eo pipefail
+          docker buildx imagetools inspect "${IMAGE_LATEST}"
+          ret_val=$?
+          set -eo pipefail
+          if [ "x${ret_val}" != "x0" ]; then
+            echo "::error::Base builder '${IMAGE_LATEST}' does not exist, please run 'docker-build' job" >&2
+            exit 1
+          fi
+
           create_remote_tag_alias "${IMAGE_LATEST}" "${IMAGE_BASE}"
         fi
 
-    - name: Pull base image
+    - name: Download last incremental builder
       run: |
         . docker.sh
         pull_image
@@ -326,25 +337,25 @@ jobs:
         build_image custom
         echo "::set-env name=STATE_LAST_BUILD_STAGE::custom"
 
-    - name: Download package
+    - name: Download packages
       run: |
         . docker.sh
         build_image download
         echo "::set-env name=STATE_LAST_BUILD_STAGE::download"
 
-    - name: Print disk space size
+    - name: Print disk space
       run: df -h
 
-    - name: Compile
+    - name: Compile firmware and packages
       run: |
         . docker.sh
         build_image compile
         echo "::set-env name=STATE_LAST_BUILD_STAGE::compile"
 
-    - name: Print disk space size
+    - name: Print disk space
       run: df -h
 
-    - name: Push image
+    - name: Upload current builder
       if: |
         !cancelled() && (
           success() ||
@@ -414,7 +425,7 @@ jobs:
         - mode: normal
           title: docker-build-package
         - mode: test
-          title: Fast checking for docker-build-package
+          title: Fast checking docker-build-package
     env:
       # Not recommended to change as they are already in optimal condition
       # 不推荐修改，已处在最优状态
@@ -467,12 +478,13 @@ jobs:
         login_to_registry
         touch .start_timestamp
 
-    - name: Check if use latest base image
+    - name: Check if using latest base builder
       env:
         BOOL_USE_LATEST: ${{ github.event.client_payload.use_latest || github.event.deployment.payload.use_latest }}
         BOOL_USE_LATEST_INC: ${{ github.event.client_payload.use_latest_inc || github.event.deployment.payload.use_latest_inc }}
       run: |
         . docker.sh
+        # temporarily disable failure guarder
         set +eo pipefail
         docker buildx imagetools inspect "${IMAGE_BASE}"
         ret_val=$?
@@ -481,16 +493,26 @@ jobs:
           IMAGE_SELECTED="${IMAGE_LATEST}"
           if [ "x${BOOL_USE_LATEST_INC}" = "xtrue" ]; then
             if [ "x${BOOL_USE_LATEST}" = "xtrue" ]; then
-              echo "You cannot use both 'use_latest' and 'use_latest_inc'" >&2
+              echo "::error::You cannot use both 'use_latest' and 'use_latest_inc'" >&2
               exit 1
             fi
             IMAGE_SELECTED="${IMAGE_LATEST_INC}"
           fi
-          echo "Creating '${IMAGE_BASE}' from '${IMAGE_SELECTED}'"
+          echo "Creating incremental builder '${IMAGE_BASE}' from '${IMAGE_SELECTED}'"
+
+          set +eo pipefail
+          docker buildx imagetools inspect "${IMAGE_SELECTED}"
+          ret_val=$?
+          set -eo pipefail
+          if [ "x${ret_val}" != "x0" ]; then
+            echo "::error::Base/incremental builder '${IMAGE_SELECTED}' does not exist, please run 'docker-build' job" >&2
+            exit 1
+          fi
+
           create_remote_tag_alias "${IMAGE_SELECTED}" "${IMAGE_BASE}"
         fi
 
-    - name: Pull base image
+    - name: Download last incremental builder
       run: |
         . docker.sh
         pull_image
@@ -514,25 +536,25 @@ jobs:
         build_image custom
         echo "::set-env name=STATE_LAST_BUILD_STAGE::custom"
 
-    - name: Download package
+    - name: Download packages
       run: |
         . docker.sh
         build_image download
         echo "::set-env name=STATE_LAST_BUILD_STAGE::download"
 
-    - name: Print disk space size
+    - name: Print disk space
       run: df -h
 
-    - name: Compile
+    - name: Compile packages
       run: |
         . docker.sh
         build_image compile
         echo "::set-env name=STATE_LAST_BUILD_STAGE::compile"
 
-    - name: Print disk space size
+    - name: Print disk space
       run: df -h
 
-    - name: Push image
+    - name: Upload current builder
       if: (!cancelled()) && (success() || github.event.client_payload.push_when_fail == true || github.event.deployment.payload.push_when_fail == true)
       run: |
         . docker.sh
@@ -549,7 +571,7 @@ jobs:
         copy_files /home/builder/openwrt/bin "$(pwd)/openwrt/bin"
         echo "::set-output name=status::success"
 
-    - name: Remove firmware
+    - name: Filter out firmware files
       if: steps.copydir.outputs.status == 'success' && !cancelled()
       run: |
         shopt -s extglob
@@ -564,7 +586,7 @@ jobs:
         name: OpenWrt_packages
         path: openwrt/bin
 
-    - name: Remove old packages
+    - name: Filter out old packages
       if: steps.copydir.outputs.status == 'success' && !cancelled()
       run: |
         cd openwrt/bin/targets/*/*
@@ -618,10 +640,10 @@ jobs:
         TIMEOUT_MIN: 5
       uses: tete1030/debugger-action@my
 
-    - name: Download package
+    - name: Download packages
       run: scripts/download.sh
 
-    - name: Print disk space size
+    - name: Print disk space
       run: df -h
 
     - name: Multi-thread compile
@@ -637,7 +659,7 @@ jobs:
       if: steps.mtcompile.outputs.started == 'yes' && steps.mtcompile.outputs.success != 'yes'
       run: scripts/compile.sh s
 
-    - name: Print disk space size
+    - name: Print disk space
       run: df -h
 
     - name: Upload bin directory
