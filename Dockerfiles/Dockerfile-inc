@@ -14,6 +14,7 @@ ARG IMAGE_BASE
 FROM ${IMAGE_BASE} AS updateclone
 ARG UPDATE_REPO
 ARG UPDATE_FEEDS
+# No cache to use for incremental building, so we just copy all files altogether
 COPY --chown=builder:builder scripts ./scripts
 RUN [ "x${UPDATE_REPO}" != "x1" ] || scripts/update_repo.sh
 RUN UPDATE_FEEDS="${UPDATE_FEEDS}" scripts/update_feeds.sh

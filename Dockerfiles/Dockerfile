@@ -17,6 +17,7 @@ RUN useradd -ms /bin/bash builder \
 USER builder
 WORKDIR /home/builder
 RUN mkdir scripts
+# Copying each script separately instead of copying all scripts altogether to maximumlly leverage building cache
 COPY --chown=builder:builder scripts/initenv.sh ./scripts/initenv.sh
 RUN scripts/initenv.sh
 
@@ -24,8 +25,8 @@ FROM init-env AS clone
 ARG REPO_URL
 ARG REPO_BRANCH
 COPY --chown=builder:builder scripts/update_repo.sh ./scripts/update_repo.sh
-COPY --chown=builder:builder scripts/update_feeds.sh ./scripts/update_feeds.sh
 RUN REPO_URL="${REPO_URL}" REPO_BRANCH="${REPO_BRANCH}" scripts/update_repo.sh
+COPY --chown=builder:builder scripts/update_feeds.sh ./scripts/update_feeds.sh
 RUN UPDATE_FEEDS=1 scripts/update_feeds.sh
 
 FROM clone AS custom
