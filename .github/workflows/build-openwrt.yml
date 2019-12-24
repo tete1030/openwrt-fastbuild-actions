@@ -43,6 +43,9 @@ env:
   DK_CONTEXT: .
   DK_NO_REMOTE_CACHE: 1
   DK_NO_BUILDTIME_PUSH: 1
+  DOCKERFILE_BASE: Dockerfile
+  DOCKERFILE_INC: Dockerfile-inc
+  DOCKERFILE_PACKAGE: Dockerfile-package
 
 name: Build OpenWrt
 
@@ -92,7 +95,6 @@ jobs:
     env:
       # Not recommended to change as they are already in optimal condition
       # 不推荐修改，已处在最优状态
-      DK_DOCKERFILE: Dockerfile
       DK_BUILD_ARGS: 'REPO_URL REPO_BRANCH CONFIG_FILE'
 
     steps:
@@ -102,7 +104,9 @@ jobs:
     - name: Init test env
       if: matrix.mode == 'test'
       run: |
-        echo "::set-env name=DK_DOCKERFILE::tests/${DK_DOCKERFILE}"
+        for var_dockerfile in ${!DOCKERFILE_@}; do
+          echo "::set-env name=${var_dockerfile}::tests/${!var_dockerfile}"
+        done
         echo "::set-env name=BUILDER_TAG::test-${BUILDER_TAG}"
         echo "::set-env name=TEST::1"
 
@@ -115,7 +119,13 @@ jobs:
 
         echo "::set-env name=DK_IMAGE_NAME::${BUILDER_NAME}"
         echo "::set-env name=DK_IMAGE_TAG::${BUILDER_TAG}"
-        echo "::set-env name=DK_DOCKERFILE::Dockerfiles/${DK_DOCKERFILE}"
+
+        for var_dockerfile in ${!DOCKERFILE_@}; do
+          eval ${var_dockerfile}="Dockerfiles/${!var_dockerfile}"
+          echo "::set-env name=${var_dockerfile}::${!var_dockerfile}"
+        done
+        echo "::set-env name=DK_DOCKERFILE::${DOCKERFILE_BASE}"
+
         scripts/cleanup.sh
 
     - name: Set up Docker Buildx
@@ -249,8 +259,6 @@ jobs:
       # 不推荐修改，已处在最优状态
       # Using docker driver instead of docker-container because we don't need cache
       # 由于不需要缓存，这里使用docker而非docker-container
-      DK_DOCKERFILE: Dockerfile-inc
-      DK_DOCKERFILE_BASE: Dockerfile
       DK_BUILD_ARGS: 'CONFIG_FILE DK_IMAGE_BASE OPT_UPDATE_REPO OPT_UPDATE_FEEDS'
 
     steps:
@@ -260,7 +268,9 @@ jobs:
     - name: Init test env
       if: matrix.mode == 'test'
       run: |
-        echo "::set-env name=DK_DOCKERFILE::tests/${DK_DOCKERFILE}"
+        for var_dockerfile in ${!DOCKERFILE_@}; do
+          echo "::set-env name=${var_dockerfile}::tests/${!var_dockerfile}"
+        done
         echo "::set-env name=BUILDER_TAG::test-${BUILDER_TAG}"
         echo "::set-env name=TEST::1"
 
@@ -278,7 +288,11 @@ jobs:
         echo "::set-env name=DK_IMAGE_NAME::${BUILDER_NAME}"
         echo "::set-env name=DK_IMAGE_TAG::${BUILDER_TAG_INC}"
 
-        echo "::set-env name=DK_DOCKERFILE::Dockerfiles/${DK_DOCKERFILE}"
+        for var_dockerfile in ${!DOCKERFILE_@}; do
+          eval ${var_dockerfile}="Dockerfiles/${!var_dockerfile}"
+          echo "::set-env name=${var_dockerfile}::${!var_dockerfile}"
+        done
+        echo "::set-env name=DK_DOCKERFILE::${DOCKERFILE_INC}"
 
         OPT_UPDATE_FEEDS=0
         [ "x${{ github.event.client_payload.update_feeds || github.event.deployment.payload.update_feeds }}" != "xtrue" ] || OPT_UPDATE_FEEDS=1
@@ -328,7 +342,7 @@ jobs:
         fi
 
         if [ "x${BUILD_BASE}" = "x1" ]; then
-          echo "::set-env name=DK_DOCKERFILE::${DK_DOCKERFILE_BASE}"
+          echo "::set-env name=DK_DOCKERFILE::${DOCKERFILE_BASE}"
         fi
         echo "::set-env name=BUILD_BASE::${BUILD_BASE}"
 
@@ -462,7 +476,6 @@ jobs:
       # 不推荐修改，已处在最优状态
       # Using docker driver instead of docker-container because we don't need cache
       # 由于不需要缓存，这里使用docker而非docker-container
-      DK_DOCKERFILE: Dockerfile-package
       DK_BUILD_ARGS: 'CONFIG_FILE DK_IMAGE_BASE OPT_UPDATE_FEEDS'
 
     steps:
@@ -472,7 +485,9 @@ jobs:
     - name: Init test env
       if: matrix.mode == 'test'
       run: |
-        echo "::set-env name=DK_DOCKERFILE::tests/${DK_DOCKERFILE}"
+        for var_dockerfile in ${!DOCKERFILE_@}; do
+          echo "::set-env name=${var_dockerfile}::tests/${!var_dockerfile}"
+        done
         echo "::set-env name=BUILDER_TAG::test-${BUILDER_TAG}"
         echo "::set-env name=TEST::1"
 
@@ -490,7 +505,11 @@ jobs:
         echo "::set-env name=DK_IMAGE_NAME::${BUILDER_NAME}"
         echo "::set-env name=DK_IMAGE_TAG::${BUILDER_TAG_PACKAGE}"
 
-        echo "::set-env name=DK_DOCKERFILE::Dockerfiles/${DK_DOCKERFILE}"
+        for var_dockerfile in ${!DOCKERFILE_@}; do
+          eval ${var_dockerfile}="Dockerfiles/${!var_dockerfile}"
+          echo "::set-env name=${var_dockerfile}::${!var_dockerfile}"
+        done
+        echo "::set-env name=DK_DOCKERFILE::${DOCKERFILE_PACKAGE}"
         
         OPT_UPDATE_FEEDS=0
         [ "x${{ github.event.client_payload.update_feeds || github.event.deployment.payload.update_feeds }}" != "xtrue" ] || OPT_UPDATE_FEEDS=1
