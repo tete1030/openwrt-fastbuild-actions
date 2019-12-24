@@ -303,7 +303,7 @@ jobs:
 
     - name: Check status of builders
       env:
-        BOOL_USE_LATEST: ${{ github.event.client_payload.use_latest || github.event.deployment.payload.use_latest }}
+        BOOL_USE_BASE: ${{ github.event.client_payload.use_base || github.event.deployment.payload.use_base }}
       run: |
         . docker.sh
         # temporarily disable failure guarder
@@ -313,7 +313,7 @@ jobs:
         set -eo pipefail
 
         BUILD_BASE=0
-        if [ "x${BOOL_USE_LATEST}" = "xtrue" -o "x${builder_inc_ret_val}" != "x0" ]; then
+        if [ "x${BOOL_USE_BASE}" = "xtrue" -o "x${builder_inc_ret_val}" != "x0" ]; then
           set +eo pipefail
             docker buildx imagetools inspect "${BUILDER_ID_BASE}" 2>&1 >/dev/null
             builder_base_ret_val=$?
@@ -513,8 +513,8 @@ jobs:
 
     - name: Check if using latest base builder
       env:
-        BOOL_USE_LATEST: ${{ github.event.client_payload.use_latest || github.event.deployment.payload.use_latest }}
-        BOOL_USE_LATEST_INC: ${{ github.event.client_payload.use_latest_inc || github.event.deployment.payload.use_latest_inc }}
+        BOOL_USE_BASE: ${{ github.event.client_payload.use_base || github.event.deployment.payload.use_base }}
+        BOOL_USE_INC: ${{ github.event.client_payload.use_inc || github.event.deployment.payload.use_inc }}
       run: |
         . docker.sh
         # temporarily disable failure guarder
@@ -522,11 +522,11 @@ jobs:
           docker buildx imagetools inspect "${BUILDER_ID_PACKAGE}"
           ret_val=$?
         set -eo pipefail
-        if [ "x${BOOL_USE_LATEST}" = "xtrue" -o "x${BOOL_USE_LATEST_INC}" = "xtrue" -o "x${ret_val}" != "x0" ]; then
+        if [ "x${BOOL_USE_BASE}" = "xtrue" -o "x${BOOL_USE_INC}" = "xtrue" -o "x${ret_val}" != "x0" ]; then
           BUILDER_ID_SELECTED="${BUILDER_ID_BASE}"
-          if [ "x${BOOL_USE_LATEST_INC}" = "xtrue" ]; then
-            if [ "x${BOOL_USE_LATEST}" = "xtrue" ]; then
-              echo "::error::You cannot use both 'use_latest' and 'use_latest_inc'" >&2
+          if [ "x${BOOL_USE_INC}" = "xtrue" ]; then
+            if [ "x${BOOL_USE_BASE}" = "xtrue" ]; then
+              echo "::error::You cannot use both 'use_base' and 'use_inc'" >&2
               exit 1
             fi
             BUILDER_ID_SELECTED="${BUILDER_ID_INC}"
