@@ -198,15 +198,17 @@ jobs:
         path: openwrt/bin
 
     - name: Organize files
+      id: organize
       if: steps.copydir.outputs.status == 'success' && !cancelled()
       run: |
         cd openwrt/bin/targets/*/*
         rm -rf packages
         echo "::set-env name=FIRMWARE::$(pwd)"
+        echo "::set-output name=status::success"
 
     - name: Upload firmware
       uses: actions/upload-artifact@master
-      if: steps.copydir.outputs.status == 'success' && success() && !cancelled()
+      if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
         name: OpenWrt_firmware
         path: ${{ env.FIRMWARE }}
@@ -393,15 +395,17 @@ jobs:
         path: openwrt/bin
 
     - name: Organize files
+      id: organize
       if: steps.copydir.outputs.status == 'success' && !cancelled()
       run: |
         cd openwrt/bin/targets/*/*
         rm -rf packages
         echo "::set-env name=FIRMWARE::$(pwd)"
+        echo "::set-output name=status::success"
   
     - name: Upload firmware
       uses: actions/upload-artifact@master
-      if: steps.copydir.outputs.status == 'success' && success() && !cancelled()
+      if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
         name: OpenWrt_firmware
         path: ${{ env.FIRMWARE }}
@@ -584,29 +588,33 @@ jobs:
         echo "::set-output name=status::success"
 
     - name: Filter out firmware files
+      id: organize_1
       if: steps.copydir.outputs.status == 'success' && !cancelled()
       run: |
         shopt -s extglob
         cd openwrt/bin/targets/*/*
         all_extra_files=( !(packages) )
         rm -rf "${all_extra_files[@]}"
+        echo "::set-output name=status::success"
 
     - name: Upload packages
       uses: actions/upload-artifact@master
-      if: steps.copydir.outputs.status == 'success' && !cancelled()
+      if: steps.organize_1.outputs.status == 'success' && !cancelled()
       with:
         name: OpenWrt_packages
         path: openwrt/bin
 
     - name: Filter out old packages
-      if: steps.copydir.outputs.status == 'success' && !cancelled()
+      id: organize_2
+      if: steps.organize_1.outputs.status == 'success' && !cancelled()
       run: |
         cd openwrt/bin/targets/*/*
         find . -type f -not -newer ../../../../../.start_timestamp -exec rm -f {} \;
+        echo "::set-output name=status::success"
 
     - name: Upload new packages
       uses: actions/upload-artifact@master
-      if: steps.copydir.outputs.status == 'success' && !cancelled()
+      if: steps.organize_2.outputs.status == 'success' && !cancelled()
       with:
         name: OpenWrt_new_packages
         path: openwrt/bin
@@ -682,15 +690,17 @@ jobs:
         path: openwrt/bin
 
     - name: Organize files
+      id: organize
       if: (!cancelled())
       run: |
         cd openwrt/bin/targets/*/*
         rm -rf packages
         echo "::set-env name=FIRMWARE::$(pwd)"
+        echo "::set-output name=status::success"
 
     - name: Upload firmware
       uses: actions/upload-artifact@master
-      if: (success() && !cancelled())
+      if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
         name: OpenWrt_firmware
         path: ${{ env.FIRMWARE }}
