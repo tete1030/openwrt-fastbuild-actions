@@ -41,8 +41,8 @@ env:
   # 以下参数不推荐修改
   DK_BUILDX_DRIVER: docker
   DK_CONTEXT: .
-  NO_REMOTE_CACHE: 1
-  NO_BUILDTIME_PUSH: 1
+  DK_NO_REMOTE_CACHE: 1
+  DK_NO_BUILDTIME_PUSH: 1
 
 name: Build OpenWrt
 
@@ -93,7 +93,7 @@ jobs:
       # Not recommended to change as they are already in optimal condition
       # 不推荐修改，已处在最优状态
       DK_DOCKERFILE: Dockerfile
-      BUILD_ARGS: 'REPO_URL REPO_BRANCH CONFIG_FILE'
+      DK_BUILD_ARGS: 'REPO_URL REPO_BRANCH CONFIG_FILE'
 
     steps:
     - name: Checkout
@@ -256,7 +256,7 @@ jobs:
       # 由于不需要缓存，这里使用docker而非docker-container
       DK_DOCKERFILE: Dockerfile-inc
       DK_DOCKERFILE_BASE: Dockerfile
-      BUILD_ARGS: 'CONFIG_FILE DK_IMAGE_BASE UPDATE_REPO UPDATE_FEEDS'
+      DK_BUILD_ARGS: 'CONFIG_FILE DK_IMAGE_BASE UPDATE_REPO UPDATE_FEEDS'
 
     steps:
     - name: Checkout
@@ -473,7 +473,7 @@ jobs:
       # Using docker driver instead of docker-container because we don't need cache
       # 由于不需要缓存，这里使用docker而非docker-container
       DK_DOCKERFILE: Dockerfile-package
-      BUILD_ARGS: 'CONFIG_FILE DK_IMAGE_BASE UPDATE_FEEDS'
+      DK_BUILD_ARGS: 'CONFIG_FILE DK_IMAGE_BASE UPDATE_FEEDS'
 
     steps:
     - name: Checkout

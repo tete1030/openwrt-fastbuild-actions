@@ -129,15 +129,15 @@ build_image() {
   declare -a cache_from
   declare -a cache_to
 
-  if [ "x${USE_DOCKER_BUILD}" = "x1" ]; then
+  if [ "x${DK_USE_INTEGRATED_BUILDKIT}" = "x1" ]; then
     if [ "x${DK_BUILDX_DRIVER}" != "xdocker" ]; then
       echo "Docker build command does not support other drivers than 'docker'" >&2
       exit 1
     fi
   fi
 
-  if [ "x${NO_REMOTE_CACHE}" = "x1" ]; then
-    if [ "x${NO_INLINE_CACHE}" = "x1" ]; then
+  if [ "x${DK_NO_REMOTE_CACHE}" = "x1" ]; then
+    if [ "x${DK_NO_INLINE_CACHE}" = "x1" ]; then
       if [ "x${DK_BUILDX_DRIVER}" = "xdocker" ]; then
         echo "Buildx driver 'docker' does not support local cache" >&2
         exit 1
@@ -149,13 +149,13 @@ build_image() {
       if [ ! -d "./cache" ]; then
         mkdir ./cache
       fi
-      if [ "x${USE_DOCKER_BUILD}" = "x1" -a "x${NO_CACHE_TO}" != "x1" ]; then
+      if [ "x${DK_USE_INTEGRATED_BUILDKIT}" = "x1" -a "x${DK_NO_CACHE_EXPT}" != "x1" ]; then
         echo "Docker build command does not support --cache-to=type=local" >&2
         exit 1
       fi
     else
       cache_from+=( "--cache-from=type=registry,ref=$(_get_full_image_name_tag_for_build)" )
-      if [ "x${USE_DOCKER_BUILD}" = "x1" ]; then
+      if [ "x${DK_USE_INTEGRATED_BUILDKIT}" = "x1" ]; then
         cache_to+=( --build-arg BUILDKIT_INLINE_CACHE=1 )
       else
         cache_to+=( "--cache-to=type=inline,mode=min" )
@@ -166,7 +166,7 @@ build_image() {
       echo "Buildx driver 'docker' does not support registry cache" >&2
       exit 1
     fi
-    if [ "x${USE_DOCKER_BUILD}" = "x1" -a "x${NO_CACHE_TO}" != "x1" ]; then
+    if [ "x${DK_USE_INTEGRATED_BUILDKIT}" = "x1" -a "x${DK_NO_CACHE_EXPT}" != "x1" ]; then
       echo "Docker build command does not support --cache-to=type=registry" >&2
       exit 1
     fi
@@ -179,7 +179,7 @@ build_image() {
     cache_to+=( "--cache-to=type=registry,ref=$(_get_full_image_name_tag_for_build_cache),mode=max" )
   fi
   echo "From cache: ${cache_from[@]}"
-  if [ "x${NO_CACHE_TO}" = "x1" ]; then
+  if [ "x${DK_NO_CACHE_EXPT}" = "x1" ]; then
     echo "No saving cache"
     cache_to=()
   else
@@ -191,8 +191,8 @@ build_image() {
     build_target+=( "--target=${1}" )
   fi
   declare -a build_args
-  if [ ! -z "${BUILD_ARGS}" ]; then
-    for arg in ${BUILD_ARGS[@]};
+  if [ ! -z "${DK_BUILD_ARGS}" ]; then
+    for arg in ${DK_BUILD_ARGS[@]};
     do
       if [ -z "${!arg}" ]; then
         echo "Error: for error free coding, please do not leave variable \`${arg}\` empty. You can assign it a meaningless value if not used." >&2
@@ -203,21 +203,21 @@ build_image() {
   fi
 
   declare -a build_other_opts
-  if [ ! -z "${OUTPUT}" ]; then
-    if [ "x${USE_DOCKER_BUILD}" = "x1" ]; then
+  if [ ! -z "${DK_OUTPUT}" ]; then
+    if [ "x${DK_USE_INTEGRATED_BUILDKIT}" = "x1" ]; then
       echo "Warning: docker build command may not support this output type" >&2
     fi
-    build_other_opts+=( "--output=${OUTPUT}" )
+    build_other_opts+=( "--output=${DK_OUTPUT}" )
   else
-    if [ "x${NO_BUILDTIME_PUSH}" = "x1" ]; then
+    if [ "x${DK_NO_BUILDTIME_PUSH}" = "x1" ]; then
       if [ "x${DK_BUILDX_DRIVER}" != "xdocker" ]; then
         echo "Warning: buildx driver '${DK_BUILDX_DRIVER}' does not support image management. Images may lose when not pushing." >&2
       fi
-      if [ "x${USE_DOCKER_BUILD}" != "x1" ]; then
+      if [ "x${DK_USE_INTEGRATED_BUILDKIT}" != "x1" ]; then
         build_other_opts+=( --output=type=image,push=false )
       fi
     else
-      if [ "x${USE_DOCKER_BUILD}" = "x1" ]; then
+      if [ "x${DK_USE_INTEGRATED_BUILDKIT}" = "x1" ]; then
         echo "Docker build does not support build-time push" >&2
         exit 1
       fi
@@ -229,7 +229,7 @@ build_image() {
   fi
 
   if [ "x${SQUASH}" = "x1" ]; then
-    if [ "x${USE_DOCKER_BUILD}" = "x1" ]; then
+    if [ "x${DK_USE_INTEGRATED_BUILDKIT}" = "x1" ]; then
       build_other_opts+=( "--squash" )
     else
       echo "Buildx does not support squash" >&2
@@ -238,7 +238,7 @@ build_image() {
   fi
 
   BUILD_COMMAND="buildx build"
-  if [ "x${USE_DOCKER_BUILD}" = "x1" ]; then
+  if [ "x${DK_USE_INTEGRATED_BUILDKIT}" = "x1" ]; then
     export DOCKER_BUILDKIT=1
     BUILD_COMMAND="build"
   fi
@@ -314,9 +314,9 @@ EOF
 
     echo "Building copy task image"
     (
-      export NO_CACHE_TO=1
+      export DK_NO_CACHE_EXPT=1
       export NO_TAG=1
-      export OUTPUT="type=local,dest=${COPY_CACHE_DIR}"
+      export DK_OUTPUT="type=local,dest=${COPY_CACHE_DIR}"
       export DK_DOCKERFILE_FULL
       export DK_DOCKERFILE_STDIN=1
       build_image buildresult
@@ -343,7 +343,7 @@ create_remote_tag_alias() {
 }
 
 push_image() {
-  if [ "x${NO_BUILDTIME_PUSH}" = "x1" ]; then
+  if [ "x${DK_NO_BUILDTIME_PUSH}" = "x1" ]; then
     if [ "x${DK_BUILDX_DRIVER}" = "xdocker" ]; then
       docker push "$(_get_full_image_name_tag_for_build)"
     else
@@ -352,7 +352,7 @@ push_image() {
         echo "STATE_LAST_BUILD_STAGE not set" >&2
         exit 1
       fi
-      NO_BUILDTIME_PUSH=0 build_image "${STATE_LAST_BUILD_STAGE}"
+      DK_NO_BUILDTIME_PUSH=0 build_image "${STATE_LAST_BUILD_STAGE}"
     fi
   fi
   # push image
@@ -362,8 +362,8 @@ push_image() {
 }
 
 push_cache() {
-  if [ "x${NO_REMOTE_CACHE}" = "x1" ]; then
-    echo "NO_REMOTE_CACHE is set, no cache to push" >&2
+  if [ "x${DK_NO_REMOTE_CACHE}" = "x1" ]; then
+    echo "DK_NO_REMOTE_CACHE is set, no cache to push" >&2
   else
     create_remote_tag_alias "$(_get_full_image_name_tag_for_build_cache)" "$(_get_full_image_name_tag_for_cache)" 
   fi
