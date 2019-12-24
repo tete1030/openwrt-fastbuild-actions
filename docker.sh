@@ -124,8 +124,11 @@ pull_image() {
 }
 
 build_image() {
+  TARGET="${1}"
+
   IFS_ORI="$IFS"
   IFS=$'\x20'
+
   declare -a cache_from
   declare -a cache_to
 
@@ -187,8 +190,8 @@ build_image() {
   fi
 
   declare -a build_target
-  if [ ! -z "${1}" ]; then
-    build_target+=( "--target=${1}" )
+  if [ ! -z "${TARGET}" ]; then
+    build_target+=( "--target=${TARGET}" )
   fi
   declare -a build_args
   if [ ! -z "${DK_BUILD_ARGS}" ]; then
@@ -224,7 +227,7 @@ build_image() {
       build_other_opts+=( --push )
     fi
   fi
-  if [ "x${NO_TAG}" != "x1" ]; then
+  if [ "x${DK_NO_TAG}" != "x1" ]; then
     build_other_opts+=( "--tag=$(_get_full_image_name_tag_for_build)" )
   fi
 
@@ -273,6 +276,10 @@ build_image() {
     )
   fi
 
+  if [ ! -z "${TARGET}" -a "x${DK_NO_TARGET_RECORD}" != "x1" ]; then
+    echo "::set-env name=DK_LAST_BUILD_TARGET::${TARGET}"
+  fi
+
   IFS="$IFS_ORI"
 }
 
@@ -290,12 +297,12 @@ copy_files() {
     TMP_DOCKERFILE_DIR="/tmp"
     
     echo "Buildx driver '${DK_BUILDX_DRIVER}', using indirect copying method"
-    STATE_LAST_BUILD_STAGE="${3:-${STATE_LAST_BUILD_STAGE}}"
-    if [ -z "${STATE_LAST_BUILD_STAGE}" ]; then
-      echo "STATE_LAST_BUILD_STAGE not set" >&2
+    DK_LAST_BUILD_TARGET="${3:-${DK_LAST_BUILD_TARGET}}"
+    if [ -z "${DK_LAST_BUILD_TARGET}" ]; then
+      echo "DK_LAST_BUILD_TARGET not set" >&2
       exit 1
     fi
-    echo "Using STATE_LAST_BUILD_STAGE='${STATE_LAST_BUILD_STAGE}'"
+    echo "Using DK_LAST_BUILD_TARGET='${DK_LAST_BUILD_TARGET}'"
     if [ -d "${COPY_CACHE_DIR}" -a ! -z "$(eval ls -A \"${COPY_CACHE_DIR}\" 2>/dev/null)" ]; then
       echo "Error: \'${COPY_CACHE_DIR}\' directory already exists and not empty" >&2
       exit
@@ -309,13 +316,14 @@ copy_files() {
     cat >> "${TMP_DOCKERFILE_DIR}/Dockerfile.tmp" << EOF
 FROM scratch AS buildresult
 WORKDIR "${BUILDRESULT_IMAGE_DIR}"
-COPY --from="${STATE_LAST_BUILD_STAGE}" "${1}" ./copied
+COPY --from="${DK_LAST_BUILD_TARGET}" "${1}" ./copied
 EOF
 
     echo "Building copy task image"
     (
       export DK_NO_CACHE_EXPT=1
-      export NO_TAG=1
+      export DK_NO_TAG=1
+      export DK_NO_TARGET_RECORD=1
       export DK_OUTPUT="type=local,dest=${COPY_CACHE_DIR}"
       export DK_DOCKERFILE_FULL
       export DK_DOCKERFILE_STDIN=1
@@ -347,12 +355,12 @@ push_image() {
     if [ "x${DK_BUILDX_DRIVER}" = "xdocker" ]; then
       docker push "$(_get_full_image_name_tag_for_build)"
     else
-      echo "Warning: separated pushing in '${DK_BUILDX_DRIVER}' driver can be slow, because final image needs to be rebuilt from previous cache"
-      if [ -z "${STATE_LAST_BUILD_STAGE}" ]; then
-        echo "STATE_LAST_BUILD_STAGE not set" >&2
+      echo "Warning: separated pushing in '${DK_BUILDX_DRIVER}' driver can be very slow, because the final image needs to be unpacked and repacked again"
+      if [ -z "${DK_LAST_BUILD_TARGET}" ]; then
+        echo "DK_LAST_BUILD_TARGET not set" >&2
         exit 1
       fi
-      DK_NO_BUILDTIME_PUSH=0 build_image "${STATE_LAST_BUILD_STAGE}"
+      DK_NO_BUILDTIME_PUSH=0 DK_NO_TARGET_RECORD=1 build_image "${DK_LAST_BUILD_TARGET}"
     fi
   fi
   # push image

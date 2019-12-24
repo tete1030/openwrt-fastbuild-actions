@@ -134,13 +134,11 @@ jobs:
       run: |
         . docker.sh
         build_image init-env
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::init-env"
 
     - name: Clone all source code
       run: |
         . docker.sh
         build_image clone
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::clone"
 
     # Allow intermediate customization
     - name: Debug set, wait for SSH connection
@@ -153,13 +151,11 @@ jobs:
       run: |
         . docker.sh
         build_image custom
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::custom"
 
     - name: Download packages
       run: |
         . docker.sh
         build_image download
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::download"
 
     - name: Print disk space
       run: df -h
@@ -168,7 +164,6 @@ jobs:
       run: |
         . docker.sh
         build_image compile
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::compile"
 
     - name: Print disk space
       run: df -h
@@ -348,14 +343,12 @@ jobs:
       run: |
         . docker.sh
         build_image init-env
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::init-env"
 
     - name: Clone/update source codes
       if: env.BUILD_BASE == '1'
       run: |
         . docker.sh
         build_image clone
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::clone"
 
     # Allow intermediate customization
     - name: Debug set, wait for SSH connection
@@ -368,13 +361,11 @@ jobs:
       run: |
         . docker.sh
         build_image custom
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::custom"
 
     - name: Download packages
       run: |
         . docker.sh
         build_image download
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::download"
 
     - name: Print disk space
       run: df -h
@@ -383,7 +374,6 @@ jobs:
       run: |
         . docker.sh
         build_image compile
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::compile"
 
     - name: Print disk space
       run: df -h
@@ -571,19 +561,16 @@ jobs:
       run: |
         . docker.sh
         build_image clone
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::clone"
 
     - name: Apply customizations
       run: |
         . docker.sh
         build_image custom
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::custom"
 
     - name: Download packages
       run: |
         . docker.sh
         build_image download
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::download"
 
     - name: Print disk space
       run: df -h
@@ -592,7 +579,6 @@ jobs:
       run: |
         . docker.sh
         build_image compile
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::compile"
 
     - name: Print disk space
       run: df -h
