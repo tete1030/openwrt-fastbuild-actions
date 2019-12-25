@@ -626,42 +626,19 @@ jobs:
       uses: tete1030/debugger-action@my
 
 # Base
-# * +mentohust
-# * -shadowsocksr
-# * -unblockmusic
-# * -v2ray
-# * -samba +samba4
-# * -adbyby
-# * -xlnetacc
 # * -mia
-# * -wifi_schedule
 # * -kms
-# * -zerotier
-# * +dockerce
-# * +curl
-# * +wget
 
 # Install
 # * autossh
 # * openclash
 # * fping
 # * netdata
-# * zsh
-# * tcpdump
-# * dmesg
-# * tmux
-# * vim-full
 # * strace
-# * htop
 
 # Change source
-# * Upgrade download_pl
-# * Add mentohust
 # * autossh.init
 # * transmission init.d
-# * netdata init.d upgrade
-# * netdata makefile upgrade for 1.19
-# * Add libJudy for netdata
 # * netdata add go.d.plugin
 # * openclash replace clashr
 # 
