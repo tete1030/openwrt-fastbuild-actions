@@ -53,10 +53,10 @@ on:
   deployment:
   repository_dispatch:
   push:
-#  schedule:
-#    - cron: 0 8 * * 5
-#  watch:
-#    types: [started]
+  # schedule:
+  #   - cron: '*/5 * * * *'
+  # watch:
+  #   types: [started]
 
 jobs:
   context:
@@ -71,10 +71,17 @@ jobs:
 
   build-inc:
     runs-on: ubuntu-18.04
+    # Always activate this job, unless specified '#build-package#'
+    # * You can change Line 3 to the following one to only build when push with '#build-inc#'
+    #     && contains(github.event.head_commit.message, '#build-inc#')
+    # * To build on schedule event, add OR condition:
+    #     github.event_name == 'schedule'
+    # * To build when YOU stars YOUR OWN project, add OR condition:
+    #     github.event_name == 'watch' && github.event.action == 'started' && github.event.repository.owner.id == github.event.sender.id
     if: |
       (
         github.event_name == 'push'
-        && contains(github.event.head_commit.message, '#build-inc#')
+        && !contains(github.event.head_commit.message, '#build-package#')
       ) || (
         github.event_name == 'repository_dispatch'
         && github.event.action == 'build-inc'
@@ -299,6 +306,11 @@ jobs:
 
   build-package:
     runs-on: ubuntu-18.04
+    # Activate this job when specified '#build-package#'
+    # * To build on schedule event, add OR condition:
+    #     github.event_name == 'schedule'
+    # * To build when YOU stars YOUR OWN project, add OR condition:
+    #     github.event_name == 'watch' && github.event.action == 'started' && github.event.repository.owner.id == github.event.sender.id
     if: |
       (
         github.event_name == 'push'
