@@ -10,7 +10,7 @@
 set -eo pipefail
 
 if [ -d openwrt ]; then
-  git pull --ff
+  git -C openwrt pull --ff
 else
   if [ -z "${REPO_URL}" -o -z "${REPO_BRANCH}" ]; then
     echo "'REPO_URL' or 'REPO_BRANCH' is empty" >&2
