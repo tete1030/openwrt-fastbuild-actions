@@ -11,7 +11,7 @@ set -eo pipefail
 
 echo "Updating and installing feeds ..."
 cd openwrt
-[ "x${UPDATE_FEEDS}" != "x1" ] || ./scripts/feeds update -a
+[ "x${OPT_UPDATE_FEEDS}" != "x1" ] || ./scripts/feeds update -a
 ./scripts/feeds install -a
 
 mkdir -p package/z-last-build-packages || true
@@ -24,7 +24,7 @@ install_package() {
     exit 1
   fi
   if [ -d "${1}" ]; then
-    [ "x${UPDATE_FEEDS}" != "x1" ] || ( git -C "${1}" reset --hard && git -C "${1}" pull --ff )
+    [ "x${OPT_UPDATE_FEEDS}" != "x1" ] || ( git -C "${1}" reset --hard && git -C "${1}" pull --ff )
   else
     git clone "${2}" "${1}"
   fi
