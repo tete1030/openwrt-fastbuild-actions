@@ -71,7 +71,7 @@ jobs:
 
   build-inc:
     runs-on: ubuntu-18.04
-    if: | 
+    if: |
       (
         github.event_name == 'push'
         && contains(github.event.head_commit.message, '#build-inc#')
@@ -131,11 +131,27 @@ jobs:
         echo "::set-env name=DK_DOCKERFILE::${DOCKERFILE_INC}"
 
         OPT_UPDATE_FEEDS=0
-        [ "x${{ github.event.client_payload.update_feeds || github.event.deployment.payload.update_feeds }}" != "xtrue" ] || OPT_UPDATE_FEEDS=1
+        [ "x${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '#update_feeds#')) || github.event.client_payload.update_feeds || github.event.deployment.payload.update_feeds }}" != "xtrue" ] || OPT_UPDATE_FEEDS=1
         echo "::set-env name=OPT_UPDATE_FEEDS::${OPT_UPDATE_FEEDS}"
         OPT_UPDATE_REPO=0
-        [ "x${{ github.event.client_payload.update_repo || github.event.deployment.payload.update_repo }}" != "xtrue" ] || OPT_UPDATE_REPO=1
+        [ "x${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '#update_repo#')) || github.event.client_payload.update_repo || github.event.deployment.payload.update_repo }}" != "xtrue" ] || OPT_UPDATE_REPO=1
         echo "::set-env name=OPT_UPDATE_REPO::${OPT_UPDATE_REPO}"
+
+        OPT_USE_BASE=0
+        [ "x${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '#use_base#')) || github.event.client_payload.use_base || github.event.deployment.payload.use_base }}" != "xtrue" ] || OPT_USE_BASE=1
+        echo "::set-env name=OPT_USE_BASE::${OPT_USE_BASE}"
+
+        OPT_REBUILD=0
+        [ "x${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '#rebuild#')) || github.event.client_payload.rebuild || github.event.deployment.payload.rebuild }}" != "xtrue" ] || OPT_REBUILD=1
+        echo "::set-env name=OPT_REBUILD::${OPT_REBUILD}"
+
+        OPT_DEBUG=0
+        [ "x${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '#debug#')) || github.event.client_payload.debug || github.event.deployment.payload.debug }}" != "xtrue" ] || OPT_DEBUG=1
+        echo "::set-env name=OPT_DEBUG::${OPT_DEBUG}"
+
+        OPT_PUSH_WHEN_FAIL=0
+        [ "x${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '#push_when_fail#')) || github.event.client_payload.push_when_fail || github.event.deployment.payload.push_when_fail }}" != "xtrue" ] || OPT_PUSH_WHEN_FAIL=1
+        echo "::set-env name=OPT_PUSH_WHEN_FAIL::${OPT_PUSH_WHEN_FAIL}"
 
         scripts/cleanup.sh
 
@@ -152,44 +168,44 @@ jobs:
         login_to_registry
 
     - name: Check status of builders
-      env:
-        BOOL_USE_BASE: ${{ github.event.client_payload.use_base || github.event.deployment.payload.use_base }}
       run: |
         . docker.sh
-        # temporarily disable failure guarder
-        set +eo pipefail
-          docker buildx imagetools inspect "${BUILDER_ID_INC}" 2>&1 >/dev/null
-          builder_inc_ret_val=$?
-        set -eo pipefail
-
-        BUILD_BASE=0
-        if [ "x${BOOL_USE_BASE}" = "xtrue" -o "x${builder_inc_ret_val}" != "x0" ]; then
+        if [ "x${OPT_REBUILD}" != "x1" ]; then
+          # temporarily disable failure guarder
           set +eo pipefail
-            docker buildx imagetools inspect "${BUILDER_ID_BASE}" 2>&1 >/dev/null
-            builder_base_ret_val=$?
+            docker buildx imagetools inspect "${BUILDER_ID_INC}" 2>&1 >/dev/null
+            builder_inc_ret_val=$?
           set -eo pipefail
-          if [ "x${builder_base_ret_val}" != "x0" ]; then
-            echo "Base builder '${BUILDER_ID_BASE}' does not exist, creating one"
-            BUILD_BASE=1
-          else
-            echo "Creating incremental builder '${BUILDER_ID_INC}' from base builder '${BUILDER_ID_BASE}'"
-            create_remote_tag_alias "${BUILDER_ID_BASE}" "${BUILDER_ID_INC}"
+
+          if [ "x${OPT_USE_BASE}" = "x1" -o "x${builder_inc_ret_val}" != "x0" ]; then
+            set +eo pipefail
+              docker buildx imagetools inspect "${BUILDER_ID_BASE}" 2>&1 >/dev/null
+              builder_base_ret_val=$?
+            set -eo pipefail
+            if [ "x${builder_base_ret_val}" != "x0" ]; then
+              echo "Base builder '${BUILDER_ID_BASE}' does not exist, creating one"
+              OPT_REBUILD=1
+            else
+              echo "Creating incremental builder '${BUILDER_ID_INC}' from base builder '${BUILDER_ID_BASE}'"
+              create_remote_tag_alias "${BUILDER_ID_BASE}" "${BUILDER_ID_INC}"
+            fi
           fi
         fi
 
-        if [ "x${BUILD_BASE}" = "x1" ]; then
+        if [ "x${OPT_REBUILD}" = "x1" ]; then
+          echo "Re-creating base builder '${BUILDER_ID_BASE}'"
           echo "::set-env name=DK_DOCKERFILE::${DOCKERFILE_BASE}"
         fi
-        echo "::set-env name=BUILD_BASE::${BUILD_BASE}"
+        echo "::set-env name=OPT_REBUILD::${OPT_REBUILD}"
 
     - name: Download last incremental builder
-      if: env.BUILD_BASE == '0'
+      if: env.OPT_REBUILD == '0'
       run: |
         . docker.sh
         pull_image
 
     - name: Initialize environment for base builder
-      if: env.BUILD_BASE == '1'
+      if: env.OPT_REBUILD == '1'
       run: |
         . docker.sh
         build_image init-env
@@ -201,7 +217,7 @@ jobs:
 
     # Allow intermediate customization
     - name: Debug set, wait for SSH connection
-      if: github.event.client_payload.debug == true || github.event.deployment.payload.debug == true
+      if: env.OPT_DEBUG == '1'
       env:
         TIMEOUT_MIN: 5
       uses: tete1030/debugger-action@my
@@ -231,13 +247,12 @@ jobs:
       if: |
         !cancelled() && (
           success()
-          || github.event.client_payload.push_when_fail == true
-          || github.event.deployment.payload.push_when_fail == true
+          || env.PUSH_WHEN_FAIL == '1'
         )
       run: |
         . docker.sh
         push_image_and_cache
-        if [ "x${BUILD_BASE}" = "x1" ]; then
+        if [ "x${OPT_REBUILD}" = "x1" ]; then
           create_remote_tag_alias "${BUILDER_ID_INC}" "${BUILDER_ID_BASE}"
         fi
 
@@ -279,8 +294,7 @@ jobs:
     - name: Failed/debug set, wait for SSH connection ( you are safe to cancel the job now )
       if: |
         failure()
-        || github.event.client_payload.debug == true
-        || github.event.deployment.payload.debug == true
+        || env.OPT_DEBUG == '1'
       uses: tete1030/debugger-action@my
 
   build-package:
@@ -346,8 +360,24 @@ jobs:
         echo "::set-env name=DK_DOCKERFILE::${DOCKERFILE_PACKAGE}"
         
         OPT_UPDATE_FEEDS=0
-        [ "x${{ github.event.client_payload.update_feeds || github.event.deployment.payload.update_feeds }}" != "xtrue" ] || OPT_UPDATE_FEEDS=1
+        [ "x${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '#update_feeds#')) || github.event.client_payload.update_feeds || github.event.deployment.payload.update_feeds }}" != "xtrue" ] || OPT_UPDATE_FEEDS=1
         echo "::set-env name=OPT_UPDATE_FEEDS::${OPT_UPDATE_FEEDS}"
+
+        OPT_USE_BASE=0
+        [ "x${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '#use_base#')) || github.event.client_payload.use_base || github.event.deployment.payload.use_base }}" != "xtrue" ] || OPT_USE_BASE=1
+        echo "::set-env name=OPT_USE_BASE::${OPT_USE_BASE}"
+
+        OPT_USE_INC=0
+        [ "x${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '#use_inc#')) || github.event.client_payload.use_inc || github.event.deployment.payload.use_inc }}" != "xtrue" ] || OPT_USE_INC=1
+        echo "::set-env name=OPT_USE_INC::${OPT_USE_INC}"
+
+        OPT_DEBUG=0
+        [ "x${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '#debug#')) || github.event.client_payload.debug || github.event.deployment.payload.debug }}" != "xtrue" ] || OPT_DEBUG=1
+        echo "::set-env name=OPT_DEBUG::${OPT_DEBUG}"
+
+        OPT_PUSH_WHEN_FAIL=0
+        [ "x${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '#push_when_fail#')) || github.event.client_payload.push_when_fail || github.event.deployment.payload.push_when_fail }}" != "xtrue" ] || OPT_PUSH_WHEN_FAIL=1
+        echo "::set-env name=OPT_PUSH_WHEN_FAIL::${OPT_PUSH_WHEN_FAIL}"
 
         scripts/cleanup.sh
 
@@ -365,9 +395,6 @@ jobs:
         touch .start_timestamp
 
     - name: Check if using latest base builder
-      env:
-        BOOL_USE_BASE: ${{ github.event.client_payload.use_base || github.event.deployment.payload.use_base }}
-        BOOL_USE_INC: ${{ github.event.client_payload.use_inc || github.event.deployment.payload.use_inc }}
       run: |
         . docker.sh
         # temporarily disable failure guarder
@@ -375,10 +402,10 @@ jobs:
           docker buildx imagetools inspect "${BUILDER_ID_PACKAGE}"
           ret_val=$?
         set -eo pipefail
-        if [ "x${BOOL_USE_BASE}" = "xtrue" -o "x${BOOL_USE_INC}" = "xtrue" -o "x${ret_val}" != "x0" ]; then
+        if [ "x${OPT_USE_BASE}" = "x1" -o "x${OPT_USE_INC}" = "x1" -o "x${ret_val}" != "x0" ]; then
           BUILDER_ID_SELECTED="${BUILDER_ID_BASE}"
-          if [ "x${BOOL_USE_INC}" = "xtrue" ]; then
-            if [ "x${BOOL_USE_BASE}" = "xtrue" ]; then
+          if [ "x${OPT_USE_INC}" = "x1" ]; then
+            if [ "x${OPT_USE_BASE}" = "x1" ]; then
               echo "::error::You cannot use both 'use_base' and 'use_inc'" >&2
               exit 1
             fi
@@ -405,7 +432,7 @@ jobs:
 
     # Allow intermediate customization
     - name: Debug set, wait for SSH connection
-      if: github.event.client_payload.debug == true || github.event.deployment.payload.debug == true
+      if: env.OPT_DEBUG == '1'
       env:
         TIMEOUT_MIN: 5
       uses: tete1030/debugger-action@my
@@ -437,7 +464,7 @@ jobs:
       run: df -h
 
     - name: Upload current builder
-      if: (!cancelled()) && (success() || github.event.client_payload.push_when_fail == true || github.event.deployment.payload.push_when_fail == true)
+      if: (!cancelled()) && (success() || env.OPT_PUSH_WHEN_FAIL == '1')
       run: |
         . docker.sh
         push_image_and_cache
@@ -487,7 +514,7 @@ jobs:
 
     # failure checking
     - name: Failed/debug set, wait for SSH connection ( you are safe to cancel the job now )
-      if: failure() || github.event.client_payload.debug == true || github.event.deployment.payload.debug == true
+      if: failure() || env.OPT_DEBUG == '1'
       uses: tete1030/debugger-action@my
 
   build-direct:
@@ -509,6 +536,14 @@ jobs:
 
     - name: Initialize environment
       run: |
+        OPT_DEBUG=0
+        [ "x${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '#debug#')) || github.event.client_payload.debug || github.event.deployment.payload.debug }}" != "xtrue" ] || OPT_DEBUG=1
+        echo "::set-env name=OPT_DEBUG::${OPT_DEBUG}"
+
+        OPT_PUSH_WHEN_FAIL=0
+        [ "x${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '#push_when_fail#')) || github.event.client_payload.push_when_fail || github.event.deployment.payload.push_when_fail }}" != "xtrue" ] || OPT_PUSH_WHEN_FAIL=1
+        echo "::set-env name=OPT_PUSH_WHEN_FAIL::${OPT_PUSH_WHEN_FAIL}"
+
         scripts/cleanup.sh
         scripts/initenv.sh
 
@@ -525,7 +560,7 @@ jobs:
 
     # Allow intermediate customization
     - name: Debug set, wait for SSH connection
-      if: github.event.client_payload.debug == true || github.event.deployment.payload.debug == true
+      if: env.OPT_DEBUG == '1'
       env:
         TIMEOUT_MIN: 5
       uses: tete1030/debugger-action@my
@@ -577,5 +612,5 @@ jobs:
 
     # failure checking
     - name: Failed/debug set, wait for SSH connection ( you are safe to cancel the job now )
-      if: failure() || github.event.client_payload.debug == true || github.event.deployment.payload.debug == true
+      if: failure() || env.OPT_DEBUG == '1'
       uses: tete1030/debugger-action@my
