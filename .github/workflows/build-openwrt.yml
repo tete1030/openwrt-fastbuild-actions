@@ -357,7 +357,6 @@ jobs:
         build_image init-env
 
     - name: Clone/update source codes
-      if: env.BUILD_BASE == '1'
       run: |
         . docker.sh
         build_image clone
