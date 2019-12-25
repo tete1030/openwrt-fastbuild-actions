@@ -2,7 +2,7 @@
 # https://github.com/P3TERX/Actions-OpenWrt
 # Description: Build OpenWrt using GitHub Actions
 # Lisence: MIT
-# Author: P3TERX (for direct-build job)
+# Author: P3TERX (for build-direct job)
 # Blog: https://p3terx.com
 #=================================================
 
@@ -39,13 +39,17 @@ env:
   SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
   # Not recommended to change unless you understand how it is used
   # 以下参数不推荐修改
+  DK_BUILDX_DRIVER: docker
   DK_CONTEXT: .
+  DK_NO_REMOTE_CACHE: 1
+  DK_NO_BUILDTIME_PUSH: 1
+  DOCKERFILE_BASE: Dockerfile
+  DOCKERFILE_INC: Dockerfile-inc
+  DOCKERFILE_PACKAGE: Dockerfile-package
 
 name: Build OpenWrt
 
 on:
-  release:
-    types: [published]
   deployment:
   repository_dispatch:
   push:
@@ -63,15 +67,18 @@ on:
   # For `github.event` structures, see: https://developer.github.com/v3/activity/events/types/
 
 jobs:
-  docker-build:
+  build-base:
     runs-on: ubuntu-18.04
     if: |
-      github.event_name == 'release' || (
-        github.event_name == 'repository_dispatch' && 
-        github.event.action == 'docker-build'
+      (
+        github.event_name == 'push'
+        && contains(github.event.head_commit.message, '#build-base#')
       ) || (
-        github.event_name == 'deployment' && 
-        github.event.deployment.task == 'docker-build'
+        github.event_name == 'repository_dispatch'
+        && github.event.action == 'build-base'
+      ) || (
+        github.event_name == 'deployment'
+        && github.event.deployment.task == 'build-base'
       )
     name: ${{matrix.title}}
     strategy:
@@ -80,17 +87,13 @@ jobs:
         mode: [normal, test]
         include:
         - mode: normal
-          title: docker-build
+          title: build-base
         - mode: test
-          title: Fast checking docker-build
+          title: Fast checking build-base
     env:
       # Not recommended to change as they are already in optimal condition
       # 不推荐修改，已处在最优状态
-      NO_REMOTE_CACHE: 1
-      NO_BUILDTIME_PUSH: 1
-      DK_BUILDX_DRIVER: docker
-      DK_DOCKERFILE: Dockerfile
-      BUILD_ARGS: 'REPO_URL REPO_BRANCH CONFIG_FILE'
+      DK_BUILD_ARGS: 'REPO_URL REPO_BRANCH CONFIG_FILE'
 
     steps:
     - name: Checkout
@@ -99,14 +102,28 @@ jobs:
     - name: Init test env
       if: matrix.mode == 'test'
       run: |
-        echo "::set-env name=DK_DOCKERFILE::tests/${DK_DOCKERFILE}"
+        for var_dockerfile in ${!DOCKERFILE_@}; do
+          echo "::set-env name=${var_dockerfile}::tests/${!var_dockerfile}"
+        done
         echo "::set-env name=BUILDER_TAG::test-${BUILDER_TAG}"
         echo "::set-env name=TEST::1"
 
     - name: Init build env
       run: |
-        echo "::set-env name=IMAGE_NAME::${DK_USERNAME}/${BUILDER_NAME}"
-        echo "::set-env name=IMAGE_TAG::${BUILDER_TAG}"
+        export BUILDER_NAME="${DK_USERNAME}/${BUILDER_NAME}"
+        export BUILDER_ID_BASE="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG}"
+        echo "::set-env name=BUILDER_NAME::${BUILDER_NAME}"
+        echo "::set-env name=BUILDER_ID_BASE::${BUILDER_ID_BASE}"
+
+        echo "::set-env name=DK_IMAGE_NAME::${BUILDER_NAME}"
+        echo "::set-env name=DK_IMAGE_TAG::${BUILDER_TAG}"
+
+        for var_dockerfile in ${!DOCKERFILE_@}; do
+          eval ${var_dockerfile}="Dockerfiles/${!var_dockerfile}"
+          echo "::set-env name=${var_dockerfile}::${!var_dockerfile}"
+        done
+        echo "::set-env name=DK_DOCKERFILE::${DOCKERFILE_BASE}"
+
         scripts/cleanup.sh
 
     - name: Set up Docker Buildx
@@ -121,17 +138,15 @@ jobs:
         configure_docker
         login_to_registry
 
-    - name: Initialize environment
+    - name: Initialize environment for base builder
       run: |
         . docker.sh
         build_image init-env
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::init-env"
 
     - name: Clone all source code
       run: |
         . docker.sh
         build_image clone
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::clone"
 
     # Allow intermediate customization
     - name: Debug set, wait for SSH connection
@@ -144,13 +159,11 @@ jobs:
       run: |
         . docker.sh
         build_image custom
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::custom"
 
     - name: Download packages
       run: |
         . docker.sh
         build_image download
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::download"
 
     - name: Print disk space
       run: df -h
@@ -159,7 +172,6 @@ jobs:
       run: |
         . docker.sh
         build_image compile
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::compile"
 
     - name: Print disk space
       run: df -h
@@ -167,9 +179,9 @@ jobs:
     - name: Upload current builder
       if: |
         !cancelled() && (
-          success() ||
-          github.event.client_payload.push_when_fail == true ||
-          github.event.deployment.payload.push_when_fail == true
+          success()
+          || github.event.client_payload.push_when_fail == true
+          || github.event.deployment.payload.push_when_fail == true
         )
       run: |
         . docker.sh
@@ -194,15 +206,17 @@ jobs:
         path: openwrt/bin
 
     - name: Organize files
+      id: organize
       if: steps.copydir.outputs.status == 'success' && !cancelled()
       run: |
         cd openwrt/bin/targets/*/*
         rm -rf packages
         echo "::set-env name=FIRMWARE::$(pwd)"
+        echo "::set-output name=status::success"
 
     - name: Upload firmware
       uses: actions/upload-artifact@master
-      if: steps.copydir.outputs.status == 'success' && success() && !cancelled()
+      if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
         name: OpenWrt_firmware
         path: ${{ env.FIRMWARE }}
@@ -210,20 +224,23 @@ jobs:
     # failure checking
     - name: Failed/debug set, wait for SSH connection ( you are safe to cancel the job now )
       if: |
-        failure() ||
-        github.event.client_payload.debug == true ||
-        github.event.deployment.payload.debug == true
+        failure()
+        || github.event.client_payload.debug == true
+        || github.event.deployment.payload.debug == true
       uses: tete1030/debugger-action@my
 
-  docker-build-inc:
+  build-inc:
     runs-on: ubuntu-18.04
     if: | 
-      github.event_name == 'push' || (
-        github.event_name == 'repository_dispatch' && 
-        github.event.action == 'docker-build-inc'
+      (
+        github.event_name == 'push'
+        && contains(github.event.head_commit.message, '#build-inc#')
       ) || (
-        github.event_name == 'deployment' && 
-        github.event.deployment.task == 'docker-build-inc'
+        github.event_name == 'repository_dispatch'
+        && github.event.action == 'build-inc'
+      ) || (
+        github.event_name == 'deployment'
+        && github.event.deployment.task == 'build-inc'
       )
     name: ${{matrix.title}}
     strategy:
@@ -232,19 +249,13 @@ jobs:
         mode: [normal, test]
         include:
         - mode: normal
-          title: docker-build-inc
+          title: build-inc
         - mode: test
-          title: Fast checking docker-build-inc
+          title: Fast checking build-inc
     env:
       # Not recommended to change as they are already in optimal condition
       # 不推荐修改，已处在最优状态
-      # Using docker driver instead of docker-container because we don't need cache
-      # 由于不需要缓存，这里使用docker而非docker-container
-      DK_BUILDX_DRIVER: docker
-      DK_DOCKERFILE: Dockerfile-inc
-      NO_REMOTE_CACHE: 1
-      NO_BUILDTIME_PUSH: 1
-      BUILD_ARGS: 'CONFIG_FILE IMAGE_BASE UPDATE_REPO UPDATE_FEEDS'
+      DK_BUILD_ARGS: 'REPO_URL REPO_BRANCH CONFIG_FILE DK_IMAGE_BASE OPT_UPDATE_REPO OPT_UPDATE_FEEDS'
 
     steps:
     - name: Checkout
@@ -253,26 +264,38 @@ jobs:
     - name: Init test env
       if: matrix.mode == 'test'
       run: |
-        echo "::set-env name=DK_DOCKERFILE::tests/${DK_DOCKERFILE}"
+        for var_dockerfile in ${!DOCKERFILE_@}; do
+          echo "::set-env name=${var_dockerfile}::tests/${!var_dockerfile}"
+        done
         echo "::set-env name=BUILDER_TAG::test-${BUILDER_TAG}"
         echo "::set-env name=TEST::1"
 
     - name: Init build env
       run: |
-        # set-env command does not export env for current shell
-        export IMAGE_NAME="${DK_USERNAME}/${BUILDER_NAME}"
-        export IMAGE_TAG=${BUILDER_TAG}-inc
-        echo "::set-env name=IMAGE_NAME::${IMAGE_NAME}"
-        echo "::set-env name=IMAGE_TAG::${IMAGE_TAG}"
-        echo "::set-env name=IMAGE_BASE::${DK_REGISTRY:+$DK_REGISTRY/}${IMAGE_NAME}:${IMAGE_TAG}"
-        echo "::set-env name=IMAGE_LATEST::${DK_REGISTRY:+$DK_REGISTRY/}${IMAGE_NAME}:${BUILDER_TAG}"
+        export BUILDER_NAME="${DK_USERNAME}/${BUILDER_NAME}"
+        export BUILDER_TAG_INC="${BUILDER_TAG}-inc"
+        export BUILDER_ID_BASE="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG}"
+        export BUILDER_ID_INC="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG_INC}"
+        export BUILDER_ID_PACKAGE="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG}-package"
+        echo "::set-env name=BUILDER_ID_BASE::${BUILDER_ID_BASE}"
+        echo "::set-env name=BUILDER_ID_INC::${BUILDER_ID_INC}"
 
-        UPDATE_FEEDS=0
-        [ "x${{ github.event.client_payload.update_feeds || github.event.deployment.payload.update_feeds }}" != "xtrue" ] || UPDATE_FEEDS=1
-        echo "::set-env name=UPDATE_FEEDS::${UPDATE_FEEDS}"
-        UPDATE_REPO=0
-        [ "x${{ github.event.client_payload.update_repo || github.event.deployment.payload.update_repo }}" != "xtrue" ] || UPDATE_REPO=1
-        echo "::set-env name=UPDATE_REPO::${UPDATE_REPO}"
+        echo "::set-env name=DK_IMAGE_BASE::${BUILDER_ID_INC}"
+        echo "::set-env name=DK_IMAGE_NAME::${BUILDER_NAME}"
+        echo "::set-env name=DK_IMAGE_TAG::${BUILDER_TAG_INC}"
+
+        for var_dockerfile in ${!DOCKERFILE_@}; do
+          eval ${var_dockerfile}="Dockerfiles/${!var_dockerfile}"
+          echo "::set-env name=${var_dockerfile}::${!var_dockerfile}"
+        done
+        echo "::set-env name=DK_DOCKERFILE::${DOCKERFILE_INC}"
+
+        OPT_UPDATE_FEEDS=0
+        [ "x${{ github.event.client_payload.update_feeds || github.event.deployment.payload.update_feeds }}" != "xtrue" ] || OPT_UPDATE_FEEDS=1
+        echo "::set-env name=OPT_UPDATE_FEEDS::${OPT_UPDATE_FEEDS}"
+        OPT_UPDATE_REPO=0
+        [ "x${{ github.event.client_payload.update_repo || github.event.deployment.payload.update_repo }}" != "xtrue" ] || OPT_UPDATE_REPO=1
+        echo "::set-env name=OPT_UPDATE_REPO::${OPT_UPDATE_REPO}"
 
         scripts/cleanup.sh
 
@@ -288,35 +311,53 @@ jobs:
         configure_docker
         login_to_registry
 
-    - name: Check if using latest base builder
+    - name: Check status of builders
       env:
-        BOOL_USE_LATEST: ${{ github.event.client_payload.use_latest || github.event.deployment.payload.use_latest }}
+        BOOL_USE_BASE: ${{ github.event.client_payload.use_base || github.event.deployment.payload.use_base }}
       run: |
         . docker.sh
         # temporarily disable failure guarder
         set +eo pipefail
-        docker buildx imagetools inspect "${IMAGE_BASE}"
-        ret_val=$?
+          docker buildx imagetools inspect "${BUILDER_ID_INC}" 2>&1 >/dev/null
+          builder_inc_ret_val=$?
         set -eo pipefail
-        if [ "x${BOOL_USE_LATEST}" = "xtrue" -o "x${ret_val}" != "x0" ]; then
-          echo "Creating incremental builder '${IMAGE_BASE}' from base builder '${IMAGE_LATEST}'"
 
+        BUILD_BASE=0
+        if [ "x${BOOL_USE_BASE}" = "xtrue" -o "x${builder_inc_ret_val}" != "x0" ]; then
           set +eo pipefail
-          docker buildx imagetools inspect "${IMAGE_LATEST}"
-          ret_val=$?
+            docker buildx imagetools inspect "${BUILDER_ID_BASE}" 2>&1 >/dev/null
+            builder_base_ret_val=$?
           set -eo pipefail
-          if [ "x${ret_val}" != "x0" ]; then
-            echo "::error::Base builder '${IMAGE_LATEST}' does not exist, please run 'docker-build' job" >&2
-            exit 1
+          if [ "x${builder_base_ret_val}" != "x0" ]; then
+            echo "Base builder '${BUILDER_ID_BASE}' does not exist, creating one"
+            BUILD_BASE=1
+          else
+            echo "Creating incremental builder '${BUILDER_ID_INC}' from base builder '${BUILDER_ID_BASE}'"
+            create_remote_tag_alias "${BUILDER_ID_BASE}" "${BUILDER_ID_INC}"
           fi
-
-          create_remote_tag_alias "${IMAGE_LATEST}" "${IMAGE_BASE}"
         fi
 
+        if [ "x${BUILD_BASE}" = "x1" ]; then
+          echo "::set-env name=DK_DOCKERFILE::${DOCKERFILE_BASE}"
+        fi
+        echo "::set-env name=BUILD_BASE::${BUILD_BASE}"
+
     - name: Download last incremental builder
+      if: env.BUILD_BASE == '0'
       run: |
         . docker.sh
         pull_image
+
+    - name: Initialize environment for base builder
+      if: env.BUILD_BASE == '1'
+      run: |
+        . docker.sh
+        build_image init-env
+
+    - name: Clone/update source codes
+      run: |
+        . docker.sh
+        build_image clone
 
     # Allow intermediate customization
     - name: Debug set, wait for SSH connection
@@ -325,23 +366,15 @@ jobs:
         TIMEOUT_MIN: 5
       uses: tete1030/debugger-action@my
 
-    - name: Update repo and packages
-      run: |
-        . docker.sh
-        build_image updateclone
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::updateclone"
-
     - name: Apply customizations
       run: |
         . docker.sh
         build_image custom
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::custom"
 
     - name: Download packages
       run: |
         . docker.sh
         build_image download
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::download"
 
     - name: Print disk space
       run: df -h
@@ -350,7 +383,6 @@ jobs:
       run: |
         . docker.sh
         build_image compile
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::compile"
 
     - name: Print disk space
       run: df -h
@@ -358,13 +390,16 @@ jobs:
     - name: Upload current builder
       if: |
         !cancelled() && (
-          success() ||
-          github.event.client_payload.push_when_fail == true ||
-          github.event.deployment.payload.push_when_fail == true
+          success()
+          || github.event.client_payload.push_when_fail == true
+          || github.event.deployment.payload.push_when_fail == true
         )
       run: |
         . docker.sh
         push_image_and_cache
+        if [ "x${BUILD_BASE}" = "x1" ]; then
+          create_remote_tag_alias "${BUILDER_ID_INC}" "${BUILDER_ID_BASE}"
+        fi
 
     - name: Copy out bin directory
       id: copydir
@@ -385,15 +420,17 @@ jobs:
         path: openwrt/bin
 
     - name: Organize files
+      id: organize
       if: steps.copydir.outputs.status == 'success' && !cancelled()
       run: |
         cd openwrt/bin/targets/*/*
         rm -rf packages
         echo "::set-env name=FIRMWARE::$(pwd)"
+        echo "::set-output name=status::success"
   
     - name: Upload firmware
       uses: actions/upload-artifact@master
-      if: steps.copydir.outputs.status == 'success' && success() && !cancelled()
+      if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
         name: OpenWrt_firmware
         path: ${{ env.FIRMWARE }}
@@ -401,20 +438,23 @@ jobs:
     # failure checking
     - name: Failed/debug set, wait for SSH connection ( you are safe to cancel the job now )
       if: |
-        failure() ||
-        github.event.client_payload.debug == true ||
-        github.event.deployment.payload.debug == true
+        failure()
+        || github.event.client_payload.debug == true
+        || github.event.deployment.payload.debug == true
       uses: tete1030/debugger-action@my
 
-  docker-build-package:
+  build-package:
     runs-on: ubuntu-18.04
     if: |
-      github.event_name == 'push' || (
-        github.event_name == 'repository_dispatch' && 
-        github.event.action == 'docker-build-package'
+      (
+        github.event_name == 'push'
+        && contains(github.event.head_commit.message, '#build-package#')
       ) || (
-        github.event_name == 'deployment' && 
-        github.event.deployment.task == 'docker-build-package'
+        github.event_name == 'repository_dispatch'
+        && github.event.action == 'build-package'
+      ) || (
+        github.event_name == 'deployment'
+        && github.event.deployment.task == 'build-package'
       )
     name: ${{matrix.title}}
     strategy:
@@ -423,19 +463,13 @@ jobs:
         mode: [normal, test]
         include:
         - mode: normal
-          title: docker-build-package
+          title: build-package
         - mode: test
-          title: Fast checking docker-build-package
+          title: Fast checking build-package
     env:
       # Not recommended to change as they are already in optimal condition
       # 不推荐修改，已处在最优状态
-      # Using docker driver instead of docker-container because we don't need cache
-      # 由于不需要缓存，这里使用docker而非docker-container
-      DK_BUILDX_DRIVER: docker
-      DK_DOCKERFILE: Dockerfile-package
-      NO_REMOTE_CACHE: 1
-      NO_BUILDTIME_PUSH: 1
-      BUILD_ARGS: 'CONFIG_FILE IMAGE_BASE UPDATE_FEEDS'
+      DK_BUILD_ARGS: 'CONFIG_FILE DK_IMAGE_BASE OPT_UPDATE_FEEDS'
 
     steps:
     - name: Checkout
@@ -444,24 +478,36 @@ jobs:
     - name: Init test env
       if: matrix.mode == 'test'
       run: |
-        echo "::set-env name=DK_DOCKERFILE::tests/${DK_DOCKERFILE}"
+        for var_dockerfile in ${!DOCKERFILE_@}; do
+          echo "::set-env name=${var_dockerfile}::tests/${!var_dockerfile}"
+        done
         echo "::set-env name=BUILDER_TAG::test-${BUILDER_TAG}"
         echo "::set-env name=TEST::1"
 
     - name: Init build env
       run: |
-        # set-env command does not export env for current shell
-        export IMAGE_NAME="${DK_USERNAME}/${BUILDER_NAME}"
-        export IMAGE_TAG=${BUILDER_TAG}-package
-        echo "::set-env name=IMAGE_NAME::${IMAGE_NAME}"
-        echo "::set-env name=IMAGE_TAG::${IMAGE_TAG}"
-        echo "::set-env name=IMAGE_BASE::${DK_REGISTRY:+$DK_REGISTRY/}${IMAGE_NAME}:${IMAGE_TAG}"
-        echo "::set-env name=IMAGE_LATEST::${DK_REGISTRY:+$DK_REGISTRY/}${IMAGE_NAME}:${BUILDER_TAG}"
-        echo "::set-env name=IMAGE_LATEST_INC::${DK_REGISTRY:+$DK_REGISTRY/}${IMAGE_NAME}:${BUILDER_TAG}-inc"
+        export BUILDER_NAME="${DK_USERNAME}/${BUILDER_NAME}"
+        export BUILDER_TAG_PACKAGE="${BUILDER_TAG}-package"
+        export BUILDER_ID_BASE="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG}"
+        export BUILDER_ID_INC="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG}-inc"
+        export BUILDER_ID_PACKAGE="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG_PACKAGE}"
+        echo "::set-env name=BUILDER_ID_BASE::${BUILDER_ID_BASE}"
+        echo "::set-env name=BUILDER_ID_INC::${BUILDER_ID_INC}"
+        echo "::set-env name=BUILDER_ID_PACKAGE::${BUILDER_ID_PACKAGE}"
 
-        UPDATE_FEEDS=0
-        [ "x${{ github.event.client_payload.update_feeds || github.event.deployment.payload.update_feeds }}" != "xtrue" ] || UPDATE_FEEDS=1
-        echo "::set-env name=UPDATE_FEEDS::${UPDATE_FEEDS}"
+        echo "::set-env name=DK_IMAGE_BASE::${BUILDER_ID_PACKAGE}"
+        echo "::set-env name=DK_IMAGE_NAME::${BUILDER_NAME}"
+        echo "::set-env name=DK_IMAGE_TAG::${BUILDER_TAG_PACKAGE}"
+
+        for var_dockerfile in ${!DOCKERFILE_@}; do
+          eval ${var_dockerfile}="Dockerfiles/${!var_dockerfile}"
+          echo "::set-env name=${var_dockerfile}::${!var_dockerfile}"
+        done
+        echo "::set-env name=DK_DOCKERFILE::${DOCKERFILE_PACKAGE}"
+        
+        OPT_UPDATE_FEEDS=0
+        [ "x${{ github.event.client_payload.update_feeds || github.event.deployment.payload.update_feeds }}" != "xtrue" ] || OPT_UPDATE_FEEDS=1
+        echo "::set-env name=OPT_UPDATE_FEEDS::${OPT_UPDATE_FEEDS}"
 
         scripts/cleanup.sh
 
@@ -480,36 +526,36 @@ jobs:
 
     - name: Check if using latest base builder
       env:
-        BOOL_USE_LATEST: ${{ github.event.client_payload.use_latest || github.event.deployment.payload.use_latest }}
-        BOOL_USE_LATEST_INC: ${{ github.event.client_payload.use_latest_inc || github.event.deployment.payload.use_latest_inc }}
+        BOOL_USE_BASE: ${{ github.event.client_payload.use_base || github.event.deployment.payload.use_base }}
+        BOOL_USE_INC: ${{ github.event.client_payload.use_inc || github.event.deployment.payload.use_inc }}
       run: |
         . docker.sh
         # temporarily disable failure guarder
         set +eo pipefail
-        docker buildx imagetools inspect "${IMAGE_BASE}"
-        ret_val=$?
+          docker buildx imagetools inspect "${BUILDER_ID_PACKAGE}"
+          ret_val=$?
         set -eo pipefail
-        if [ "x${BOOL_USE_LATEST}" = "xtrue" -o "x${BOOL_USE_LATEST_INC}" = "xtrue" -o "x${ret_val}" != "x0" ]; then
-          IMAGE_SELECTED="${IMAGE_LATEST}"
-          if [ "x${BOOL_USE_LATEST_INC}" = "xtrue" ]; then
-            if [ "x${BOOL_USE_LATEST}" = "xtrue" ]; then
-              echo "::error::You cannot use both 'use_latest' and 'use_latest_inc'" >&2
+        if [ "x${BOOL_USE_BASE}" = "xtrue" -o "x${BOOL_USE_INC}" = "xtrue" -o "x${ret_val}" != "x0" ]; then
+          BUILDER_ID_SELECTED="${BUILDER_ID_BASE}"
+          if [ "x${BOOL_USE_INC}" = "xtrue" ]; then
+            if [ "x${BOOL_USE_BASE}" = "xtrue" ]; then
+              echo "::error::You cannot use both 'use_base' and 'use_inc'" >&2
               exit 1
             fi
-            IMAGE_SELECTED="${IMAGE_LATEST_INC}"
+            BUILDER_ID_SELECTED="${BUILDER_ID_INC}"
           fi
-          echo "Creating incremental builder '${IMAGE_BASE}' from '${IMAGE_SELECTED}'"
 
+          echo "Creating incremental builder '${BUILDER_ID_PACKAGE}' from '${BUILDER_ID_SELECTED}'"
           set +eo pipefail
-          docker buildx imagetools inspect "${IMAGE_SELECTED}"
-          ret_val=$?
+            docker buildx imagetools inspect "${BUILDER_ID_SELECTED}"
+            ret_val=$?
           set -eo pipefail
           if [ "x${ret_val}" != "x0" ]; then
-            echo "::error::Base/incremental builder '${IMAGE_SELECTED}' does not exist, please run 'docker-build' job" >&2
+            echo "::error::Base/incremental builder '${BUILDER_ID_SELECTED}' does not exist, please run 'build-base'/'build-inc' job" >&2
             exit 1
           fi
 
-          create_remote_tag_alias "${IMAGE_SELECTED}" "${IMAGE_BASE}"
+          create_remote_tag_alias "${BUILDER_ID_SELECTED}" "${BUILDER_ID_PACKAGE}"
         fi
 
     - name: Download last incremental builder
@@ -527,20 +573,17 @@ jobs:
     - name: Update repo and packages
       run: |
         . docker.sh
-        build_image updateclone
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::updateclone"
+        build_image clone
 
     - name: Apply customizations
       run: |
         . docker.sh
         build_image custom
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::custom"
 
     - name: Download packages
       run: |
         . docker.sh
         build_image download
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::download"
 
     - name: Print disk space
       run: df -h
@@ -549,7 +592,6 @@ jobs:
       run: |
         . docker.sh
         build_image compile
-        echo "::set-env name=STATE_LAST_BUILD_STAGE::compile"
 
     - name: Print disk space
       run: df -h
@@ -572,29 +614,33 @@ jobs:
         echo "::set-output name=status::success"
 
     - name: Filter out firmware files
+      id: organize_1
       if: steps.copydir.outputs.status == 'success' && !cancelled()
       run: |
         shopt -s extglob
         cd openwrt/bin/targets/*/*
         all_extra_files=( !(packages) )
         rm -rf "${all_extra_files[@]}"
+        echo "::set-output name=status::success"
 
     - name: Upload packages
       uses: actions/upload-artifact@master
-      if: steps.copydir.outputs.status == 'success' && !cancelled()
+      if: steps.organize_1.outputs.status == 'success' && !cancelled()
       with:
         name: OpenWrt_packages
         path: openwrt/bin
 
     - name: Filter out old packages
-      if: steps.copydir.outputs.status == 'success' && !cancelled()
+      id: organize_2
+      if: steps.organize_1.outputs.status == 'success' && !cancelled()
       run: |
         cd openwrt/bin/targets/*/*
         find . -type f -not -newer ../../../../../.start_timestamp -exec rm -f {} \;
+        echo "::set-output name=status::success"
 
     - name: Upload new packages
       uses: actions/upload-artifact@master
-      if: steps.copydir.outputs.status == 'success' && !cancelled()
+      if: steps.organize_2.outputs.status == 'success' && !cancelled()
       with:
         name: OpenWrt_new_packages
         path: openwrt/bin
@@ -604,14 +650,18 @@ jobs:
       if: failure() || github.event.client_payload.debug == true || github.event.deployment.payload.debug == true
       uses: tete1030/debugger-action@my
 
-  direct-build:
+  build-direct:
     runs-on: ubuntu-18.04
-    if: (
-        github.event_name == 'repository_dispatch' &&
-        github.event.action == 'direct-build'
+    if: |
+      (
+        github.event_name == 'push'
+        && contains(github.event.head_commit.message, '#build-direct#')
       ) || (
-        github.event_name == 'deployment' &&
-        github.event.deployment.task == 'direct-build'
+        github.event_name == 'repository_dispatch'
+        && github.event.action == 'build-direct'
+      ) || (
+        github.event_name == 'deployment'
+        && github.event.deployment.task == 'build-direct'
       )
     steps:
     - name: Checkout
@@ -628,7 +678,7 @@ jobs:
         REPO_BRANCH: master
       run:
         scripts/update_repo.sh
-        UPDATE_FEEDS=1 scripts/update_feeds.sh
+        OPT_UPDATE_FEEDS=1 scripts/update_feeds.sh
 
     - name: Load custom configuration
       run: scripts/customize.sh
@@ -670,15 +720,17 @@ jobs:
         path: openwrt/bin
 
     - name: Organize files
+      id: organize
       if: (!cancelled())
       run: |
         cd openwrt/bin/targets/*/*
         rm -rf packages
         echo "::set-env name=FIRMWARE::$(pwd)"
+        echo "::set-output name=status::success"
 
     - name: Upload firmware
       uses: actions/upload-artifact@master
-      if: (success() && !cancelled())
+      if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
         name: OpenWrt_firmware
         path: ${{ env.FIRMWARE }}

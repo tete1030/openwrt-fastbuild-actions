@@ -5,13 +5,13 @@
 # Author: Texot
 #=================================================
 
-ARG IMAGE_BASE
-FROM ${IMAGE_BASE} AS updateclone
-ARG UPDATE_FEEDS
+ARG DK_IMAGE_BASE
+FROM ${DK_IMAGE_BASE} AS clone
+ARG OPT_UPDATE_FEEDS
 COPY --chown=builder:builder scripts ./scripts
-# RUN UPDATE_FEEDS="${UPDATE_FEEDS}" scripts/update_feeds.sh
+# RUN OPT_UPDATE_FEEDS="${OPT_UPDATE_FEEDS}" scripts/update_feeds.sh
 
-FROM updateclone AS custom
+FROM clone AS custom
 COPY --chown=builder:builder patches ./patches
 ARG CONFIG_FILE
 COPY --chown=builder:builder ${CONFIG_FILE} ./
