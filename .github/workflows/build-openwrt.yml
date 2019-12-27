@@ -47,6 +47,7 @@ env:
   DK_CONTEXT: .
   DK_NO_REMOTE_CACHE: 1
   DK_NO_BUILDTIME_PUSH: 1
+  DK_CONVERT_MULTISTAGE_TO_IMAGE: 1
   DOCKERFILE_BASE: Dockerfile
   DOCKERFILE_INC: Dockerfile-inc
   DOCKERFILE_PACKAGE: Dockerfile-package
@@ -241,7 +242,8 @@ jobs:
       if: env.OPT_DEBUG == '1'
       env:
         TIMEOUT_MIN: 5
-      uses: tete1030/debugger-action@my
+        TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
+      uses: tete1030/debugger-action@dev
 
     - name: Apply customizations
       run: |
@@ -316,7 +318,9 @@ jobs:
       if: |
         failure()
         || env.OPT_DEBUG == '1'
-      uses: tete1030/debugger-action@my
+      env:
+        TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
+      uses: tete1030/debugger-action@dev
 
   build-package:
     runs-on: ubuntu-18.04
@@ -462,7 +466,8 @@ jobs:
       if: env.OPT_DEBUG == '1'
       env:
         TIMEOUT_MIN: 5
-      uses: tete1030/debugger-action@my
+        TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
+      uses: tete1030/debugger-action@dev
 
     - name: Update repo and packages
       run: |
@@ -542,7 +547,9 @@ jobs:
     # failure checking
     - name: Failed/debug set, wait for SSH connection ( you are safe to cancel the job now )
       if: failure() || env.OPT_DEBUG == '1'
-      uses: tete1030/debugger-action@my
+      env:
+        TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
+      uses: tete1030/debugger-action@dev
 
   build-direct:
     runs-on: ubuntu-18.04
@@ -590,7 +597,7 @@ jobs:
       if: env.OPT_DEBUG == '1'
       env:
         TIMEOUT_MIN: 5
-      uses: tete1030/debugger-action@my
+      uses: tete1030/debugger-action@dev
 
     - name: Download packages
       run: scripts/download.sh
@@ -640,4 +647,4 @@ jobs:
     # failure checking
     - name: Failed/debug set, wait for SSH connection ( you are safe to cancel the job now )
       if: failure() || env.OPT_DEBUG == '1'
-      uses: tete1030/debugger-action@my
+      uses: tete1030/debugger-action@dev
