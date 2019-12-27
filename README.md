@@ -29,7 +29,7 @@ Github Actions和Actions-Openwrt让我们可以很方便地自动化编译OpenWr
         - [Options only for build-package](#options-only-for-build-package)
         - [Examples](#examples)
           - [Use github-repo-dispatcher to rebase building environment](#use-github-repo-dispatcher-to-rebase-building-environment)
-        - [Use commit message to re-create building environment](#use-commit-message-to-re-create-building-environment)
+          - [Use commit message to re-create building environment](#use-commit-message-to-re-create-building-environment)
   - [Details](#details)
     - [Mechanism](#mechanism)
     - [Success building job examples](#success-building-job-examples)
@@ -38,6 +38,7 @@ Github Actions和Actions-Openwrt让我们可以很方便地自动化编译OpenWr
       - [build-package](#build-package)
   - [FAQs](#faqs)
     - [Why I cannot see any tag on Docker Hub website?](#why-i-cannot-see-any-tag-on-docker-hub-website)
+    - [如何添加自定义安装包？](#%e5%a6%82%e4%bd%95%e6%b7%bb%e5%8a%a0%e8%87%aa%e5%ae%9a%e4%b9%89%e5%ae%89%e8%a3%85%e5%8c%85)
   - [Todo](#todo)
   - [Acknowledgments](#acknowledgments)
   - [License](#license)
@@ -104,7 +105,7 @@ The building process generally takes **1.5~3 hours** depending on your config.
 5. *(可选，没什么用)* 如果你想自动把SSH命令发送到Slack，你可以在Secrets页面设置`SLACK_WEBHOOK_URL`。详细方法请自行Google。
 6. *(可选)* 定制`.github/workflows/build-openwrt.yml`以修改你想在Docker Hub保存的**builder名和其他选项**。
 7. **生成你的`.config`文件**，并把它重命名为`config.diff`。把它放在根目录。
-8. *(可选)* 如果你想**放置额外安装包**，定制`scripts/update_feeds.sh`。
+8. *(可选)* 如果你想**放置额外安装包**，定制`scripts/update_feeds.sh`。([Wiki-如何添加自定义安装包？](https://github.com/tete1030/openwrt-fastbuild-actions/wiki/%E5%A6%82%E4%BD%95%E6%B7%BB%E5%8A%A0%E8%87%AA%E5%AE%9A%E4%B9%89%E5%AE%89%E8%A3%85%E5%8C%85%EF%BC%9F))
 9. *(可选)* 在patches目录放置**补丁文件**。补丁会自动在`update_feeds.sh`之后，`download.sh`之前执行。
 10. **Commit并Push**。这一步骤会自动触发编译。
 11. 等待`build-inc`任务完成。
@@ -195,7 +196,7 @@ All boolean options are by default `false`. The following are options available.
 
 ###### Use github-repo-dispatcher to rebase building environment
 
-To trigger rebase the incremental builder with SSH debugger enabled:
+To trigger rebasing the incremental builder with SSH debugger enabled:
 1. Open your forked repo
 2. Click "Repo Dispatch" or "Deploy" at the top right corner (install at [tete1030/github-repo-dispatcher](https://github.com/tete1030/github-repo-dispatcher))
 3. Fill `build-inc` in "Type/Task" prompt
@@ -203,7 +204,7 @@ To trigger rebase the incremental builder with SSH debugger enabled:
 5. Fill `{"use_base": true, "debug": true}` in "Payload" prompt
 6. Open the job's log page, wait for the SSH command showing up (when debugging, you are allowed to SSH into the job's runner, with the help of tmate.io)
 
-##### Use commit message to re-create building environment
+###### Use commit message to re-create building environment
 
 1. Save all the files you changed
 2. At the last commit before push, commit with message "some message #build-inc#rebuild# some message"
@@ -223,8 +224,8 @@ For convenience, assume docker image for storing builder
 There are three builders:
 
 - When doing first-time building or rebuilding, the `build-inc` mode setups "base builder" and builds OpenWrt freshly. It produces a firmware and a "base builder". The builder is named as `t/o:latest` and stored in Docker Hub. It is further linked to `t/o:latest-inc`, which is an incremental build used for future use.
-- For every push, the `build-inc` mode setups "incremental builder `t/o:latest-inc`" based on its own previous "incremental builder `t/o:latest-inc`" (same name). It also builds a new firmware. Finally it saves back the new builder to Docker Hub, overwriting the old one.
-- For every push, the `build-package` mode setups "incremental builder `t/o:latest-package`" based on its own previous "incremental builder `t/o:latest-package`" (same name). If the previous one does not exist, it uses the base builder. This mode also builds packages (*.ipkg). Finally it saves back the new builder to Docker Hub, overwriting the old one.
+- For every push, the `build-inc` mode setups "incremental builder `t/o:latest-inc`" based on its own previous "incremental builder `t/o:latest-inc`" (same name). This mode builds a new firmware and packages. Finally it saves back the new builder to Docker Hub, overwriting the old one.
+- For every push, the `build-package` mode setups "incremental builder `t/o:latest-package`" based on its own previous "incremental builder `t/o:latest-package`" (same name). If the previous one does not exist, it uses the base builder. This mode only builds packages (*.ipkg), no firmware is built. Finally it saves back the new builder to Docker Hub, overwriting the old one.
 
 ### Success building job examples
 
@@ -277,9 +278,13 @@ All tags actually exist but could be invisible. Caused by known problem of build
 - https://github.com/docker/hub-feedback/issues/1906
 - https://github.com/docker/buildx/issues/173
 
+### 如何添加自定义安装包？
+
+[Wiki-如何添加自定义安装包？](https://github.com/tete1030/openwrt-fastbuild-actions/wiki/%E5%A6%82%E4%BD%95%E6%B7%BB%E5%8A%A0%E8%87%AA%E5%AE%9A%E4%B9%89%E5%AE%89%E8%A3%85%E5%8C%85%EF%BC%9F)
+
 ## Todo
 
-- [x] Merge three building modes into one to simplify the process
+- [x] Merge building modes to simplify the process
 - [ ] SSH into docker container instead of just the runner (for `make menuconfig`)
 - [x] Allow customizing trigger event
 - [x] Allow specify building job in commit message
