@@ -41,6 +41,7 @@ This project uses Docker Hub or any Docker registriy for storing previous buildi
       - [build-package](#build-package)
   - [FAQs](#faqs)
     - [Why I cannot see any tag on Docker Hub website?](#why-i-cannot-see-any-tag-on-docker-hub-website)
+    - [How to add my own packages and do other customizations? (Chinese)](#how-to-add-my-own-packages-and-do-other-customizations-chinese)
   - [Todo](#todo)
   - [Acknowledgments](#acknowledgments)
   - [License](#license)
@@ -241,6 +242,10 @@ I'll now explain here the detailed building process of each mode.
 All tags actually exist but could be invisible. Caused by known problem of buildx:
 - https://github.com/docker/hub-feedback/issues/1906
 - https://github.com/docker/buildx/issues/173
+
+### How to add my own packages and do other customizations? (Chinese)
+
+[Wiki-如何添加自定义安装包？](https://github.com/tete1030/openwrt-fastbuild-actions/wiki/%E5%A6%82%E4%BD%95%E6%B7%BB%E5%8A%A0%E8%87%AA%E5%AE%9A%E4%B9%89%E5%AE%89%E8%A3%85%E5%8C%85%EF%BC%9F)
 
 ## Todo
 

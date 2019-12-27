@@ -24,7 +24,7 @@ Github Actions和Actions-Openwrt让我们可以很方便地自动化编译OpenWr
   - [细节（未完成）](#%e7%bb%86%e8%8a%82%e6%9c%aa%e5%ae%8c%e6%88%90)
   - [FAQs](#faqs)
     - [为什么Docker Hub的repo页面我看不到任何tag？](#%e4%b8%ba%e4%bb%80%e4%b9%88docker-hub%e7%9a%84repo%e9%a1%b5%e9%9d%a2%e6%88%91%e7%9c%8b%e4%b8%8d%e5%88%b0%e4%bb%bb%e4%bd%95tag)
-    - [如何添加自定义安装包？](#%e5%a6%82%e4%bd%95%e6%b7%bb%e5%8a%a0%e8%87%aa%e5%ae%9a%e4%b9%89%e5%ae%89%e8%a3%85%e5%8c%85)
+    - [如何添加自定义安装包，并定制部分文件？](#%e5%a6%82%e4%bd%95%e6%b7%bb%e5%8a%a0%e8%87%aa%e5%ae%9a%e4%b9%89%e5%ae%89%e8%a3%85%e5%8c%85%e5%b9%b6%e5%ae%9a%e5%88%b6%e9%83%a8%e5%88%86%e6%96%87%e4%bb%b6)
 
 ## 特点
 
@@ -97,6 +97,6 @@ Github Actions和Actions-Openwrt让我们可以很方便地自动化编译OpenWr
 - https://github.com/docker/buildx/issues/173
 
 
-### 如何添加自定义安装包？
+### 如何添加自定义安装包，并定制部分文件？
 
 [Wiki-如何添加自定义安装包？](https://github.com/tete1030/openwrt-fastbuild-actions/wiki/%E5%A6%82%E4%BD%95%E6%B7%BB%E5%8A%A0%E8%87%AA%E5%AE%9A%E4%B9%89%E5%AE%89%E8%A3%85%E5%8C%85%EF%BC%9F)
