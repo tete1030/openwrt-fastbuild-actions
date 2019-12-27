@@ -1,7 +1,14 @@
 Building OpenWrt with GitHub Actions and Docker
 ============================================================================
 
-> I largely optimized the main building process. It is now easier to use.
+[中文说明](README_CN.md)
+
+> I have largely optimized the main building process. It is now easier to use.
+>
+> This project is most useful for people who modify the compiling settings frequently, and may need to compile new packages from time to time. It by default does not update OpenWrt's and packages' source code every time it builds (unless you specified), because doing so harms incremental building‘s utility and stability.
+> 
+> If you don't like this, do not care about long compiling duration, or feel that the following instructions are complex, check out [P3TERX's Actions-Openwrt](https://github.com/P3TERX/Actions-OpenWrt) or [KFERMercer's OpenWrt-CI](https://github.com/KFERMercer/OpenWrt-CI). They are very easy to use except for the compiling duration.
+
 
 This project is inspired by [P3TERX's Actions-Openwrt](https://github.com/P3TERX/Actions-OpenWrt).
 
@@ -9,20 +16,16 @@ With Github Actions and Actions-Openwrt, it is easy to build an OpenWrt firmware
 
 This project uses Docker Hub or any Docker registriy for storing previous building process, allowing incremental building.
 
-Github Actions和Actions-Openwrt让我们可以很方便地自动化编译OpenWrt固件，而不必在本地编译。然而Github Actions不存储缓存，已编译过的文件也不会在下次编译重新被使用。这就意味着，即便只是很小的改动，每次编译我们要等上很久来重新编译整个固件。
-
-本项目使用Docker Hub或任何Docker Registry存储编译状态，使得后续的编译可以增量进行。
-
 - [Building OpenWrt with GitHub Actions and Docker](#building-openwrt-with-github-actions-and-docker)
-  - [Features 特点](#features-%e7%89%b9%e7%82%b9)
-  - [Usage 用法](#usage-%e7%94%a8%e6%b3%95)
-    - [Basic usage 基础用法](#basic-usage-%e5%9f%ba%e7%a1%80%e7%94%a8%e6%b3%95)
-      - [First-time building 第一次编译](#first-time-building-%e7%ac%ac%e4%b8%80%e6%ac%a1%e7%bc%96%e8%af%91)
+  - [Features](#features)
+  - [Usage](#usage)
+    - [Basic usage](#basic-usage)
+      - [First-time building](#first-time-building)
         - [Secrets page](#secrets-page)
-      - [Following building 后续编译](#following-building-%e5%90%8e%e7%bb%ad%e7%bc%96%e8%af%91)
-    - [Advanced usage 高级用法](#advanced-usage-%e9%ab%98%e7%ba%a7%e7%94%a8%e6%b3%95)
-      - [Re-create your building environment 重建编译环境](#re-create-your-building-environment-%e9%87%8d%e5%bb%ba%e7%bc%96%e8%af%91%e7%8e%af%e5%a2%83)
-      - [Rebase your building environment 重设编译环境](#rebase-your-building-environment-%e9%87%8d%e8%ae%be%e7%bc%96%e8%af%91%e7%8e%af%e5%a2%83)
+      - [Following building](#following-building)
+    - [Advanced usage](#advanced-usage)
+      - [Re-create your building environment](#re-create-your-building-environment)
+      - [Rebase your building environment](#rebase-your-building-environment)
       - [Manually trigger building and its options](#manually-trigger-building-and-its-options)
         - [Global options](#global-options)
         - [Options only for build-inc](#options-only-for-build-inc)
@@ -38,12 +41,12 @@ Github Actions和Actions-Openwrt让我们可以很方便地自动化编译OpenWr
       - [build-package](#build-package)
   - [FAQs](#faqs)
     - [Why I cannot see any tag on Docker Hub website?](#why-i-cannot-see-any-tag-on-docker-hub-website)
-    - [如何添加自定义安装包？](#%e5%a6%82%e4%bd%95%e6%b7%bb%e5%8a%a0%e8%87%aa%e5%ae%9a%e4%b9%89%e5%ae%89%e8%a3%85%e5%8c%85)
+    - [How to add my own packages and do other customizations? (Chinese)](#how-to-add-my-own-packages-and-do-other-customizations-chinese)
   - [Todo](#todo)
   - [Acknowledgments](#acknowledgments)
   - [License](#license)
 
-## Features 特点
+## Features
 
 - Load and save building state to Docker Hub or other registries
 - Support building options
@@ -57,29 +60,15 @@ Github Actions和Actions-Openwrt让我们可以很方便地自动化编译OpenWr
   - `build-inc`: Incrementally building firmware and packages (every push, about 40 minutes for standard config, about 3 hours for first-time building)
   - `build-package`: Incrementally building only packages (every push, about 25 minutes for standard config, useful when only enabling a package module)
 
-----
-
-- 在Docker Hub或其他Registry加载和存储OpenWrt编译状态
-- 支持编译选项
-- 多种触发模式
-  - Push触发，支持在commit message中包含指令
-  - Deployment事件触发（可使用[tete1030/github-repo-dispatcher](https://github.com/tete1030/github-repo-dispatcher)）
-  - Repository dispatch事件触发（可使用[tete1030/github-repo-dispatcher](https://github.com/tete1030/github-repo-dispatcher)）
-  - 自己给自己Star触发（可指定Star的触发者）
-  - 定时触发
-- 两个编译模式（冒号前是Github Actions中的job名称）
-  - `build-inc`：增量编译固件和软件包（每次push自动进行，标准配置下大约每次40分钟，第一次编译时耗时大约3小时）
-  - `build-package`：增量编译软件包（每次push自动进行，标准配置下大约每次25分钟，当仅需要编译软件安装包时比较有用）
-
-## Usage 用法
+## Usage
 
 **The default configuration uses [coolsnowwolf/lede](https://github.com/coolsnowwolf/lede) as the OpenWrt Repo** (popular in China). If you want official OpenWrt 19.07, check out ["openwrt_official" branch](https://github.com/tete1030/openwrt-fastbuild-actions/tree/openwrt_official). (It's just changes of `REPO_URL` and `REPO_BRANCH` envs in `.github/workflows/build-openwrt.yml`.)
 
 Check out my own configuration in ["sample" branch](https://github.com/tete1030/openwrt-fastbuild-actions/tree/sample).
 
-### Basic usage 基础用法
+### Basic usage
 
-#### First-time building 第一次编译
+#### First-time building
 
 The building process generally takes **1.5~3 hours** depending on your config.
 
@@ -96,26 +85,11 @@ The building process generally takes **1.5~3 hours** depending on your config.
 11. Wait for `build-inc` job to finish.
 12. Collect your files in the `build-inc` job's `Artifacts` menu
 
-----
-
-1. 注册[GitHub Actions](https://github.com/features/actions/signup)
-2. Fork
-3. **注册Docker Hub**. 这步很重要
-4. 取得Docker Hub的**personal access token**。在你自己Fork的Repo中的**Settings->Secrets**页面填写你的Docker Hub用户名和token。使用“docker_username”填写用户名，使用“docker_password”填写token。详见[Secrets page](#secrets-page)。
-5. *(可选，没什么用)* 如果你想自动把SSH命令发送到Slack，你可以在Secrets页面设置`SLACK_WEBHOOK_URL`。详细方法请自行Google。
-6. *(可选)* 定制`.github/workflows/build-openwrt.yml`以修改你想在Docker Hub保存的**builder名和其他选项**。
-7. **生成你的`.config`文件**，并把它重命名为`config.diff`。把它放在根目录。
-8. *(可选)* 如果你想**放置额外安装包**，定制`scripts/update_feeds.sh`。([Wiki-如何添加自定义安装包？](https://github.com/tete1030/openwrt-fastbuild-actions/wiki/%E5%A6%82%E4%BD%95%E6%B7%BB%E5%8A%A0%E8%87%AA%E5%AE%9A%E4%B9%89%E5%AE%89%E8%A3%85%E5%8C%85%EF%BC%9F))
-9. *(可选)* 在patches目录放置**补丁文件**。补丁会自动在`update_feeds.sh`之后，`download.sh`之前执行。
-10. **Commit并Push**。这一步骤会自动触发编译。
-11. 等待`build-inc`任务完成。
-12. 在`build-inc`任务的`Artifacts`目录下载编译好的文件。
-
 ##### Secrets page
 
 ![Secrets page](imgs/secrets.png)
 
-#### Following building 后续编译
+#### Following building
 
 After the first-time building, you will only need the following steps to build your firmwares and packages when you change your config. The building process generally only takes **20 minutes ~ 1 hour** depending on how much your config has changed.
 
@@ -126,27 +100,18 @@ After the first-time building, you will only need the following steps to build y
 5. Wait for `build-inc` or `build-package` to finish
 6. Collect your files in the `build-inc` or `build-package` job's "Artifacts" menu
 
-----
-
-1. *(可选)* 根据需要修改你的`config.diff`
-2. *(可选)* 根据需要修改你的`scripts/update_feeds.sh`
-3. *(可选)* 根据需要添加新的补丁至patches目录
-4. Commit并Push。如果你想执行`build-inc`任务，你不需要进行任何特殊操作。如果你需要执行`build-package`，你可以在Push前的最后一个commit message中包含这一字符串：`#build-package#`
-5. 等待`build-inc`或`build-package`完成
-6. 在“Artifacts”目录收集文件
-
-### Advanced usage 高级用法
+### Advanced usage
 
 The following contents require your understanding of the mechanism. See [Mechanism](#mechanism).
 
-#### Re-create your building environment 重建编译环境
+#### Re-create your building environment
 
 If you have largely modified your configurations, incremental building may fail as there could be old configurations remained. It's better to completely re-create your builder. You can specify the `rebuild` building option to achieve this. For usage of building options, refer to [Manually trigger building and its options](#manually-trigger-building-and-its-options).
 
 
 Technically, this is to "re-create your base builder". For definition of "base builder", refer to [Mechanism](#mechanism).
 
-#### Rebase your building environment 重设编译环境
+#### Rebase your building environment
 
 Sometimes, you don't need to re-create the base builder. You just need to link previous base builder to current "incremental builder".
 
@@ -278,7 +243,7 @@ All tags actually exist but could be invisible. Caused by known problem of build
 - https://github.com/docker/hub-feedback/issues/1906
 - https://github.com/docker/buildx/issues/173
 
-### 如何添加自定义安装包？
+### How to add my own packages and do other customizations? (Chinese)
 
 [Wiki-如何添加自定义安装包？](https://github.com/tete1030/openwrt-fastbuild-actions/wiki/%E5%A6%82%E4%BD%95%E6%B7%BB%E5%8A%A0%E8%87%AA%E5%AE%9A%E4%B9%89%E5%AE%89%E8%A3%85%E5%8C%85%EF%BC%9F)
 

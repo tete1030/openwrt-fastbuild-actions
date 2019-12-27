@@ -60,6 +60,7 @@ on:
     paths-ignore:
     - imgs
     - README.md
+    - README_CN.md
     - LICENSE
     - .dockerignore
   ## If you want to use 'watch', 'schedule' events, make sure you also have changed the jobs' `if` condition.
