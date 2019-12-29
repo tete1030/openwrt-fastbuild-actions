@@ -11,7 +11,7 @@
 # 不推荐修改，已处在最优状态。如果仍要修改，确保tests文件夹中的对应文件以类似方式修改。
 
 ARG DK_IMAGE_BASE
-FROM ${DK_IMAGE_BASE} AS clone
+FROM ${DK_IMAGE_BASE} AS clone-stage
 ARG OPT_UPDATE_REPO
 ARG OPT_UPDATE_FEEDS
 # No cache to use for incremental building, so we just copy all files altogether
@@ -19,16 +19,16 @@ COPY --chown=builder:builder scripts ./scripts
 RUN [ "x${OPT_UPDATE_REPO}" != "x1" ] || scripts/update_repo.sh
 RUN OPT_UPDATE_FEEDS="${OPT_UPDATE_FEEDS}" scripts/update_feeds.sh
 
-FROM clone AS custom
+FROM clone-stage AS custom-stage
 COPY --chown=builder:builder patches ./patches
 ARG CONFIG_FILE
 COPY --chown=builder:builder ${CONFIG_FILE} ./
 RUN CONFIG_FILE="${CONFIG_FILE}" NONSTRICT_PATCH=1 scripts/customize.sh
 
-FROM custom AS download
+FROM custom-stage AS download-stage
 RUN scripts/download.sh
 
-FROM download AS compile
+FROM download-stage AS compile-stage
 COPY --chown=builder:builder scripts/compile.sh ./scripts/compile.sh
 RUN COMPILE_OPTIONS="prepare" scripts/compile.sh m \
   || COMPILE_OPTIONS="prepare" scripts/compile.sh s

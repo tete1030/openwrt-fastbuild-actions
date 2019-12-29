@@ -47,6 +47,7 @@ env:
   DK_CONTEXT: .
   DK_NO_REMOTE_CACHE: 1
   DK_NO_BUILDTIME_PUSH: 1
+  DK_CONVERT_MULTISTAGE_TO_IMAGE: 1
   DOCKERFILE_BASE: Dockerfile
   DOCKERFILE_INC: Dockerfile-inc
   DOCKERFILE_PACKAGE: Dockerfile-package
@@ -164,7 +165,7 @@ jobs:
         [ "x${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '#push_when_fail#')) || github.event.client_payload.push_when_fail || github.event.deployment.payload.push_when_fail }}" != "xtrue" ] || OPT_PUSH_WHEN_FAIL=1
         echo "::set-env name=OPT_PUSH_WHEN_FAIL::${OPT_PUSH_WHEN_FAIL}"
 
-        scripts/cleanup.sh
+        [ "x${TEST}" = "x1" ] || scripts/cleanup.sh
 
     - name: Set up Docker Buildx
       id: buildx
@@ -227,10 +228,11 @@ jobs:
         build_image clone
 
     # Allow intermediate customization
-    - name: Debug set, wait for SSH connection
+    - name: Debug set, wait for SSH connection (timeout 5min)
       if: env.OPT_DEBUG == '1'
       env:
         TIMEOUT_MIN: 5
+        TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
       uses: tete1030/debugger-action@my
 
     - name: Apply customizations
@@ -302,10 +304,12 @@ jobs:
         path: ${{ env.FIRMWARE }}
 
     # failure checking
-    - name: Failed/debug set, wait for SSH connection ( you are safe to cancel the job now )
+    - name: Failed/debug set, wait for SSH connection (timeout 30min. You are safe to cancel the job now.)
       if: |
         failure()
         || env.OPT_DEBUG == '1'
+      env:
+        TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
       uses: tete1030/debugger-action@my
 
   build-package:
@@ -396,7 +400,7 @@ jobs:
         [ "x${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '#push_when_fail#')) || github.event.client_payload.push_when_fail || github.event.deployment.payload.push_when_fail }}" != "xtrue" ] || OPT_PUSH_WHEN_FAIL=1
         echo "::set-env name=OPT_PUSH_WHEN_FAIL::${OPT_PUSH_WHEN_FAIL}"
 
-        scripts/cleanup.sh
+        [ "x${TEST}" = "x1" ] || scripts/cleanup.sh
 
     - name: Set up Docker Buildx
       id: buildx
@@ -448,10 +452,11 @@ jobs:
         pull_image
 
     # Allow intermediate customization
-    - name: Debug set, wait for SSH connection
+    - name: Debug set, wait for SSH connection (timeout 5min)
       if: env.OPT_DEBUG == '1'
       env:
         TIMEOUT_MIN: 5
+        TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
       uses: tete1030/debugger-action@my
 
     - name: Update repo and packages
@@ -530,8 +535,10 @@ jobs:
         path: openwrt/bin
 
     # failure checking
-    - name: Failed/debug set, wait for SSH connection ( you are safe to cancel the job now )
+    - name: Failed/debug set, wait for SSH connection (timeout 30min. You are safe to cancel the job now.)
       if: failure() || env.OPT_DEBUG == '1'
+      env:
+        TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
       uses: tete1030/debugger-action@my
 
   build-direct:
@@ -576,7 +583,7 @@ jobs:
       run: scripts/customize.sh
 
     # Allow intermediate customization
-    - name: Debug set, wait for SSH connection
+    - name: Debug set, wait for SSH connection (timeout 5min)
       if: env.OPT_DEBUG == '1'
       env:
         TIMEOUT_MIN: 5
@@ -628,6 +635,6 @@ jobs:
         path: ${{ env.FIRMWARE }}
 
     # failure checking
-    - name: Failed/debug set, wait for SSH connection ( you are safe to cancel the job now )
+    - name: Failed/debug set, wait for SSH connection (timeout 30min. You are safe to cancel the job now.)
       if: failure() || env.OPT_DEBUG == '1'
       uses: tete1030/debugger-action@my
