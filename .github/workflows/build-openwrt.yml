@@ -175,7 +175,7 @@ jobs:
         [ "x${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '#push_when_fail#')) || github.event.client_payload.push_when_fail || github.event.deployment.payload.push_when_fail }}" != "xtrue" ] || OPT_PUSH_WHEN_FAIL=1
         echo "::set-env name=OPT_PUSH_WHEN_FAIL::${OPT_PUSH_WHEN_FAIL}"
 
-        scripts/cleanup.sh
+        [ "x${TEST}" = "x1" ] || scripts/cleanup.sh
 
     - name: Set up Docker Buildx
       id: buildx
@@ -410,7 +410,7 @@ jobs:
         [ "x${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '#push_when_fail#')) || github.event.client_payload.push_when_fail || github.event.deployment.payload.push_when_fail }}" != "xtrue" ] || OPT_PUSH_WHEN_FAIL=1
         echo "::set-env name=OPT_PUSH_WHEN_FAIL::${OPT_PUSH_WHEN_FAIL}"
 
-        scripts/cleanup.sh
+        [ "x${TEST}" = "x1" ] || scripts/cleanup.sh
 
     - name: Set up Docker Buildx
       id: buildx
