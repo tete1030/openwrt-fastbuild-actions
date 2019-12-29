@@ -238,7 +238,7 @@ jobs:
         build_image clone
 
     # Allow intermediate customization
-    - name: Debug set, wait for SSH connection
+    - name: Debug set, wait for SSH connection (timeout 5min)
       if: env.OPT_DEBUG == '1'
       env:
         TIMEOUT_MIN: 5
@@ -314,7 +314,7 @@ jobs:
         path: ${{ env.FIRMWARE }}
 
     # failure checking
-    - name: Failed/debug set, wait for SSH connection ( you are safe to cancel the job now )
+    - name: Failed/debug set, wait for SSH connection (timeout 30min. You are safe to cancel the job now.)
       if: |
         failure()
         || env.OPT_DEBUG == '1'
@@ -462,7 +462,7 @@ jobs:
         pull_image
 
     # Allow intermediate customization
-    - name: Debug set, wait for SSH connection
+    - name: Debug set, wait for SSH connection (timeout 5min)
       if: env.OPT_DEBUG == '1'
       env:
         TIMEOUT_MIN: 5
@@ -545,7 +545,7 @@ jobs:
         path: openwrt/bin
 
     # failure checking
-    - name: Failed/debug set, wait for SSH connection ( you are safe to cancel the job now )
+    - name: Failed/debug set, wait for SSH connection (timeout 30min. You are safe to cancel the job now.)
       if: failure() || env.OPT_DEBUG == '1'
       env:
         TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
@@ -593,7 +593,7 @@ jobs:
       run: scripts/customize.sh
 
     # Allow intermediate customization
-    - name: Debug set, wait for SSH connection
+    - name: Debug set, wait for SSH connection (timeout 5min)
       if: env.OPT_DEBUG == '1'
       env:
         TIMEOUT_MIN: 5
@@ -645,6 +645,6 @@ jobs:
         path: ${{ env.FIRMWARE }}
 
     # failure checking
-    - name: Failed/debug set, wait for SSH connection ( you are safe to cancel the job now )
+    - name: Failed/debug set, wait for SSH connection (timeout 30min. You are safe to cancel the job now.)
       if: failure() || env.OPT_DEBUG == '1'
       uses: tete1030/debugger-action@dev
