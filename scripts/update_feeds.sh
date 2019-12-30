@@ -34,3 +34,4 @@ install_package() {
 # Note that to have it compiled, you also have to set its CONFIG_* options
 install_package mentohust https://github.com/KyleRicardo/MentoHUST-OpenWrt-ipk.git
 install_package luci-app-mentohust https://github.com/BoringCat/luci-app-mentohust.git
+install_package OpenClash https://github.com/vernesong/OpenClash.git

@@ -637,20 +637,6 @@ jobs:
       if: failure() || env.OPT_DEBUG == '1'
       uses: tete1030/debugger-action@my
 
-# Base
-# * -mia
-# * -kms
-
-# Install
-# * autossh
-# * openclash
-# * fping
-# * netdata
-# * strace
-
 # Change source
-# * autossh.init
-# * transmission init.d
 # * netdata add go.d.plugin
-# * openclash replace clashr
 # 

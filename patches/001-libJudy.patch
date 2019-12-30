@@ -1,5 +1,5 @@
---- package/libJudy/Makefile	1970-01-01 00:00:00.000000000 +0000
-+++ package/libJudy/Makefile	2019-11-30 18:16:53.743828520 +0000
+--- package/z-last-build-packages/libJudy/Makefile	1970-01-01 00:00:00.000000000 +0000
++++ package/z-last-build-packages/libJudy/Makefile	2019-11-30 18:16:53.743828520 +0000
 @@ -0,0 +1,46 @@
 +include $(TOPDIR)/rules.mk
 +
@@ -47,9 +47,9 @@
 +endef
 +
 +$(eval $(call BuildPackage,libJudy))
-diff -ruN package/libJudy/patches/100-host-compile-JudyTablesGen.patch package/libJudy/patches/100-host-compile-JudyTablesGen.patch
---- package/libJudy/patches/100-host-compile-JudyTablesGen.patch	1970-01-01 00:00:00.000000000 +0000
-+++ package/libJudy/patches/100-host-compile-JudyTablesGen.patch	2019-11-30 18:14:51.731314215 +0000
+diff -ruN package/z-last-build-packages/libJudy/patches/100-host-compile-JudyTablesGen.patch package/z-last-build-packages/libJudy/patches/100-host-compile-JudyTablesGen.patch
+--- package/z-last-build-packages/libJudy/patches/100-host-compile-JudyTablesGen.patch	1970-01-01 00:00:00.000000000 +0000
++++ package/z-last-build-packages/libJudy/patches/100-host-compile-JudyTablesGen.patch	2019-11-30 18:14:51.731314215 +0000
 @@ -0,0 +1,44 @@
 +--- a/src/Judy1/Makefile.am
 ++++ b/src/Judy1/Makefile.am
@@ -95,9 +95,9 @@ diff -ruN package/libJudy/patches/100-host-compile-JudyTablesGen.patch package/l
 + 
 + JudyLByCount.c:   ../JudyCommon/JudyByCount.c
 + 	cp -f ../JudyCommon/JudyByCount.c      		JudyLByCount.c   
-diff -ruN package/libJudy/patches/300-makefile-nodoc-notest.patch package/libJudy/patches/300-makefile-nodoc-notest.patch
---- package/libJudy/patches/300-makefile-nodoc-notest.patch	1970-01-01 00:00:00.000000000 +0000
-+++ package/libJudy/patches/300-makefile-nodoc-notest.patch	2019-11-30 17:59:32.868635448 +0000
+diff -ruN package/z-last-build-packages/libJudy/patches/300-makefile-nodoc-notest.patch package/z-last-build-packages/libJudy/patches/300-makefile-nodoc-notest.patch
+--- package/z-last-build-packages/libJudy/patches/300-makefile-nodoc-notest.patch	1970-01-01 00:00:00.000000000 +0000
++++ package/z-last-build-packages/libJudy/patches/300-makefile-nodoc-notest.patch	2019-11-30 17:59:32.868635448 +0000
 @@ -0,0 +1,11 @@
 +--- a/Makefile.in	2007-05-22 07:39:11.000000000 -0700
 ++++ b/Makefile.in	2017-02-03 09:47:58.000000000 -0800
