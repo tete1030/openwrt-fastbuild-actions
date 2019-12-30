@@ -321,6 +321,15 @@ jobs:
       env:
         TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
       uses: tete1030/debugger-action@dev
+    
+    - name: Upload debugging changes
+      if: |
+        (failure() && env.PUSH_WHEN_FAIL == '1')
+        || env.OPT_DEBUG == '1'
+      run: |
+        . docker.sh
+        docker tag "${DK_LAST_BUILD_TARGET}" "$(_get_full_image_name_tag_for_build)"
+        push_image_and_cache
 
   build-package:
     runs-on: ubuntu-18.04
@@ -550,6 +559,15 @@ jobs:
       env:
         TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
       uses: tete1030/debugger-action@dev
+    
+    - name: Upload debugging changes
+      if: |
+        (failure() && env.PUSH_WHEN_FAIL == '1')
+        || env.OPT_DEBUG == '1'
+      run: |
+        . docker.sh
+        docker tag "${DK_LAST_BUILD_TARGET}" "$(_get_full_image_name_tag_for_build)"
+        push_image_and_cache
 
   build-direct:
     runs-on: ubuntu-18.04
