@@ -22,6 +22,7 @@ Github Actions和Actions-Openwrt让我们可以很方便地自动化编译OpenWr
       - [后续编译](#%e5%90%8e%e7%bb%ad%e7%bc%96%e8%af%91)
     - [高级用法（未完成）](#%e9%ab%98%e7%ba%a7%e7%94%a8%e6%b3%95%e6%9c%aa%e5%ae%8c%e6%88%90)
   - [细节（未完成）](#%e7%bb%86%e8%8a%82%e6%9c%aa%e5%ae%8c%e6%88%90)
+  - [调试和手动配置](#%e8%b0%83%e8%af%95%e5%92%8c%e6%89%8b%e5%8a%a8%e9%85%8d%e7%bd%ae)
   - [FAQs](#faqs)
     - [为什么Docker Hub的repo页面我看不到任何tag？](#%e4%b8%ba%e4%bb%80%e4%b9%88docker-hub%e7%9a%84repo%e9%a1%b5%e9%9d%a2%e6%88%91%e7%9c%8b%e4%b8%8d%e5%88%b0%e4%bb%bb%e4%bd%95tag)
     - [如何添加自定义安装包，并定制部分文件？](#%e5%a6%82%e4%bd%95%e6%b7%bb%e5%8a%a0%e8%87%aa%e5%ae%9a%e4%b9%89%e5%ae%89%e8%a3%85%e5%8c%85%e5%b9%b6%e5%ae%9a%e5%88%b6%e9%83%a8%e5%88%86%e6%96%87%e4%bb%b6)
@@ -39,6 +40,7 @@ Github Actions和Actions-Openwrt让我们可以很方便地自动化编译OpenWr
 - 两个编译模式（冒号前是Github Actions中的job名称）
   - `build-inc`：增量编译固件和软件包（每次push自动进行，标准配置下大约每次40分钟，第一次编译时耗时大约3小时）
   - `build-package`：增量编译软件包（每次push自动进行，标准配置下大约每次25分钟，当仅需要编译软件安装包时比较有用）
+- 支持通过SSH调试和配置（e.g. `make menuconfig`）
 
 ## 用法
 
@@ -87,6 +89,17 @@ Github Actions和Actions-Openwrt让我们可以很方便地自动化编译OpenWr
 ## 细节（未完成）
 
 请参考[Details](README.md#details)
+
+## 调试和手动配置
+
+通过[tmate](https://tmate.io/)，你可以通过SSH进入docker容器或Github Actions虚拟机以便你调试或更改配置，例如执行`make menuconfig`。如要进入这个模式，你需要开启构建选项`debug`。请参考[Manually trigger building and its options](README.md#manually-trigger-building-and-its-options)以了解如何使用构建选项。
+
+请注意你在docker容器内做出的手动配置应当仅仅是为了**临时使用**的。尽管你在docker容器内的更改会被保存并上传Docker Hub，仍有许多情况会导致你的这些手动配置丢失：
+1. 使用了`rebuild`选项以完全重建你的base builder并rebase你的incremental builder（参考[Mechanism](README.md#mechanism)）
+2. 使用了`use_base`或`use_inc`选项以rebase你的incremental builder
+3. 部分文件会在每次编译时被覆盖。例如，如果你在docker 容器内使用了`make menuconfig`，`.config`文件会被修改并保存到Docker Hub。但是当下次编译时，`config.diff`文件会被复制到`.config`文件上并覆盖它。这将导致你上次编译时使用`make menuconfig`做出的更改丢失。
+
+为了作出永久的配置改变，你仍应使用本仓库内提供的`config.diff`文件及其他自定义方法。
 
 ## FAQs
 

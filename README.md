@@ -39,6 +39,7 @@ This project uses Docker Hub or any Docker registriy for storing previous buildi
     - [Building process explained](#building-process-explained)
       - [build-inc](#build-inc)
       - [build-package](#build-package)
+  - [Debug and manually configure](#debug-and-manually-configure)
   - [FAQs](#faqs)
     - [Why I cannot see any tag on Docker Hub website?](#why-i-cannot-see-any-tag-on-docker-hub-website)
     - [How to add my own packages and do other customizations? (Chinese)](#how-to-add-my-own-packages-and-do-other-customizations-chinese)
@@ -59,6 +60,7 @@ This project uses Docker Hub or any Docker registriy for storing previous buildi
 - Two building modes (before colons are job names of Github Actions)
   - `build-inc`: Incrementally building firmware and packages (every push, about 40 minutes for standard config, about 3 hours for first-time building)
   - `build-package`: Incrementally building only packages (every push, about 25 minutes for standard config, useful when only enabling a package module)
+- Handy debugging and manual configuration through SSH (e.g. `make menuconfig`)
 
 ## Usage
 
@@ -234,6 +236,17 @@ I'll now explain here the detailed building process of each mode.
 8. Upload files to Artifacts
     - `OpenWrt_packages`: all packages
     - `OpenWrt_new_packages`: only newly produced packages of this building
+
+## Debug and manually configure
+
+Thanks to [tmate](https://tmate.io/), you can enter into both the docker containers and GitHub Actions runners through SSH to debug and manually change your configuration, e.g. `make menuconfig`. To enter the mode, you have to enable the building option: `debug`. See [Manually trigger building and its options](#manually-trigger-building-and-its-options) for methods of using options.
+
+Note that the configuration changes you made should only be for **temporary use**. Though your changes in the docker container will be saved to Docker Hub, there are situations where you manual configuration may lost:
+1. The `rebuild` option is set to completely rebuild your base builder and rebase the incremental builder
+2. The `use_base` or `use_inc` option is set to rebase the incremental builder
+3. Some files will be overwriten during every building. For example, if you have executed `make menuconfig` in the container, the changes of the `.config` file will be saved. But during next building, the `config.diff` file in this repo will be copied to `.config`. This will overwrite your previous changes.
+
+To make permanent changes, it is still recommended to use the `config.diff` file and other customization methods provided in this repo.
 
 ## FAQs
 
