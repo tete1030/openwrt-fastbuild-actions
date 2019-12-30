@@ -58,12 +58,10 @@ on:
   deployment:
   repository_dispatch:
   push:
-    paths-ignore:
-    - imgs
-    - README.md
-    - README_CN.md
-    - LICENSE
-    - .dockerignore
+  #  branches: 
+  #    - master
+    paths:
+      - 'config.diff'
   ## If you want to use 'watch', 'schedule' events, make sure you also have changed the jobs' `if` condition.
   ## For 'schedule', see examples in: https://crontab.guru/examples.html
   ##     e.g. every sunday midnight: '0 0 * * 0' every midnight: '0 0 * * *'
@@ -74,7 +72,7 @@ on:
 
 jobs:
   build-inc:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     # Always activate this job, unless specified '#build-package#'
     # * You can change Line 3 to the following one to only build when push with '#build-inc#'
     #     && contains(github.event.head_commit.message, '#build-inc#')
