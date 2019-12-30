@@ -44,6 +44,16 @@ _get_full_image_name_tag_for_cache() {
   echo "$(_get_full_image_name_tag)-cache"
 }
 
+STAGE_AFFIX="-stage"
+_get_stage_from_target() {
+  echo "${1}${STAGE_AFFIX}"
+}
+
+STAGE_CVT_IMAGE_PREFIX="stage-cvt-image-"
+_get_image_from_target() {
+  echo "${STAGE_CVT_IMAGE_PREFIX}${1}"
+}
+
 # action steps
 check_required_input() {
   _exit_if_empty DK_USERNAME "${DK_USERNAME}"
@@ -129,8 +139,43 @@ build_image() {
   IFS_ORI="$IFS"
   IFS=$'\x20'
 
+  declare -a build_target
+  declare -a build_args
+  declare -a build_other_opts
   declare -a cache_from
   declare -a cache_to
+
+  DK_DOCKERFILE_FULL="${DK_DOCKERFILE_FULL:-${DK_CONTEXT}/${DK_DOCKERFILE}}"
+
+  TMP_DOCKERFILE_DIR="/tmp"
+  DK_DOCKERFILE_TMP="${TMP_DOCKERFILE_DIR}/Dockerfile_build.tmp"
+  if [ "x${DK_CONVERT_MULTISTAGE_TO_IMAGE}" = "x1" ]; then
+    if [ "x${DK_BUILDX_DRIVER}" != "xdocker" ]; then
+      echo "DK_CONVERT_MULTISTAGE_TO_IMAGE is only supported by buildx driver 'docker'" >&2
+      exit 1
+    fi
+    if [ "x${DK_NO_REMOTE_CACHE}" != "x1" ]; then
+      echo "DK_CONVERT_MULTISTAGE_TO_IMAGE does not support remote cache, please set DK_NO_REMOTE_CACHE to 1" >&2
+      exit 1
+    fi
+    if [ "x${DK_NO_TAG}" = "x1" ]; then
+      echo "DK_CONVERT_MULTISTAGE_TO_IMAGE requires tag option, please do not set DK_NO_TAG" >&2
+      exit 1
+    fi
+    if [ "x${DK_NO_BUILDTIME_PUSH}" != "x1" ]; then
+      echo "DK_CONVERT_MULTISTAGE_TO_IMAGE does not support buildtime pushing, please set DK_NO_BUILDTIME_PUSH to 1" >&2
+      exit 1
+    fi
+    if [ -z "${TARGET}" ]; then
+      echo "DK_CONVERT_MULTISTAGE_TO_IMAGE requires target option" >&2
+      exit 1
+    fi
+    cp "${DK_DOCKERFILE_FULL}" "${DK_DOCKERFILE_TMP}"
+    perl -pi -e 's/^(\s*FROM\s+)([\w-]+?)'${STAGE_AFFIX}'/\1'${STAGE_CVT_IMAGE_PREFIX}'\2/g' "${DK_DOCKERFILE_TMP}"
+    DK_DOCKERFILE_FULL="${DK_DOCKERFILE_TMP}"
+    DK_DOCKERFILE_STDIN=1
+    build_other_opts+=( "--tag=$(_get_image_from_target ${TARGET})" )
+  fi
 
   if [ "x${DK_USE_INTEGRATED_BUILDKIT}" = "x1" ]; then
     if [ "x${DK_BUILDX_DRIVER}" != "xdocker" ]; then
@@ -188,12 +233,11 @@ build_image() {
   else
     echo "To cache: ${cache_to[@]}"
   fi
-
-  declare -a build_target
+  
   if [ ! -z "${TARGET}" ]; then
-    build_target+=( "--target=${TARGET}" )
+    build_target+=( "--target=$(_get_stage_from_target ${TARGET})" )
   fi
-  declare -a build_args
+
   if [ ! -z "${DK_BUILD_ARGS}" ]; then
     for arg in ${DK_BUILD_ARGS[@]};
     do
@@ -204,8 +248,7 @@ build_image() {
       build_args+=( --build-arg "${arg}=${!arg}" )
     done
   fi
-
-  declare -a build_other_opts
+  
   if [ ! -z "${DK_OUTPUT}" ]; then
     if [ "x${DK_USE_INTEGRATED_BUILDKIT}" = "x1" ]; then
       echo "Warning: docker build command may not support this output type" >&2
@@ -246,12 +289,10 @@ build_image() {
     BUILD_COMMAND="build"
   fi
 
-  DK_DOCKERFILE_FULL=${DK_DOCKERFILE_FULL:-${DK_CONTEXT}/${DK_DOCKERFILE}}
-
   if [ "x${DK_DOCKERFILE_STDIN}" = "x1" ]; then
     (
       set -x
-      docker ${BUILD_COMMAND} \
+      cat "${DK_DOCKERFILE_FULL}" | docker ${BUILD_COMMAND} \
         "${build_target[@]}" \
         "${build_args[@]}" \
         "${cache_from[@]}" \
@@ -259,7 +300,7 @@ build_image() {
         "${build_other_opts[@]}" \
         ${DK_BUILDX_EXTRA_BUILD_OPTS} \
         --file=- \
-        "${DK_CONTEXT}" < "${DK_DOCKERFILE_FULL}"
+        "${DK_CONTEXT}"
     )
   else
     (
@@ -277,7 +318,12 @@ build_image() {
   fi
 
   if [ ! -z "${TARGET}" -a "x${DK_NO_TARGET_RECORD}" != "x1" ]; then
-    echo "::set-env name=DK_LAST_BUILD_TARGET::${TARGET}"
+    if [ "x${DK_CONVERT_MULTISTAGE_TO_IMAGE}" = "x1" ]; then
+      LAST_BUILD_TARGET="$(_get_image_from_target ${TARGET})"
+    else
+      LAST_BUILD_TARGET="$(_get_stage_from_target ${TARGET})"
+    fi
+    echo "::set-env name=DK_LAST_BUILD_TARGET::${LAST_BUILD_TARGET}"
   fi
 
   IFS="$IFS_ORI"
@@ -311,9 +357,9 @@ copy_files() {
     mkdir -p "${TMP_DOCKERFILE_DIR}" || true
 
     echo "Building copy task Dockerfile"
-    DK_DOCKERFILE_FULL="${TMP_DOCKERFILE_DIR}/Dockerfile.tmp"
-    cp "${DK_CONTEXT}/${DK_DOCKERFILE}" "${TMP_DOCKERFILE_DIR}/Dockerfile.tmp"
-    cat >> "${TMP_DOCKERFILE_DIR}/Dockerfile.tmp" << EOF
+    DK_DOCKERFILE_FULL="${TMP_DOCKERFILE_DIR}/Dockerfile_copy.tmp"
+    cp "${DK_CONTEXT}/${DK_DOCKERFILE}" "${DK_DOCKERFILE_FULL}"
+    cat >> "${DK_DOCKERFILE_FULL}" << EOF
 FROM scratch AS buildresult
 WORKDIR "${BUILDRESULT_IMAGE_DIR}"
 COPY --from="${DK_LAST_BUILD_TARGET}" "${1}" ./copied
