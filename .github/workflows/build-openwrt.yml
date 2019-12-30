@@ -16,8 +16,12 @@
 # If you want to tweak the options, please be sure you understand them.
 # 如果你想更改参数，确保在理解它们的前提下进行
 env:
-  # Specify here the name and tag you want to use for the builders
-  # 在这里自定义你想使用的Builder名和默认Tag
+  # Specify here the name and tag you want to use for the builders, they will be used for your docker hub repository
+  # For BUILDER_NAME: due to docker's limitation, only allowing lowercase letters, digits and separators (period, underscores, dashes)
+  # For BUILDER_TAG: lowercase and uppercase letters, digits, underscores, periods and dashes
+  # 在这里自定义你想使用的Builder名和默认Tag，这将被用作Docker Hub仓库的名字和Tag
+  # 对于BUILDER_NAME，由于docker的限制，仅能使用小写字母、数字和分隔符（英文句号，下划线，横杠）
+  # 对于BUILDER_TAG，能使用大小写字母、数字和分隔符
   BUILDER_NAME: openwrt_official
   BUILDER_TAG: latest
   # Specify here the OpenWrt Repo URL and Branch
@@ -41,6 +45,7 @@ env:
   DK_CONTEXT: .
   DK_NO_REMOTE_CACHE: 1
   DK_NO_BUILDTIME_PUSH: 1
+  DK_CONVERT_MULTISTAGE_TO_IMAGE: 1
   DOCKERFILE_BASE: Dockerfile
   DOCKERFILE_INC: Dockerfile-inc
   DOCKERFILE_PACKAGE: Dockerfile-package
@@ -54,6 +59,7 @@ on:
     paths-ignore:
     - imgs
     - README.md
+    - README_CN.md
     - LICENSE
     - .dockerignore
   ## If you want to use 'watch', 'schedule' events, make sure you also have changed the jobs' `if` condition.
@@ -157,7 +163,7 @@ jobs:
         [ "x${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '#push_when_fail#')) || github.event.client_payload.push_when_fail || github.event.deployment.payload.push_when_fail }}" != "xtrue" ] || OPT_PUSH_WHEN_FAIL=1
         echo "::set-env name=OPT_PUSH_WHEN_FAIL::${OPT_PUSH_WHEN_FAIL}"
 
-        scripts/cleanup.sh
+        [ "x${TEST}" = "x1" ] || scripts/cleanup.sh
 
     - name: Set up Docker Buildx
       id: buildx
@@ -220,10 +226,11 @@ jobs:
         build_image clone
 
     # Allow intermediate customization
-    - name: Debug set, wait for SSH connection
+    - name: Debug set, wait for SSH connection (timeout 5min)
       if: env.OPT_DEBUG == '1'
       env:
         TIMEOUT_MIN: 5
+        TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
       uses: tete1030/debugger-action@my
 
     - name: Apply customizations
@@ -295,10 +302,12 @@ jobs:
         path: ${{ env.FIRMWARE }}
 
     # failure checking
-    - name: Failed/debug set, wait for SSH connection ( you are safe to cancel the job now )
+    - name: Failed/debug set, wait for SSH connection (timeout 30min. You are safe to cancel the job now.)
       if: |
         failure()
         || env.OPT_DEBUG == '1'
+      env:
+        TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
       uses: tete1030/debugger-action@my
 
   build-package:
@@ -389,7 +398,7 @@ jobs:
         [ "x${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '#push_when_fail#')) || github.event.client_payload.push_when_fail || github.event.deployment.payload.push_when_fail }}" != "xtrue" ] || OPT_PUSH_WHEN_FAIL=1
         echo "::set-env name=OPT_PUSH_WHEN_FAIL::${OPT_PUSH_WHEN_FAIL}"
 
-        scripts/cleanup.sh
+        [ "x${TEST}" = "x1" ] || scripts/cleanup.sh
 
     - name: Set up Docker Buildx
       id: buildx
@@ -441,10 +450,11 @@ jobs:
         pull_image
 
     # Allow intermediate customization
-    - name: Debug set, wait for SSH connection
+    - name: Debug set, wait for SSH connection (timeout 5min)
       if: env.OPT_DEBUG == '1'
       env:
         TIMEOUT_MIN: 5
+        TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
       uses: tete1030/debugger-action@my
 
     - name: Update repo and packages
@@ -523,8 +533,10 @@ jobs:
         path: openwrt/bin
 
     # failure checking
-    - name: Failed/debug set, wait for SSH connection ( you are safe to cancel the job now )
+    - name: Failed/debug set, wait for SSH connection (timeout 30min. You are safe to cancel the job now.)
       if: failure() || env.OPT_DEBUG == '1'
+      env:
+        TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
       uses: tete1030/debugger-action@my
 
   build-direct:
@@ -569,7 +581,7 @@ jobs:
       run: scripts/customize.sh
 
     # Allow intermediate customization
-    - name: Debug set, wait for SSH connection
+    - name: Debug set, wait for SSH connection (timeout 5min)
       if: env.OPT_DEBUG == '1'
       env:
         TIMEOUT_MIN: 5
@@ -621,6 +633,6 @@ jobs:
         path: ${{ env.FIRMWARE }}
 
     # failure checking
-    - name: Failed/debug set, wait for SSH connection ( you are safe to cancel the job now )
+    - name: Failed/debug set, wait for SSH connection (timeout 30min. You are safe to cancel the job now.)
       if: failure() || env.OPT_DEBUG == '1'
       uses: tete1030/debugger-action@my
