@@ -39,6 +39,7 @@ env:
   DK_USERNAME: ${{secrets.docker_username}}
   DK_PASSWORD: ${{secrets.docker_password}}
   SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
+  TMATE_ENCRYPT_PASSWORD: ${{secrets.TMATE_ENCRYPT_PASSWORD}}
   # Not recommended to change unless you understand how it is used
   # 以下参数不推荐修改
   DK_BUILDX_DRIVER: docker
@@ -231,7 +232,7 @@ jobs:
       env:
         TIMEOUT_MIN: 5
         TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
-      uses: tete1030/debugger-action@my
+      uses: tete1030/debugger-action@dev
 
     - name: Apply customizations
       run: |
@@ -308,7 +309,7 @@ jobs:
         || env.OPT_DEBUG == '1'
       env:
         TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
-      uses: tete1030/debugger-action@my
+      uses: tete1030/debugger-action@dev
 
   build-package:
     runs-on: ubuntu-18.04
@@ -455,7 +456,7 @@ jobs:
       env:
         TIMEOUT_MIN: 5
         TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
-      uses: tete1030/debugger-action@my
+      uses: tete1030/debugger-action@dev
 
     - name: Update repo and packages
       run: |
@@ -537,7 +538,7 @@ jobs:
       if: failure() || env.OPT_DEBUG == '1'
       env:
         TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
-      uses: tete1030/debugger-action@my
+      uses: tete1030/debugger-action@dev
 
   build-direct:
     runs-on: ubuntu-18.04
@@ -585,7 +586,7 @@ jobs:
       if: env.OPT_DEBUG == '1'
       env:
         TIMEOUT_MIN: 5
-      uses: tete1030/debugger-action@my
+      uses: tete1030/debugger-action@dev
 
     - name: Download packages
       run: scripts/download.sh
@@ -635,7 +636,7 @@ jobs:
     # failure checking
     - name: Failed/debug set, wait for SSH connection (timeout 30min. You are safe to cancel the job now.)
       if: failure() || env.OPT_DEBUG == '1'
-      uses: tete1030/debugger-action@my
+      uses: tete1030/debugger-action@dev
 
 # Change source
 # * netdata add go.d.plugin
