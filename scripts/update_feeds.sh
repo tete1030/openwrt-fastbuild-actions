@@ -34,4 +34,4 @@ install_package() {
   fi
 }
 
-source ../user/packages.txt
+source ../packages.txt
