@@ -44,9 +44,9 @@ fi
 
 _get_opt() {
 OPT_NAME="${1}"
-echo -n "${GITHUB_CONTEXT}" | python3 <<EOF
-import json, sys
-github_ctx = json.load( sys.stdin )
+GITHUB_CONTEXT="${GITHUB_CONTEXT}" python3 <<EOF
+import json, os
+github_ctx = json.loads( os.environ["GITHUB_CONTEXT"] )
 try:
   head_commit_message_opt = (github_ctx["event"]["head_commit"]["message"].find("#${OPT_NAME}#".lower()) != -1)
 except KeyError:
