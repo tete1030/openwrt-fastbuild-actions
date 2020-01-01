@@ -41,6 +41,7 @@ env:
   DK_USERNAME: ${{secrets.docker_username}}
   DK_PASSWORD: ${{secrets.docker_password}}
   SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
+  TMATE_ENCRYPT_PASSWORD: ${{secrets.TMATE_ENCRYPT_PASSWORD}}
   # Not recommended to change unless you understand how it is used
   # 以下参数不推荐修改
   DK_BUILDX_DRIVER: docker
@@ -51,6 +52,7 @@ env:
   DOCKERFILE_BASE: Dockerfile
   DOCKERFILE_INC: Dockerfile-inc
   DOCKERFILE_PACKAGE: Dockerfile-package
+  CONFIG_FILE_DEFAULT: 'config.diff.default'
 
 name: Build OpenWrt
 
@@ -136,6 +138,13 @@ jobs:
         echo "::set-env name=DK_IMAGE_NAME::${BUILDER_NAME}"
         echo "::set-env name=DK_IMAGE_TAG::${BUILDER_TAG_INC}"
 
+        if [ -z "${CONFIG_FILE}" -o ! -f "${CONFIG_FILE}" ]; then
+          echo "CONFIG_FILE='${CONFIG_FILE}' does not exist, using default" >&2
+          [ ! -z "${CONFIG_FILE_DEFAULT}" -a -f "${CONFIG_FILE_DEFAULT}" ] || ( echo "CONFIG_FILE_DEFAULT='${CONFIG_FILE_DEFAULT}' does not exist!" >&2 && exit 1 )
+          export CONFIG_FILE="${CONFIG_FILE_DEFAULT}"
+          echo "::set-env name=CONFIG_FILE::${CONFIG_FILE}"
+        fi
+
         for var_dockerfile in ${!DOCKERFILE_@}; do
           eval ${var_dockerfile}="Dockerfiles/${!var_dockerfile}"
           echo "::set-env name=${var_dockerfile}::${!var_dockerfile}"
@@ -164,6 +173,12 @@ jobs:
         OPT_PUSH_WHEN_FAIL=0
         [ "x${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '#push_when_fail#')) || github.event.client_payload.push_when_fail || github.event.deployment.payload.push_when_fail }}" != "xtrue" ] || OPT_PUSH_WHEN_FAIL=1
         echo "::set-env name=OPT_PUSH_WHEN_FAIL::${OPT_PUSH_WHEN_FAIL}"
+
+        if [ "x${OPT_DEBUG}" = "x1" -a -z "${TMATE_ENCRYPT_PASSWORD}" -a -z "${SLACK_WEBHOOK_URL}" ]; then
+          echo "::error::To use debug mode, you should set either TMATE_ENCRYPT_PASSWORD or SLACK_WEBHOOK_URL in the 'Secrets' page for safety of your sensitive information. For details, please refer to https://github.com/tete103%30/debugger-action/blob/master/README.md"
+          echo "::error::In the reference URL you are instructed to use environment variables for them. However in this repo, you should set them in the 'Secrets' page"
+          exit 1
+        fi
 
         [ "x${TEST}" = "x1" ] || scripts/cleanup.sh
 
@@ -310,7 +325,16 @@ jobs:
         || env.OPT_DEBUG == '1'
       env:
         TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
-      uses: tete1030/debugger-action@my
+      uses: tete1030/debugger-action@dev
+    
+    - name: Upload debugging changes
+      if: |
+        (failure() && env.PUSH_WHEN_FAIL == '1')
+        || env.OPT_DEBUG == '1'
+      run: |
+        . docker.sh
+        docker tag "${DK_LAST_BUILD_TARGET}" "$(_get_full_image_name_tag_for_build)"
+        push_image_and_cache
 
   build-package:
     runs-on: ubuntu-18.04
@@ -374,6 +398,13 @@ jobs:
         echo "::set-env name=DK_IMAGE_NAME::${BUILDER_NAME}"
         echo "::set-env name=DK_IMAGE_TAG::${BUILDER_TAG_PACKAGE}"
 
+        if [ -z "${CONFIG_FILE}" -o ! -f "${CONFIG_FILE}" ]; then
+          echo "CONFIG_FILE='${CONFIG_FILE}' does not exist, using default" >&2
+          [ ! -z "${CONFIG_FILE_DEFAULT}" -a -f "${CONFIG_FILE_DEFAULT}" ] || ( echo "CONFIG_FILE_DEFAULT='${CONFIG_FILE_DEFAULT}' does not exist!" >&2 && exit 1 )
+          export CONFIG_FILE="${CONFIG_FILE_DEFAULT}"
+          echo "::set-env name=CONFIG_FILE::${CONFIG_FILE}"
+        fi
+
         for var_dockerfile in ${!DOCKERFILE_@}; do
           eval ${var_dockerfile}="Dockerfiles/${!var_dockerfile}"
           echo "::set-env name=${var_dockerfile}::${!var_dockerfile}"
@@ -399,6 +430,12 @@ jobs:
         OPT_PUSH_WHEN_FAIL=0
         [ "x${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '#push_when_fail#')) || github.event.client_payload.push_when_fail || github.event.deployment.payload.push_when_fail }}" != "xtrue" ] || OPT_PUSH_WHEN_FAIL=1
         echo "::set-env name=OPT_PUSH_WHEN_FAIL::${OPT_PUSH_WHEN_FAIL}"
+
+        if [ "x${OPT_DEBUG}" = "x1" -a -z "${TMATE_ENCRYPT_PASSWORD}" -a -z "${SLACK_WEBHOOK_URL}" ]; then
+          echo "::error::To use debug mode, you should set either TMATE_ENCRYPT_PASSWORD or SLACK_WEBHOOK_URL in the 'Secrets' page for safety of your sensitive information. For details, please refer to https://github.com/tete103%30/debugger-action/blob/master/README.md"
+          echo "::error::In the reference URL you are instructed to use environment variables for them. However in this repo, you should set them in the 'Secrets' page"
+          exit 1
+        fi
 
         [ "x${TEST}" = "x1" ] || scripts/cleanup.sh
 
@@ -539,7 +576,16 @@ jobs:
       if: failure() || env.OPT_DEBUG == '1'
       env:
         TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
-      uses: tete1030/debugger-action@my
+      uses: tete1030/debugger-action@dev
+    
+    - name: Upload debugging changes
+      if: |
+        (failure() && env.PUSH_WHEN_FAIL == '1')
+        || env.OPT_DEBUG == '1'
+      run: |
+        . docker.sh
+        docker tag "${DK_LAST_BUILD_TARGET}" "$(_get_full_image_name_tag_for_build)"
+        push_image_and_cache
 
   build-direct:
     runs-on: ubuntu-18.04
