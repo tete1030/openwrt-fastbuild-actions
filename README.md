@@ -143,7 +143,7 @@ All boolean options are by default `false`. The following are options available.
 
 ##### Global options
 
-- `debug`(bool): entering tmate during and after building, allowing you to SSH into the Actions
+- `debug`(bool): entering tmate during and after building, allowing you to SSH into the docker container and Actions. See [Debug and manually configure](#debug-and-manually-configure) for detailed usage.
 - `push_when_fail`(bool): always save the builder to Docker Hub even if the building process fails. Not recommended to use
 
 ##### Options only for `build-inc`

@@ -58,7 +58,7 @@ Github Actions和Actions-Openwrt让我们可以很方便地自动化编译OpenWr
 2. Fork本项目
 3. **注册Docker Hub**. 这步很重要
 4. 取得Docker Hub的**personal access token**。在你自己Fork的Repo中的**Settings->Secrets**页面填写你的Docker Hub用户名和token。使用“docker_username”填写用户名，使用“docker_password”填写token。详见[Secrets页面](#secrets页面)。
-5. *(可选，没什么用)* 如果你想自动把SSH命令发送到Slack，你可以在Secrets页面设置`SLACK_WEBHOOK_URL`。详细方法请自行Google。
+5. *(可选，debug时必须)* 在Secrets页面设置`SLACK_WEBHOOK_URL`或`TMATE_ENCRYPT_PASSWORD`以保护你的敏感信息。 请参考[调试和手动配置](#调试和手动配置).
 6. *(可选)* 定制`.github/workflows/build-openwrt.yml`以修改你想在Docker Hub保存的**builder名和其他选项**。
 7. **生成你的`.config`文件**，并把它重命名为`config.diff`。把它放在根目录。
 8. *(可选)* 如果你想**放置额外安装包**，定制`scripts/update_feeds.sh`。([Wiki-如何添加自定义安装包？](https://github.com/tete1030/openwrt-fastbuild-actions/wiki/%E5%A6%82%E4%BD%95%E6%B7%BB%E5%8A%A0%E8%87%AA%E5%AE%9A%E4%B9%89%E5%AE%89%E8%A3%85%E5%8C%85%EF%BC%9F))
@@ -93,6 +93,8 @@ Github Actions和Actions-Openwrt让我们可以很方便地自动化编译OpenWr
 ## 调试和手动配置
 
 通过[tmate](https://tmate.io/)，你可以通过SSH进入docker容器或Github Actions虚拟机以便你调试或更改配置，例如执行`make menuconfig`。如要进入这个模式，你需要开启构建选项`debug`。请参考[Manually trigger building and its options](README.md#manually-trigger-building-and-its-options)以了解如何使用构建选项。
+
+为了你敏感信息的安全，你**必须**在**Secrets**页面设置`SLACK_WEBHOOK_URL`或`TMATE_ENCRYPT_PASSWORD`以保护你的tmate连接信息。参考[tete1030/debugger-action/README.md](https://github.com/tete1030/debugger-action/blob/master/README.md)以了解原因和它们的用法。
 
 请注意你在docker容器内做出的手动配置应当仅仅是为了**临时使用**的。尽管你在docker容器内的更改会被保存并上传Docker Hub，仍有许多情况会导致你的这些手动配置丢失：
 1. 使用了`rebuild`选项以完全重建你的base builder并rebase你的incremental builder（参考[Mechanism](README.md#mechanism)）
