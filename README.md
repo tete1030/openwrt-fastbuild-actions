@@ -78,7 +78,7 @@ The building process generally takes **1.5~3 hours** depending on your config.
 2. Fork this repo
 3. **Register a Docker Hub account**. This is necessary.
 4. Get your Docker Hub **personal access token**. Fill your username and the generated token into the forked repo's **Settings->Secrets** page. Use `docker_username` for your username, and `docker_password` for your token. See [Secrets page](#secrets-page) for correct settings.
-5. *(Optional, not very useful)* If you want the debug SSH command to be sent to Slack, you can generate a Slack Webhook URL and set the url as `SLACK_WEBHOOK_URL` in the Secrets page. Search in Google if you don't know how to do it.
+5. *(Optional, for debug)* Set `SLACK_WEBHOOK_URL` or `TMATE_ENCRYPT_PASSWORD` in the Secrets page. Refer to [Debug and manually configure](#debug-and-manually-configure).
 6. *(Optional)* Customize `.github/workflows/build-openwrt.yml` to **change builder's name and other options**.
 7. **Generate your `.config`** and rename it to `config.diff`. Put the file in the root dir of your forked repo.
 8. *(Optional)* Customize `scripts/update_feeds.sh` for **additional packages** you want to download.
@@ -143,7 +143,7 @@ All boolean options are by default `false`. The following are options available.
 
 ##### Global options
 
-- `debug`(bool): entering tmate during and after building, allowing you to SSH into the Actions
+- `debug`(bool): entering tmate during and after building, allowing you to SSH into the docker container and Actions. See [Debug and manually configure](#debug-and-manually-configure) for detailed usage.
 - `push_when_fail`(bool): always save the builder to Docker Hub even if the building process fails. Not recommended to use
 
 ##### Options only for `build-inc`
@@ -240,6 +240,8 @@ I'll now explain here the detailed building process of each mode.
 ## Debug and manually configure
 
 Thanks to [tmate](https://tmate.io/), you can enter into both the docker containers and GitHub Actions runners through SSH to debug and manually change your configuration, e.g. `make menuconfig`. To enter the mode, you have to enable the building option: `debug`. See [Manually trigger building and its options](#manually-trigger-building-and-its-options) for methods of using options.
+
+For safety of your sensitive information, you **must** either set `SLACK_WEBHOOK_URL` or `TMATE_ENCRYPT_PASSWORD` in the **Secrets** page to protect the tmate connection info. Refer to [tete1030/debugger-action/README.md](https://github.com/tete1030/debugger-action/blob/master/README.md) for details.
 
 Note that the configuration changes you made should only be for **temporary use**. Though your changes in the docker container will be saved to Docker Hub, there are situations where you manual configuration may lost:
 1. The `rebuild` option is set to completely rebuild your base builder and rebase the incremental builder
