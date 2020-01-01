@@ -14,8 +14,12 @@ cd openwrt
 [ "x${OPT_UPDATE_FEEDS}" != "x1" ] || ./scripts/feeds update -a
 ./scripts/feeds install -a
 
-mkdir -p package/z-last-build-packages || true
-cd package/z-last-build-packages
+mkdir -p package/openwrt-packages || true
+if [ -d "package/z-last-build-packages" ]; then
+  echo "Migrating from 'package/z-last-build-packages' to 'package/openwrt-packages'"
+  mv -nv package/z-last-build-packages/* package/openwrt-packages/
+  rm -rf package/z-last-build-packages
+fi
 
 # install_package PACKAGE_DIR GIT_URL
 install_package() {
@@ -24,10 +28,10 @@ install_package() {
     exit 1
   fi
   if [ -d "${1}" ]; then
-    [ "x${OPT_UPDATE_FEEDS}" != "x1" ] || ( git -C "${1}" reset --hard && git -C "${1}" pull --ff )
+    [ "x${OPT_UPDATE_FEEDS}" != "x1" ] || ( git -C "package/openwrt-packages/${1}" reset --hard && git -C "package/openwrt-packages/${1}" pull --ff )
   else
-    git clone "${2}" "${1}"
+    git -C "package/openwrt-packages" clone "${2}" "${1}"
   fi
 }
 
-source ./user/packages.txt
+source ../user/packages.txt
