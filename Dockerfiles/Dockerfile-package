@@ -15,6 +15,7 @@ FROM ${DK_IMAGE_BASE} AS clone-stage
 ARG OPT_UPDATE_FEEDS
 # No cache to use for incremental building, so we just copy all files altogether
 COPY --chown=builder:builder scripts ./scripts
+COPY --chown=builder:builder user/packages.txt ./
 RUN OPT_UPDATE_FEEDS="${OPT_UPDATE_FEEDS}" scripts/update_feeds.sh
 
 FROM clone-stage AS custom-stage

@@ -10,6 +10,7 @@ FROM ${DK_IMAGE_BASE} AS clone-stage
 ARG OPT_UPDATE_REPO
 ARG OPT_UPDATE_FEEDS
 COPY --chown=builder:builder scripts ./scripts
+COPY --chown=builder:builder user/packages.txt ./
 # RUN [ "x${OPT_UPDATE_REPO}" != "x1" ] || scripts/update_repo.sh
 # RUN OPT_UPDATE_FEEDS="${OPT_UPDATE_FEEDS}" scripts/update_feeds.sh
 
