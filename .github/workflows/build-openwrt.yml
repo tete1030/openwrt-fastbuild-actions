@@ -284,7 +284,7 @@ jobs:
       if: |
         !cancelled() && (
           success()
-          || env.PUSH_WHEN_FAIL == '1'
+          || env.OPT_PUSH_WHEN_FAIL == '1'
         )
       run: |
         . scripts/host/docker.sh
@@ -338,7 +338,7 @@ jobs:
     
     - name: Upload debugging changes
       if: |
-        (failure() && env.PUSH_WHEN_FAIL == '1')
+        (failure() && env.OPT_PUSH_WHEN_FAIL == '1')
         || env.OPT_DEBUG == '1'
       run: |
         . scripts/host/docker.sh
@@ -589,7 +589,7 @@ jobs:
     
     - name: Upload debugging changes
       if: |
-        (failure() && env.PUSH_WHEN_FAIL == '1')
+        (failure() && env.OPT_PUSH_WHEN_FAIL == '1')
         || env.OPT_DEBUG == '1'
       run: |
         . scripts/host/docker.sh
