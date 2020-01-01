@@ -32,7 +32,7 @@ env:
   # REPO_BRANCH: openwrt-19.07
   # Specify here your config file
   # 在这里指定你的配置文件名
-  CONFIG_FILE: 'config.diff'
+  CONFIG_FILE: 'user/config.diff'
   # Leave it empty if you are using the default Docker Hub
   # 如果你想使用默认的Docker Hub，此处留空
   DK_REGISTRY: ''
@@ -60,12 +60,11 @@ on:
   deployment:
   repository_dispatch:
   push:
-    paths-ignore:
-    - imgs
-    - README.md
-    - README_CN.md
-    - LICENSE
-    - .dockerignore
+    paths:
+    - '.github/workflows/build-openwrt.yml'
+    - 'Dockerfiles/**'
+    - 'scripts/**'
+    - 'user/**'
   ## If you want to use 'watch', 'schedule' events, make sure you also have changed the jobs' `if` condition.
   ## For 'schedule', see examples in: https://crontab.guru/examples.html
   ##     e.g. every sunday midnight: '0 0 * * 0' every midnight: '0 0 * * *'
@@ -190,7 +189,7 @@ jobs:
           exit 1
         fi
 
-        [ "x${TEST}" = "x1" ] || scripts/cleanup.sh
+        [ "x${TEST}" = "x1" ] || scripts/host/cleanup.sh
 
     - name: Set up Docker Buildx
       id: buildx
@@ -200,13 +199,13 @@ jobs:
 
     - name: Configure docker
       run: |
-        . docker.sh
+        . scripts/host/docker.sh
         configure_docker
         login_to_registry
 
     - name: Check status of builders
       run: |
-        . docker.sh
+        . scripts/host/docker.sh
         if [ "x${OPT_REBUILD}" != "x1" ]; then
           # temporarily disable failure guarder
           set +eo pipefail
@@ -238,18 +237,18 @@ jobs:
     - name: Download last incremental builder
       if: env.OPT_REBUILD == '0'
       run: |
-        . docker.sh
+        . scripts/host/docker.sh
         pull_image
 
     - name: Initialize environment for base builder
       if: env.OPT_REBUILD == '1'
       run: |
-        . docker.sh
+        . scripts/host/docker.sh
         build_image init-env
 
     - name: Clone/update source codes
       run: |
-        . docker.sh
+        . scripts/host/docker.sh
         build_image clone
 
     # Allow intermediate customization
@@ -262,12 +261,12 @@ jobs:
 
     - name: Apply customizations
       run: |
-        . docker.sh
+        . scripts/host/docker.sh
         build_image custom
 
     - name: Download packages
       run: |
-        . docker.sh
+        . scripts/host/docker.sh
         build_image download
 
     - name: Print disk space
@@ -275,7 +274,7 @@ jobs:
 
     - name: Compile firmware and packages
       run: |
-        . docker.sh
+        . scripts/host/docker.sh
         build_image compile
 
     - name: Print disk space
@@ -288,7 +287,7 @@ jobs:
           || env.PUSH_WHEN_FAIL == '1'
         )
       run: |
-        . docker.sh
+        . scripts/host/docker.sh
         push_image_and_cache
         if [ "x${OPT_REBUILD}" = "x1" ]; then
           create_remote_tag_alias "${BUILDER_ID_INC}" "${BUILDER_ID_BASE}"
@@ -298,7 +297,7 @@ jobs:
       id: copydir
       if: (!cancelled())
       run: |
-        . docker.sh
+        . scripts/host/docker.sh
         if [ ! -d "$(pwd)/openwrt" ]; then
           mkdir "$(pwd)/openwrt"
         fi
@@ -342,7 +341,7 @@ jobs:
         (failure() && env.PUSH_WHEN_FAIL == '1')
         || env.OPT_DEBUG == '1'
       run: |
-        . docker.sh
+        . scripts/host/docker.sh
         docker tag "${DK_LAST_BUILD_TARGET}" "$(_get_full_image_name_tag_for_build)"
         push_image_and_cache
 
@@ -447,7 +446,7 @@ jobs:
           exit 1
         fi
 
-        [ "x${TEST}" = "x1" ] || scripts/cleanup.sh
+        [ "x${TEST}" = "x1" ] || scripts/host/cleanup.sh
 
     - name: Set up Docker Buildx
       id: buildx
@@ -457,14 +456,14 @@ jobs:
 
     - name: Configure docker
       run: |
-        . docker.sh
+        . scripts/host/docker.sh
         configure_docker
         login_to_registry
         touch .start_timestamp
 
     - name: Check if using latest base builder
       run: |
-        . docker.sh
+        . scripts/host/docker.sh
         # temporarily disable failure guarder
         set +eo pipefail
           docker buildx imagetools inspect "${BUILDER_ID_PACKAGE}"
@@ -495,7 +494,7 @@ jobs:
 
     - name: Download last incremental builder
       run: |
-        . docker.sh
+        . scripts/host/docker.sh
         pull_image
 
     # Allow intermediate customization
@@ -508,17 +507,17 @@ jobs:
 
     - name: Update repo and packages
       run: |
-        . docker.sh
+        . scripts/host/docker.sh
         build_image clone
 
     - name: Apply customizations
       run: |
-        . docker.sh
+        . scripts/host/docker.sh
         build_image custom
 
     - name: Download packages
       run: |
-        . docker.sh
+        . scripts/host/docker.sh
         build_image download
 
     - name: Print disk space
@@ -526,7 +525,7 @@ jobs:
 
     - name: Compile packages
       run: |
-        . docker.sh
+        . scripts/host/docker.sh
         build_image compile
 
     - name: Print disk space
@@ -535,14 +534,14 @@ jobs:
     - name: Upload current builder
       if: (!cancelled()) && (success() || env.OPT_PUSH_WHEN_FAIL == '1')
       run: |
-        . docker.sh
+        . scripts/host/docker.sh
         push_image_and_cache
 
     - name: Copy out bin directory
       id: copydir
       if: (!cancelled())
       run: |
-        . docker.sh
+        . scripts/host/docker.sh
         if [ ! -d "$(pwd)/openwrt" ]; then
           mkdir "$(pwd)/openwrt"
         fi
@@ -593,7 +592,7 @@ jobs:
         (failure() && env.PUSH_WHEN_FAIL == '1')
         || env.OPT_DEBUG == '1'
       run: |
-        . docker.sh
+        . scripts/host/docker.sh
         docker tag "${DK_LAST_BUILD_TARGET}" "$(_get_full_image_name_tag_for_build)"
         push_image_and_cache
 
@@ -624,7 +623,7 @@ jobs:
         [ "x${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '#push_when_fail#')) || github.event.client_payload.push_when_fail || github.event.deployment.payload.push_when_fail }}" != "xtrue" ] || OPT_PUSH_WHEN_FAIL=1
         echo "::set-env name=OPT_PUSH_WHEN_FAIL::${OPT_PUSH_WHEN_FAIL}"
 
-        scripts/cleanup.sh
+        scripts/host/cleanup.sh
         scripts/initenv.sh
 
     - name: Clone all source code

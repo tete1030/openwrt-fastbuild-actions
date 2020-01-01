@@ -1,0 +1,3 @@
+user/patches merge=ours
+user/config.diff merge=ours
+user/packages.txt merge=ours

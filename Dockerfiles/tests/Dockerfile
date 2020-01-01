@@ -27,7 +27,7 @@ RUN mkdir openwrt
 FROM clone-stage AS custom-stage
 ARG CONFIG_FILE
 COPY --chown=builder:builder scripts/customize.sh ./scripts/customize.sh
-COPY --chown=builder:builder patches ./patches
+COPY --chown=builder:builder user/patches ./patches
 COPY --chown=builder:builder ${CONFIG_FILE} ./
 # RUN CONFIG_FILE="${CONFIG_FILE}" scripts/customize.sh
 

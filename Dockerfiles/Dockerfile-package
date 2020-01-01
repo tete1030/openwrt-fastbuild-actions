@@ -18,7 +18,7 @@ COPY --chown=builder:builder scripts ./scripts
 RUN OPT_UPDATE_FEEDS="${OPT_UPDATE_FEEDS}" scripts/update_feeds.sh
 
 FROM clone-stage AS custom-stage
-COPY --chown=builder:builder patches ./patches
+COPY --chown=builder:builder user/patches ./patches
 ARG CONFIG_FILE
 COPY --chown=builder:builder ${CONFIG_FILE} ./
 RUN CONFIG_FILE="${CONFIG_FILE}" NONSTRICT_PATCH=1 scripts/customize.sh

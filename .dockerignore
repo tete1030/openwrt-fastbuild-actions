@@ -1,5 +1,7 @@
 .github
+.gitattributes
 LICENSE
 README.md
-docker.sh
+README_CN.md
+scripts/host
 imgs

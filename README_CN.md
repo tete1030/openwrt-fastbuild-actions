@@ -60,9 +60,9 @@ Github Actions和Actions-Openwrt让我们可以很方便地自动化编译OpenWr
 4. 取得Docker Hub的**personal access token**。在你自己Fork的Repo中的**Settings->Secrets**页面填写你的Docker Hub用户名和token。使用“docker_username”填写用户名，使用“docker_password”填写token。详见[Secrets页面](#secrets页面)。
 5. *(可选，debug时必须)* 在Secrets页面设置`SLACK_WEBHOOK_URL`或`TMATE_ENCRYPT_PASSWORD`以保护你的敏感信息。 请参考[调试和手动配置](#调试和手动配置).
 6. *(可选)* 定制`.github/workflows/build-openwrt.yml`以修改你想在Docker Hub保存的**builder名和其他选项**。
-7. **生成你的`.config`文件**，并把它重命名为`config.diff`。把它放在根目录。
+7. **生成你的`.config`文件**，并把它重命名为`config.diff`。把它放在`user`目录。
 8. *(可选)* 如果你想**放置额外安装包**，定制`scripts/update_feeds.sh`。([Wiki-如何添加自定义安装包？](https://github.com/tete1030/openwrt-fastbuild-actions/wiki/%E5%A6%82%E4%BD%95%E6%B7%BB%E5%8A%A0%E8%87%AA%E5%AE%9A%E4%B9%89%E5%AE%89%E8%A3%85%E5%8C%85%EF%BC%9F))
-9. *(可选)* 在patches目录放置**补丁文件**。补丁会自动在`update_feeds.sh`之后，`download.sh`之前执行。
+9. *(可选)* 在`user/patches`目录放置**补丁文件**。补丁会自动在`update_feeds.sh`之后，`download.sh`之前执行。
 10. **Commit并Push**。这一步骤会自动触发编译。
 11. 等待`build-inc`任务完成。
 12. 在`build-inc`任务的`Artifacts`目录下载编译好的文件。
@@ -75,9 +75,9 @@ Github Actions和Actions-Openwrt让我们可以很方便地自动化编译OpenWr
 
 第一次编译完成后，当你更改配置时，你只需要使用以下的步骤编译你的固件和软件包。这一编译过程通常只花费**20分钟至1小时**时间，取决于你的具体配置。
 
-1. *(可选)* 根据需要修改你的`config.diff`
+1. *(可选)* 根据需要修改你的`user/config.diff`
 2. *(可选)* 根据需要修改你的`scripts/update_feeds.sh`
-3. *(可选)* 根据需要添加新的补丁至patches目录
+3. *(可选)* 根据需要添加新的补丁至`user/patches`目录
 4. Commit并Push。如果你想执行`build-inc`任务，你不需要进行任何特殊操作。如果你需要执行`build-package`，你可以在Push前的最后一个commit message中包含这一字符串：`#build-package#`
 5. 等待`build-inc`或`build-package`完成
 6. 在“Artifacts”目录收集文件
@@ -99,9 +99,9 @@ Github Actions和Actions-Openwrt让我们可以很方便地自动化编译OpenWr
 请注意你在docker容器内做出的手动配置应当仅仅是为了**临时使用**的。尽管你在docker容器内的更改会被保存并上传Docker Hub，仍有许多情况会导致你的这些手动配置丢失：
 1. 使用了`rebuild`选项以完全重建你的base builder并rebase你的incremental builder（参考[Mechanism](README.md#mechanism)）
 2. 使用了`use_base`或`use_inc`选项以rebase你的incremental builder
-3. 部分文件会在每次编译时被覆盖。例如，如果你在docker 容器内使用了`make menuconfig`，`.config`文件会被修改并保存到Docker Hub。但是当下次编译时，`config.diff`文件会被复制到`.config`文件上并覆盖它。这将导致你上次编译时使用`make menuconfig`做出的更改丢失。
+3. 部分文件会在每次编译时被覆盖。例如，如果你在docker 容器内使用了`make menuconfig`，`.config`文件会被修改并保存到Docker Hub。但是当下次编译时，`user/config.diff`文件会被复制到`.config`文件上并覆盖它。这将导致你上次编译时使用`make menuconfig`做出的更改丢失。
 
-为了作出永久的配置改变，你仍应使用本仓库内提供的`config.diff`文件及其他自定义方法。
+为了作出永久的配置改变，你仍应使用`user/config.diff`文件及本仓库内提供的其他自定义方法。
 
 ## FAQs
 

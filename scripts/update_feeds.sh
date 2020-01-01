@@ -30,7 +30,4 @@ install_package() {
   fi
 }
 
-# Customize here for any additional package you want to install/update
-# Note that to have it compiled, you also have to set its CONFIG_* options
-# Example:
-# install_package mentohust https://github.com/KyleRicardo/MentoHUST-OpenWrt-ipk.git
+source ./user/packages.txt
