@@ -248,7 +248,7 @@ jobs:
       env:
         TIMEOUT_MIN: 5
         TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
-      uses: tete1030/debugger-action@my
+      uses: tete1030/debugger-action@master
 
     - name: Apply customizations
       run: |
@@ -325,7 +325,7 @@ jobs:
         || env.OPT_DEBUG == '1'
       env:
         TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
-      uses: tete1030/debugger-action@dev
+      uses: tete1030/debugger-action@master
     
     - name: Upload debugging changes
       if: |
@@ -494,7 +494,7 @@ jobs:
       env:
         TIMEOUT_MIN: 5
         TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
-      uses: tete1030/debugger-action@my
+      uses: tete1030/debugger-action@master
 
     - name: Update repo and packages
       run: |
@@ -576,7 +576,7 @@ jobs:
       if: failure() || env.OPT_DEBUG == '1'
       env:
         TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
-      uses: tete1030/debugger-action@dev
+      uses: tete1030/debugger-action@master
     
     - name: Upload debugging changes
       if: |
@@ -633,7 +633,7 @@ jobs:
       if: env.OPT_DEBUG == '1'
       env:
         TIMEOUT_MIN: 5
-      uses: tete1030/debugger-action@my
+      uses: tete1030/debugger-action@master
 
     - name: Download packages
       run: scripts/download.sh
@@ -683,4 +683,4 @@ jobs:
     # failure checking
     - name: Failed/debug set, wait for SSH connection (timeout 30min. You are safe to cancel the job now.)
       if: failure() || env.OPT_DEBUG == '1'
-      uses: tete1030/debugger-action@my
+      uses: tete1030/debugger-action@master
