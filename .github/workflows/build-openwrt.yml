@@ -184,6 +184,12 @@ jobs:
         [ "x${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '#push_when_fail#')) || github.event.client_payload.push_when_fail || github.event.deployment.payload.push_when_fail }}" != "xtrue" ] || OPT_PUSH_WHEN_FAIL=1
         echo "::set-env name=OPT_PUSH_WHEN_FAIL::${OPT_PUSH_WHEN_FAIL}"
 
+        if [ "x${OPT_DEBUG}" = "x1" -a -z "${TMATE_ENCRYPT_PASSWORD}" -a -z "${SLACK_WEBHOOK_URL}" ]; then
+          echo "::error::To use debug mode, you should set either TMATE_ENCRYPT_PASSWORD or SLACK_WEBHOOK_URL in the 'Secrets' page for safety of your sensitive information. For details, please refer to https://github.com/tete103%30/debugger-action/blob/master/README.md"
+          echo "::error::In the reference URL you are instructed to use environment variables for them. However in this repo, you should set them in the 'Secrets' page"
+          exit 1
+        fi
+
         [ "x${TEST}" = "x1" ] || scripts/cleanup.sh
 
     - name: Set up Docker Buildx
@@ -434,6 +440,12 @@ jobs:
         OPT_PUSH_WHEN_FAIL=0
         [ "x${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '#push_when_fail#')) || github.event.client_payload.push_when_fail || github.event.deployment.payload.push_when_fail }}" != "xtrue" ] || OPT_PUSH_WHEN_FAIL=1
         echo "::set-env name=OPT_PUSH_WHEN_FAIL::${OPT_PUSH_WHEN_FAIL}"
+
+        if [ "x${OPT_DEBUG}" = "x1" -a -z "${TMATE_ENCRYPT_PASSWORD}" -a -z "${SLACK_WEBHOOK_URL}" ]; then
+          echo "::error::To use debug mode, you should set either TMATE_ENCRYPT_PASSWORD or SLACK_WEBHOOK_URL in the 'Secrets' page for safety of your sensitive information. For details, please refer to https://github.com/tete103%30/debugger-action/blob/master/README.md"
+          echo "::error::In the reference URL you are instructed to use environment variables for them. However in this repo, you should set them in the 'Secrets' page"
+          exit 1
+        fi
 
         [ "x${TEST}" = "x1" ] || scripts/cleanup.sh
 
