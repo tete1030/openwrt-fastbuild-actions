@@ -89,8 +89,11 @@ jobs:
 
     - name: Check if skip this job
       run: |
+        set +eo pipefail
         BUILD_TARGET_ESC="$(echo "${BUILD_TARGET}" | sed 's/[^[:alnum:]_-]/\\&/g')"
-        if ( git show --pretty="" --name-only | grep '^user/'"${BUILD_TARGET_SEC}"'/' > /dev/null ) ; then
+        git show --pretty="" --name-only | grep -q '^user/'"${BUILD_TARGET_SEC}"'/'
+        ret_val=$?
+        if [ ${ret_val} -eq 0 ] ; then
           echo "::set-env name=SKIP_TARGET::0"
         else
           echo "::set-env name=SKIP_TARGET::1"
