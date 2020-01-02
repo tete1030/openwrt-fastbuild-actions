@@ -33,26 +33,15 @@ env:
   # Specify here your config file
   # 在这里指定你的配置文件名
   CONFIG_FILE: 'user/config.diff'
-  # Leave it empty if you are using the default Docker Hub
-  # 如果你想使用默认的Docker Hub，此处留空
-  DK_REGISTRY: ''
   # DO NOT CHANGE the following here, set them only in forked repo's Settings->Secrets page
+  # You don't need to set docker_registry if you are using the default Docker Hub
   # 安全起见以下参数请不要在此更改，在你Fork的repo中，Settings->Secrets页面更改
+  # 如果你想使用默认的Docker Hub，你不需要在secrets页面设置docker_registry
+  DK_REGISTRY: ${{secrets.docker_registry}}
   DK_USERNAME: ${{secrets.docker_username}}
   DK_PASSWORD: ${{secrets.docker_password}}
   SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
   TMATE_ENCRYPT_PASSWORD: ${{secrets.TMATE_ENCRYPT_PASSWORD}}
-  # Not recommended to change unless you understand how it is used
-  # 以下参数不推荐修改
-  DK_BUILDX_DRIVER: docker
-  DK_CONTEXT: .
-  DK_NO_REMOTE_CACHE: 1
-  DK_NO_BUILDTIME_PUSH: 1
-  DK_CONVERT_MULTISTAGE_TO_IMAGE: 1
-  DOCKERFILE_BASE: Dockerfile
-  DOCKERFILE_INC: Dockerfile-inc
-  DOCKERFILE_PACKAGE: Dockerfile-package
-  CONFIG_FILE_DEFAULT: 'config.diff.default'
 
 name: Build OpenWrt
 
@@ -499,101 +488,3 @@ jobs:
         . scripts/host/docker.sh
         docker tag "${DK_LAST_BUILD_TARGET}" "$(_get_full_image_name_tag_for_build)"
         push_image_and_cache
-
-  build-direct:
-    runs-on: ubuntu-18.04
-    if: |
-      (
-        github.event_name == 'push'
-        && contains(github.event.head_commit.message, '#build-direct#')
-      ) || (
-        github.event_name == 'repository_dispatch'
-        && github.event.action == 'build-direct'
-      ) || (
-        github.event_name == 'deployment'
-        && github.event.deployment.task == 'build-direct'
-      )
-    steps:
-    - name: Checkout
-      uses: actions/checkout@master
-
-    - name: Initialize environment
-      run: |
-        OPT_DEBUG=0
-        [ "x${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '#debug#')) || github.event.client_payload.debug || github.event.deployment.payload.debug }}" != "xtrue" ] || OPT_DEBUG=1
-        echo "::set-env name=OPT_DEBUG::${OPT_DEBUG}"
-
-        OPT_PUSH_WHEN_FAIL=0
-        [ "x${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '#push_when_fail#')) || github.event.client_payload.push_when_fail || github.event.deployment.payload.push_when_fail }}" != "xtrue" ] || OPT_PUSH_WHEN_FAIL=1
-        echo "::set-env name=OPT_PUSH_WHEN_FAIL::${OPT_PUSH_WHEN_FAIL}"
-
-        scripts/host/cleanup.sh
-        scripts/initenv.sh
-
-    - name: Clone all source code
-      env: 
-        REPO_URL: https://github.com/coolsnowwolf/lede
-        REPO_BRANCH: master
-      run:
-        scripts/update_repo.sh
-        OPT_UPDATE_FEEDS=1 scripts/update_feeds.sh
-
-    - name: Load custom configuration
-      run: scripts/customize.sh
-
-    # Allow intermediate customization
-    - name: Debug set, wait for SSH connection (timeout 5min)
-      if: env.OPT_DEBUG == '1'
-      env:
-        TIMEOUT_MIN: 5
-      uses: tete1030/debugger-action@dev
-
-    - name: Download packages
-      run: scripts/download.sh
-
-    - name: Print disk space
-      run: df -h
-
-    - name: Multi-thread compile
-      id: mtcompile
-      continue-on-error: true
-      run: |
-        echo "::set-output name=started::yes"
-        scripts/compile.sh m
-        echo "::set-output name=success::yes"
-
-    # previous failure will cause current job failure
-    - name: Single-thread compile
-      if: steps.mtcompile.outputs.started == 'yes' && steps.mtcompile.outputs.success != 'yes'
-      run: scripts/compile.sh s
-
-    - name: Print disk space
-      run: df -h
-
-    - name: Upload bin directory
-      uses: actions/upload-artifact@master
-      if: (!cancelled())
-      with:
-        name: OpenWrt_bin
-        path: openwrt/bin
-
-    - name: Organize files
-      id: organize
-      if: (!cancelled())
-      run: |
-        cd openwrt/bin/targets/*/*
-        rm -rf packages
-        echo "::set-env name=FIRMWARE::$(pwd)"
-        echo "::set-output name=status::success"
-
-    - name: Upload firmware
-      uses: actions/upload-artifact@master
-      if: steps.organize.outputs.status == 'success' && !cancelled()
-      with:
-        name: OpenWrt_firmware
-        path: ${{ env.FIRMWARE }}
-
-    # failure checking
-    - name: Failed/debug set, wait for SSH connection (timeout 30min. You are safe to cancel the job now.)
-      if: failure() || env.OPT_DEBUG == '1'
-      uses: tete1030/debugger-action@dev

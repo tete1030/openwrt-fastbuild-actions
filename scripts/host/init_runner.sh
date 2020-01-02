@@ -1,18 +1,41 @@
 #!/bin/bash
 
-export BUILDER_NAME="${DK_USERNAME}/${BUILDER_NAME}"
-export BUILDER_TAG_INC="${BUILDER_TAG}-inc"
-export BUILDER_TAG_PACKAGE="${BUILDER_TAG}-package"
-export BUILDER_ID_BASE="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG}"
-export BUILDER_ID_INC="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG_INC}"
-export BUILDER_ID_PACKAGE="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG_PACKAGE}"
-echo "::set-env name=BUILDER_ID_BASE::${BUILDER_ID_BASE}"
-echo "::set-env name=BUILDER_ID_INC::${BUILDER_ID_INC}"
-echo "::set-env name=BUILDER_ID_PACKAGE::${BUILDER_ID_PACKAGE}"
+_set_env() {
+    for var_name in $@ ; do
+        echo "::set-env name=${var_name}::${!var_name}"
+    done
+}
+
+_set_env_prefix() {
+    for var_name_prefix in $@ ; do
+        eval '_set_env ${!'"${var_name_prefix}"'@}'
+    done
+}
+
+# Not recommended to change unless you understand how it is used
+# 以下参数不推荐修改
+DK_BUILDX_DRIVER=docker
+DK_CONTEXT=.
+DK_NO_REMOTE_CACHE=1
+DK_NO_BUILDTIME_PUSH=1
+DK_CONVERT_MULTISTAGE_TO_IMAGE=1
+DOCKERFILE_BASE=Dockerfile
+DOCKERFILE_INC=Dockerfile-inc
+DOCKERFILE_PACKAGE=Dockerfile-package
+CONFIG_FILE_DEFAULT='config.diff.default'
+_set_env_prefix DK_ DOCKERFILE_ CONFIG_FILE
+
+BUILDER_NAME="${DK_USERNAME}/${BUILDER_NAME}"
+BUILDER_TAG_INC="${BUILDER_TAG}-inc"
+BUILDER_TAG_PACKAGE="${BUILDER_TAG}-package"
+BUILDER_ID_BASE="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG}"
+BUILDER_ID_INC="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG_INC}"
+BUILDER_ID_PACKAGE="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG_PACKAGE}"
+_set_env BUILDER_ID_BASE BUILDER_ID_INC BUILDER_ID_PACKAGE
 
 for var_dockerfile in ${!DOCKERFILE_@}; do
     eval ${var_dockerfile}="Dockerfiles/${!var_dockerfile}"
-    echo "::set-env name=${var_dockerfile}::${!var_dockerfile}"
+    _set_env ${var_dockerfile}
 done
 
 if [ "x${BUILD_MODE}" = "xinc" ]; then
@@ -30,16 +53,13 @@ else
     exit 1
 fi
 
-echo "::set-env name=DK_IMAGE_BASE::${DK_IMAGE_BASE}"
-echo "::set-env name=DK_IMAGE_NAME::${DK_IMAGE_NAME}"
-echo "::set-env name=DK_IMAGE_TAG::${DK_IMAGE_TAG}"
-echo "::set-env name=DK_DOCKERFILE::${DK_DOCKERFILE}"
+_set_env DK_IMAGE_BASE DK_IMAGE_NAME DK_IMAGE_TAG DK_DOCKERFILE
 
 if [ -z "${CONFIG_FILE}" -o ! -f "${CONFIG_FILE}" ]; then
     echo "CONFIG_FILE='${CONFIG_FILE}' does not exist, using default" >&2
     [ ! -z "${CONFIG_FILE_DEFAULT}" -a -f "${CONFIG_FILE_DEFAULT}" ] || ( echo "::error::CONFIG_FILE_DEFAULT='${CONFIG_FILE_DEFAULT}' does not exist!" >&2 && exit 1 )
     export CONFIG_FILE="${CONFIG_FILE_DEFAULT}"
-    echo "::set-env name=CONFIG_FILE::${CONFIG_FILE}"
+    _set_env CONFIG_FILE
 fi
 
 _get_opt() {
@@ -75,8 +95,8 @@ _load_opt() {
     UPPER_OPT_NAME="$(echo "${OPT_NAME}" | tr '[:lower:]' '[:upper:]')"
     LOWER_OPT_NAME="$(echo "${OPT_NAME}" | tr '[:upper:]' '[:lower:]')"
     ENV_OPT_NAME="OPT_${UPPER_OPT_NAME}"
-    eval export ${ENV_OPT_NAME}="$(_get_opt "${LOWER_OPT_NAME}")"
-    echo "::set-env name=${ENV_OPT_NAME}::${!ENV_OPT_NAME}"
+    eval ${ENV_OPT_NAME}="$(_get_opt "${LOWER_OPT_NAME}")"
+    _set_env ${ENV_OPT_NAME}
 }
 
 for opt_name in ${BUILD_OPTS[@]}; do
