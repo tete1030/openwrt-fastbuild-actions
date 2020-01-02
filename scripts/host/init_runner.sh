@@ -38,7 +38,7 @@ try:
       json_obj = json_obj[int(comp)]
     else:
       json_obj = json_obj[comp]
-  print(json.dumps(json_obj), end="")
+  print(json_obj, end="")
 except (KeyError, IndexError) as e:
   print("${DEFAULT}", end="")
 EOF
