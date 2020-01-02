@@ -133,6 +133,27 @@ pull_image() {
   fi
 }
 
+check_image_health() {
+  if [ "x${DK_BUILDX_DRIVER}" != "xdocker" ]; then
+    echo "Buildx driver '${DK_BUILDX_DRIVER}' does not support image health management" >&2
+    exit 1
+  fi
+
+  if [ -z "${DK_IMAGE_BASE}" ]; then
+    echo "No DK_IMAGE_BASE configured for health checking" >&2
+    exit 1
+  fi
+
+  LAYER_NUMBER=$(($(docker history "${DK_IMAGE_BASE}" | wc -l)-1))
+  echo "Number of docker layers: ${LAYER_NUMBER}"
+  if (( LAYER_NUMBER > 100 )); then
+    echo "The number of docker layers has exceeded the limitation 100, squashing it..."
+    DOCKER_BUILDKIT=1 docker build --build-arg BUILDKIT_INLINE_CACHE=1 --squash "--tag=${DK_IMAGE_BASE}" << EOF
+FROM "${DK_IMAGE_BASE}"
+EOF
+  fi
+}
+
 build_image() {
   TARGET="${1}"
 
@@ -285,12 +306,15 @@ build_image() {
 
   BUILD_COMMAND="buildx build"
   if [ "x${DK_USE_INTEGRATED_BUILDKIT}" = "x1" ]; then
-    export DOCKER_BUILDKIT=1
+    DOCKER_BUILDKIT=1
     BUILD_COMMAND="build"
+  else
+    DOCKER_BUILDKIT=
   fi
 
   if [ "x${DK_DOCKERFILE_STDIN}" = "x1" ]; then
     (
+      export DOCKER_BUILDKIT
       set -x
       cat "${DK_DOCKERFILE_FULL}" | docker ${BUILD_COMMAND} \
         "${build_target[@]}" \
@@ -304,6 +328,7 @@ build_image() {
     )
   else
     (
+      export DOCKER_BUILDKIT
       set -x
       docker ${BUILD_COMMAND} \
         "${build_target[@]}" \

@@ -156,6 +156,7 @@ jobs:
       run: |
         . scripts/host/docker.sh
         pull_image
+        check_image_health
 
     - name: Initialize environment for base builder
       if: env.SKIP_TARGET == '0' && env.OPT_REBUILD == '1'
