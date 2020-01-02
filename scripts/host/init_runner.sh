@@ -12,55 +12,25 @@ _set_env_prefix() {
     done
 }
 
-# Not recommended to change unless you understand how it is used
-# 以下参数不推荐修改
-DK_BUILDX_DRIVER=docker
-DK_CONTEXT=.
-DK_NO_REMOTE_CACHE=1
-DK_NO_BUILDTIME_PUSH=1
-DK_CONVERT_MULTISTAGE_TO_IMAGE=1
-DOCKERFILE_BASE=Dockerfile
-DOCKERFILE_INC=Dockerfile-inc
-DOCKERFILE_PACKAGE=Dockerfile-package
-CONFIG_FILE_DEFAULT='config.diff.default'
-_set_env_prefix DK_ DOCKERFILE_ CONFIG_FILE
+_pyjq() {
+    OPT_PATH="${2}"
+    DEFAULT="${3}"
+    JSON="${1}" python3 <<EOF
+import json, os
+json_obj = json.loads( os.environ["JSON"] )
 
-BUILDER_NAME="${DK_USERNAME}/${BUILDER_NAME}"
-BUILDER_TAG_INC="${BUILDER_TAG}-inc"
-BUILDER_TAG_PACKAGE="${BUILDER_TAG}-package"
-BUILDER_ID_BASE="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG}"
-BUILDER_ID_INC="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG_INC}"
-BUILDER_ID_PACKAGE="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG_PACKAGE}"
-_set_env BUILDER_ID_BASE BUILDER_ID_INC BUILDER_ID_PACKAGE
-
-for var_dockerfile in ${!DOCKERFILE_@}; do
-    eval ${var_dockerfile}="Dockerfiles/${!var_dockerfile}"
-    _set_env ${var_dockerfile}
-done
-
-if [ "x${BUILD_MODE}" = "xinc" ]; then
-    DK_IMAGE_BASE="${BUILDER_ID_INC}"
-    DK_IMAGE_NAME="${BUILDER_NAME}"
-    DK_IMAGE_TAG="${BUILDER_TAG_INC}"
-    DK_DOCKERFILE="${DOCKERFILE_INC}"
-elif [ "x${BUILD_MODE}" = "xpackage" ]; then
-    DK_IMAGE_BASE="${BUILDER_ID_PACKAGE}"
-    DK_IMAGE_NAME="${BUILDER_NAME}"
-    DK_IMAGE_TAG="${BUILDER_TAG_PACKAGE}"
-    DK_DOCKERFILE="${DOCKERFILE_PACKAGE}"
-else
-    echo "::error::Unknown BUILD_MODE='${BUILD_MODE}'" >&2
-    exit 1
-fi
-
-_set_env DK_IMAGE_BASE DK_IMAGE_NAME DK_IMAGE_TAG DK_DOCKERFILE
-
-if [ -z "${CONFIG_FILE}" -o ! -f "${CONFIG_FILE}" ]; then
-    echo "CONFIG_FILE='${CONFIG_FILE}' does not exist, using default" >&2
-    [ ! -z "${CONFIG_FILE_DEFAULT}" -a -f "${CONFIG_FILE_DEFAULT}" ] || ( echo "::error::CONFIG_FILE_DEFAULT='${CONFIG_FILE_DEFAULT}' does not exist!" >&2 && exit 1 )
-    export CONFIG_FILE="${CONFIG_FILE_DEFAULT}"
-    _set_env CONFIG_FILE
-fi
+path_components = "${OPT_PATH}".split(".")
+try:
+  for comp in path_components:
+    if comp.isdigit():
+      json_obj = json_obj[int(comp)]
+    else:
+      json_obj = json_obj[comp]
+  print(json.dumps(json_obj), end="")
+except KeyError, IndexError:
+  print("${DEFAULT}", end="")
+EOF
+}
 
 _get_opt() {
 OPT_NAME="${1}"
@@ -98,6 +68,54 @@ _load_opt() {
     eval ${ENV_OPT_NAME}="$(_get_opt "${LOWER_OPT_NAME}")"
     _set_env ${ENV_OPT_NAME}
 }
+
+# Not recommended to change unless you understand how it is used
+# 以下参数不推荐修改
+DK_BUILDX_DRIVER=docker
+DK_CONTEXT=.
+DK_NO_REMOTE_CACHE=1
+DK_NO_BUILDTIME_PUSH=1
+DK_CONVERT_MULTISTAGE_TO_IMAGE=1
+DK_BUILD_ARGS='REPO_URL REPO_BRANCH CONFIG_FILE DK_IMAGE_BASE OPT_UPDATE_REPO OPT_UPDATE_FEEDS OPT_PACKAGE_ONLY'
+DOCKERFILE_BASE=Dockerfile
+DOCKERFILE_INC=Dockerfile-inc
+CONFIG_FILE_DEFAULT='config.diff.default'
+_set_env_prefix DK_ DOCKERFILE_ CONFIG_FILE
+
+if [ "x$(_pyjq "${MATRIX_CONTEXT}" "mode")" = "xtest" ]; then
+    for var_dockerfile in ${!DOCKERFILE_@}; do
+        eval ${var_dockerfile}="tests/${!var_dockerfile}"
+        _set_env ${var_dockerfile}
+    done
+    eval BUILDER_TAG="test-${BUILDER_TAG}"
+    TEST=1
+    _set_env BUILDER_TAG TEST
+fi
+
+BUILDER_NAME="${DK_USERNAME}/${BUILDER_NAME}"
+BUILDER_TAG_INC="${BUILDER_TAG}-inc"
+BUILDER_ID_BASE="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG}"
+BUILDER_ID_INC="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG_INC}"
+_set_env BUILDER_ID_BASE BUILDER_ID_INC
+
+for var_dockerfile in ${!DOCKERFILE_@}; do
+    eval ${var_dockerfile}="Dockerfiles/${!var_dockerfile}"
+    _set_env ${var_dockerfile}
+done
+
+DK_IMAGE_BASE="${BUILDER_ID_INC}"
+DK_IMAGE_NAME="${BUILDER_NAME}"
+DK_IMAGE_TAG="${BUILDER_TAG_INC}"
+DK_DOCKERFILE="${DOCKERFILE_INC}"
+_set_env_prefix DK_IMAGE_
+_set_env DK_DOCKERFILE
+
+if [ -z "${CONFIG_FILE}" -o ! -f "${CONFIG_FILE}" ]; then
+    echo "CONFIG_FILE='${CONFIG_FILE}' does not exist, using default" >&2
+    [ ! -z "${CONFIG_FILE_DEFAULT}" -a -f "${CONFIG_FILE_DEFAULT}" ] || ( echo "::error::CONFIG_FILE_DEFAULT='${CONFIG_FILE_DEFAULT}' does not exist!" >&2 && exit 1 )
+    export CONFIG_FILE="${CONFIG_FILE_DEFAULT}"
+    _set_env CONFIG_FILE
+fi
 
 for opt_name in ${BUILD_OPTS[@]}; do
     _load_opt "${opt_name}"

@@ -31,6 +31,12 @@ RUN scripts/download.sh
 
 FROM download-stage AS compile-stage
 COPY --chown=builder:builder scripts/compile.sh ./scripts/compile.sh
-RUN COMPILE_OPTIONS="prepare" scripts/compile.sh m \
-  || COMPILE_OPTIONS="prepare" scripts/compile.sh s
-RUN scripts/compile.sh m || scripts/compile.sh s
+ARG OPT_PACKAGE_ONLY=0
+RUN if [ "x${OPT_PACKAGE_ONLY}" != "x1" ]; then \
+    scripts/compile.sh m || scripts/compile.sh s ;\
+  else \
+    export COMPILE_OPTIONS="package/compile" ;\
+    scripts/compile.sh m || scripts/compile.sh s ;\
+    export COMPILE_OPTIONS="package/index" ;\
+    scripts/compile.sh m || scripts/compile.sh s ;\
+  fi

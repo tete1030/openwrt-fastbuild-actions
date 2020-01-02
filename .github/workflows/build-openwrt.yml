@@ -73,11 +73,11 @@ jobs:
         ${{toJSON(github)}}
         EOF
 
-  build-inc:
+  build:
     runs-on: ubuntu-18.04
-    # Always activate this job, unless specified '#build-package#'
-    # * You can change Line 3 to the following one to only build when push with '#build-inc#'
-    #     && contains(github.event.head_commit.message, '#build-inc#')
+    # Always activate this job
+    # * You can change Line 3 to the following one to only build when push with '#build#'
+    #     && contains(github.event.head_commit.message, '#build#')
     # * To build on schedule event, add OR condition:
     #     github.event_name == 'schedule'
     # * To build when YOU stars YOUR OWN project, add OR condition:
@@ -86,13 +86,12 @@ jobs:
     if: |
       (
         github.event_name == 'push'
-        && !contains(github.event.head_commit.message, '#build-package#')
       ) || (
         github.event_name == 'repository_dispatch'
-        && github.event.action == 'build-inc'
+        && github.event.action == 'build'
       ) || (
         github.event_name == 'deployment'
-        && github.event.deployment.task == 'build-inc'
+        && github.event.deployment.task == 'build'
       )
     name: ${{matrix.title}}
     strategy:
@@ -101,32 +100,19 @@ jobs:
         mode: [normal, test]
         include:
         - mode: normal
-          title: build-inc
+          title: build
         - mode: test
-          title: Fast checking build-inc
-    env:
-      # Not recommended to change as they are already in optimal condition
-      # 不推荐修改，已处在最优状态
-      DK_BUILD_ARGS: 'REPO_URL REPO_BRANCH CONFIG_FILE DK_IMAGE_BASE OPT_UPDATE_REPO OPT_UPDATE_FEEDS'
+          title: Fast checking
 
     steps:
     - name: Checkout
       uses: actions/checkout@master
 
-    - name: Init test env
-      if: matrix.mode == 'test'
-      run: |
-        for var_dockerfile in ${!DOCKERFILE_@}; do
-          echo "::set-env name=${var_dockerfile}::tests/${!var_dockerfile}"
-        done
-        echo "::set-env name=BUILDER_TAG::test-${BUILDER_TAG}"
-        echo "::set-env name=TEST::1"
-
     - name: Init build env
       env:
         GITHUB_CONTEXT: ${{toJSON(github)}}
-        BUILD_MODE: inc
-        BUILD_OPTS: 'update_feeds update_repo use_base rebuild debug push_when_fail'
+        MATRIX_CONTEXT: ${{toJSON(matrix)}}
+        BUILD_OPTS: 'update_feeds update_repo rebase rebuild debug push_when_fail package_only'
       run: |
         . scripts/host/init_runner.sh
         [ "x${TEST}" = "x1" ] || scripts/host/cleanup.sh
@@ -153,7 +139,7 @@ jobs:
             builder_inc_ret_val=$?
           set -eo pipefail
 
-          if [ "x${OPT_USE_BASE}" = "x1" -o "x${builder_inc_ret_val}" != "x0" ]; then
+          if [ "x${OPT_REBASE}" = "x1" -o "x${builder_inc_ret_val}" != "x0" ]; then
             set +eo pipefail
               docker buildx imagetools inspect "${BUILDER_ID_BASE}" 2>&1 >/dev/null
               builder_base_ret_val=$?
@@ -281,210 +267,6 @@ jobs:
       if: |
         failure()
         || env.OPT_DEBUG == '1'
-      env:
-        TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
-      uses: tete1030/debugger-action@dev
-    
-    - name: Upload debugging changes
-      if: |
-        (failure() && env.OPT_PUSH_WHEN_FAIL == '1')
-        || env.OPT_DEBUG == '1'
-      run: |
-        . scripts/host/docker.sh
-        docker tag "${DK_LAST_BUILD_TARGET}" "$(_get_full_image_name_tag_for_build)"
-        push_image_and_cache
-
-  build-package:
-    runs-on: ubuntu-18.04
-    # Activate this job when specified '#build-package#'
-    # * To build on schedule event, add OR condition:
-    #     github.event_name == 'schedule'
-    # * To build when YOU stars YOUR OWN project, add OR condition:
-    #     github.event_name == 'watch' && github.event.action == 'started' && github.event.repository.owner.id == github.event.sender.id
-    # For `github.event` structures, see: https://developer.github.com/v3/activity/events/types/
-    if: |
-      (
-        github.event_name == 'push'
-        && contains(github.event.head_commit.message, '#build-package#')
-      ) || (
-        github.event_name == 'repository_dispatch'
-        && github.event.action == 'build-package'
-      ) || (
-        github.event_name == 'deployment'
-        && github.event.deployment.task == 'build-package'
-      )
-    name: ${{matrix.title}}
-    strategy:
-      fail-fast: true
-      matrix:
-        mode: [normal, test]
-        include:
-        - mode: normal
-          title: build-package
-        - mode: test
-          title: Fast checking build-package
-    env:
-      # Not recommended to change as they are already in optimal condition
-      # 不推荐修改，已处在最优状态
-      DK_BUILD_ARGS: 'CONFIG_FILE DK_IMAGE_BASE OPT_UPDATE_FEEDS'
-
-    steps:
-    - name: Checkout
-      uses: actions/checkout@master
-
-    - name: Init test env
-      if: matrix.mode == 'test'
-      run: |
-        for var_dockerfile in ${!DOCKERFILE_@}; do
-          echo "::set-env name=${var_dockerfile}::tests/${!var_dockerfile}"
-        done
-        echo "::set-env name=BUILDER_TAG::test-${BUILDER_TAG}"
-        echo "::set-env name=TEST::1"
-
-    - name: Init build env
-      env:
-        GITHUB_CONTEXT: ${{toJSON(github)}}
-        BUILD_MODE: package
-        BUILD_OPTS: 'update_feeds use_base use_inc debug push_when_fail'
-      run: |
-        . scripts/host/init_runner.sh
-        [ "x${TEST}" = "x1" ] || scripts/host/cleanup.sh
-
-    - name: Set up Docker Buildx
-      id: buildx
-      uses: crazy-max/ghaction-docker-buildx@v1
-      with:
-        version: latest
-
-    - name: Configure docker
-      run: |
-        . scripts/host/docker.sh
-        configure_docker
-        login_to_registry
-        touch .start_timestamp
-
-    - name: Check if using latest base builder
-      run: |
-        . scripts/host/docker.sh
-        # temporarily disable failure guarder
-        set +eo pipefail
-          docker buildx imagetools inspect "${BUILDER_ID_PACKAGE}"
-          ret_val=$?
-        set -eo pipefail
-        if [ "x${OPT_USE_BASE}" = "x1" -o "x${OPT_USE_INC}" = "x1" -o "x${ret_val}" != "x0" ]; then
-          BUILDER_ID_SELECTED="${BUILDER_ID_BASE}"
-          if [ "x${OPT_USE_INC}" = "x1" ]; then
-            if [ "x${OPT_USE_BASE}" = "x1" ]; then
-              echo "::error::You cannot use both 'use_base' and 'use_inc'" >&2
-              exit 1
-            fi
-            BUILDER_ID_SELECTED="${BUILDER_ID_INC}"
-          fi
-
-          echo "Creating incremental builder '${BUILDER_ID_PACKAGE}' from '${BUILDER_ID_SELECTED}'"
-          set +eo pipefail
-            docker buildx imagetools inspect "${BUILDER_ID_SELECTED}"
-            ret_val=$?
-          set -eo pipefail
-          if [ "x${ret_val}" != "x0" ]; then
-            echo "::error::Base/incremental builder '${BUILDER_ID_SELECTED}' does not exist, please run 'build-base'/'build-inc' job" >&2
-            exit 1
-          fi
-
-          create_remote_tag_alias "${BUILDER_ID_SELECTED}" "${BUILDER_ID_PACKAGE}"
-        fi
-
-    - name: Download last incremental builder
-      run: |
-        . scripts/host/docker.sh
-        pull_image
-
-    # Allow intermediate customization
-    - name: Debug set, wait for SSH connection (timeout 5min)
-      if: env.OPT_DEBUG == '1'
-      env:
-        TIMEOUT_MIN: 5
-        TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
-      uses: tete1030/debugger-action@dev
-
-    - name: Update repo and packages
-      run: |
-        . scripts/host/docker.sh
-        build_image clone
-
-    - name: Apply customizations
-      run: |
-        . scripts/host/docker.sh
-        build_image custom
-
-    - name: Download packages
-      run: |
-        . scripts/host/docker.sh
-        build_image download
-
-    - name: Print disk space
-      run: df -h
-
-    - name: Compile packages
-      run: |
-        . scripts/host/docker.sh
-        build_image compile
-
-    - name: Print disk space
-      run: df -h
-
-    - name: Upload current builder
-      if: (!cancelled()) && (success() || env.OPT_PUSH_WHEN_FAIL == '1')
-      run: |
-        . scripts/host/docker.sh
-        push_image_and_cache
-
-    - name: Copy out bin directory
-      id: copydir
-      if: (!cancelled())
-      run: |
-        . scripts/host/docker.sh
-        if [ ! -d "$(pwd)/openwrt" ]; then
-          mkdir "$(pwd)/openwrt"
-        fi
-        copy_files /home/builder/openwrt/bin "$(pwd)/openwrt/bin"
-        echo "::set-output name=status::success"
-
-    - name: Filter out firmware files
-      id: organize_1
-      if: steps.copydir.outputs.status == 'success' && !cancelled()
-      run: |
-        shopt -s extglob
-        cd openwrt/bin/targets/*/*
-        all_extra_files=( !(packages) )
-        rm -rf "${all_extra_files[@]}"
-        echo "::set-output name=status::success"
-
-    - name: Upload packages
-      uses: actions/upload-artifact@master
-      if: steps.organize_1.outputs.status == 'success' && !cancelled()
-      with:
-        name: OpenWrt_packages
-        path: openwrt/bin
-
-    - name: Filter out old packages
-      id: organize_2
-      if: steps.organize_1.outputs.status == 'success' && !cancelled()
-      run: |
-        cd openwrt/bin/targets/*/*
-        find . -type f -not -newer ../../../../../.start_timestamp -exec rm -f {} \;
-        echo "::set-output name=status::success"
-
-    - name: Upload new packages
-      uses: actions/upload-artifact@master
-      if: steps.organize_2.outputs.status == 'success' && !cancelled()
-      with:
-        name: OpenWrt_new_packages
-        path: openwrt/bin
-
-    # failure checking
-    - name: Failed/debug set, wait for SSH connection (timeout 30min. You are safe to cancel the job now.)
-      if: failure() || env.OPT_DEBUG == '1'
       env:
         TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
       uses: tete1030/debugger-action@dev
