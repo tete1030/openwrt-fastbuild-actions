@@ -244,20 +244,22 @@ jobs:
         copy_files /home/builder/openwrt/bin "$(pwd)/openwrt/bin"
         echo "::set-output name=status::success"
 
-    - name: Upload bin directory
-      uses: actions/upload-artifact@master
-      if: steps.copydir.outputs.status == 'success' && !cancelled()
-      with:
-        name: OpenWrt_bin
-        path: openwrt/bin
+    # - name: Upload bin directory
+    #   uses: actions/upload-artifact@master
+    #   if: steps.copydir.outputs.status == 'success' && !cancelled()
+    #   with:
+    #     name: OpenWrt_bin
+    #     path: openwrt/bin
 
     - name: Organize files
       id: organize
       if: steps.copydir.outputs.status == 'success' && !cancelled()
       run: |
+        shopt -s extglob
+        mkdir "$(pwd)/openwrt/firmware"
         cd openwrt/bin/targets/*/*
-        rm -rf packages
-        echo "::set-env name=FIRMWARE::$(pwd)"
+        all_firmware_files=( !(packages) )
+        mv "${all_firmware_files[@]}" ../../../../firmware/
         echo "::set-output name=status::success"
   
     - name: Upload firmware
@@ -265,7 +267,14 @@ jobs:
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
         name: OpenWrt_firmware
-        path: ${{ env.FIRMWARE }}
+        path: openwrt/firmware
+
+    - name: Upload packages
+      uses: actions/upload-artifact@master
+      if: steps.organize.outputs.status == 'success' && !cancelled()
+      with:
+        name: OpenWrt_packages
+        path: openwrt/bin
 
     # failure checking
     - name: Failed/debug set, wait for SSH connection (timeout 30min. You are safe to cancel the job now.)
