@@ -89,8 +89,8 @@ jobs:
 
     - name: Check if skip this job
       run: |
-        git show --pretty="" --name-only | grep '^user/'"${BUILD_TARGET}"'/' > /dev/null
-        if [ $? -eq 0 ]; then
+        BUILD_TARGET_ESC="$(echo "${BUILD_TARGET}" | sed 's/[^[:alnum:]_-]/\\&/g')"
+        if ( git show --pretty="" --name-only | grep '^user/'"${BUILD_TARGET_SEC}"'/' > /dev/null ) ; then
           echo "::set-env name=SKIP_TARGET::0"
         else
           echo "::set-env name=SKIP_TARGET::1"
