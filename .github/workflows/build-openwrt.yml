@@ -1,38 +1,11 @@
 #=================================================
-# https://github.com/P3TERX/Actions-OpenWrt
-# Description: Build OpenWrt using GitHub Actions
-# Lisence: MIT
-# Author: P3TERX (for build-direct job)
-# Blog: https://p3terx.com
-#=================================================
-
-#=================================================
 # https://github.com/tete1030/openwrt-fastbuild-actions
 # Description: FAST building OpenWrt with Github Actions and Docker!
 # Lisence: MIT
-# Author: Texot (for docker-* jobs)
+# Author: Texot
 #=================================================
 
-# If you want to tweak the options, please be sure you understand them.
-# 如果你想更改参数，确保在理解它们的前提下进行
 env:
-  # Specify here the name and tag you want to use for the builders, they will be used for your docker hub repository
-  # For BUILDER_NAME: due to docker's limitation, only allowing lowercase letters, digits and separators (period, underscores, dashes)
-  # For BUILDER_TAG: lowercase and uppercase letters, digits, underscores, periods and dashes
-  # 在这里自定义你想使用的Builder名和默认Tag，这将被用作Docker Hub仓库的名字和Tag
-  # 对于BUILDER_NAME，由于docker的限制，仅能使用小写字母、数字和分隔符（英文句号，下划线，横杠）
-  # 对于BUILDER_TAG，能使用大小写字母、数字和分隔符
-  BUILDER_NAME: openwrt_dev
-  BUILDER_TAG: latest
-  # Specify here the OpenWrt Repo URL and Branch
-  # 在这里指定你的OpenWrt的Repo URL和Branch
-  REPO_URL: https://github.com/coolsnowwolf/lede
-  REPO_BRANCH: master
-  # REPO_URL: https://github.com/openwrt/openwrt
-  # REPO_BRANCH: openwrt-19.07
-  # Specify here your config file
-  # 在这里指定你的配置文件名
-  CONFIG_FILE: 'user/config.diff'
   # DO NOT CHANGE the following here, set them only in forked repo's Settings->Secrets page
   # You don't need to set docker_registry if you are using the default Docker Hub
   # 安全起见以下参数请不要在此更改，在你Fork的repo中，Settings->Secrets页面更改
@@ -50,9 +23,6 @@ on:
   repository_dispatch:
   push:
     paths:
-    - '.github/workflows/build-openwrt.yml'
-    - 'Dockerfiles/**'
-    - 'scripts/**'
     - 'user/**'
   ## If you want to use 'watch', 'schedule' events, make sure you also have changed the jobs' `if` condition.
   ## For 'schedule', see examples in: https://crontab.guru/examples.html
@@ -93,16 +63,17 @@ jobs:
         github.event_name == 'deployment'
         && github.event.deployment.task == 'build'
       )
-    name: ${{matrix.title}}
+    name: ${{matrix.title}} ${{matrix.target}}
     strategy:
       fail-fast: true
       matrix:
         mode: [normal, test]
+        target: [x86_64]
         include:
         - mode: normal
-          title: build
+          title: Build
         - mode: test
-          title: Fast checking
+          title: Fast check
 
     steps:
     - name: Checkout
@@ -115,21 +86,36 @@ jobs:
         BUILD_OPTS: 'update_feeds update_repo rebase rebuild debug push_when_fail package_only'
       run: |
         . scripts/host/init_runner.sh
-        [ "x${TEST}" = "x1" ] || scripts/host/cleanup.sh
+
+    - name: Check if skip this job
+      run: |
+        git show --pretty="" --name-only | grep '^user/'"${BUILD_TARGET}"'/' > /dev/null
+        if [ $? -eq 0 ]; then
+          echo "::set-env name=SKIP_TARGET::0"
+        else
+          echo "::set-env name=SKIP_TARGET::1"
+        fi
+
+    - name: Clean up for extra space
+      if: env.SKIP_TARGET == '0' && env.TEST != '1'
+      run: scripts/host/cleanup.sh
 
     - name: Set up Docker Buildx
       id: buildx
+      if: env.SKIP_TARGET == '0'
       uses: crazy-max/ghaction-docker-buildx@v1
       with:
         version: latest
 
     - name: Configure docker
+      if: env.SKIP_TARGET == '0'
       run: |
         . scripts/host/docker.sh
         configure_docker
         login_to_registry
 
     - name: Check status of builders
+      if: env.SKIP_TARGET == '0'
       run: |
         . scripts/host/docker.sh
         if [ "x${OPT_REBUILD}" != "x1" ]; then
@@ -161,54 +147,60 @@ jobs:
         echo "::set-env name=OPT_REBUILD::${OPT_REBUILD}"
 
     - name: Download last incremental builder
-      if: env.OPT_REBUILD == '0'
+      if: env.SKIP_TARGET == '0' && env.OPT_REBUILD == '0'
       run: |
         . scripts/host/docker.sh
         pull_image
 
     - name: Initialize environment for base builder
-      if: env.OPT_REBUILD == '1'
+      if: env.SKIP_TARGET == '0' && env.OPT_REBUILD == '1'
       run: |
         . scripts/host/docker.sh
         build_image init-env
 
     - name: Clone/update source codes
+      if: env.SKIP_TARGET == '0'
       run: |
         . scripts/host/docker.sh
         build_image clone
 
     # Allow intermediate customization
     - name: Debug set, wait for SSH connection (timeout 5min)
-      if: env.OPT_DEBUG == '1'
+      if: env.SKIP_TARGET == '0' && env.OPT_DEBUG == '1'
       env:
         TIMEOUT_MIN: 5
         TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
       uses: tete1030/debugger-action@dev
 
     - name: Apply customizations
+      if: env.SKIP_TARGET == '0'
       run: |
         . scripts/host/docker.sh
         build_image custom
 
     - name: Download packages
+      if: env.SKIP_TARGET == '0'
       run: |
         . scripts/host/docker.sh
         build_image download
 
     - name: Print disk space
+      if: env.SKIP_TARGET == '0'
       run: df -h
 
     - name: Compile firmware and packages
+      if: env.SKIP_TARGET == '0'
       run: |
         . scripts/host/docker.sh
         build_image compile
 
     - name: Print disk space
+      if: env.SKIP_TARGET == '0'
       run: df -h
 
     - name: Upload current builder
       if: |
-        !cancelled() && (
+        env.SKIP_TARGET == '0' && !cancelled() && (
           success()
           || env.OPT_PUSH_WHEN_FAIL == '1'
         )
@@ -221,7 +213,7 @@ jobs:
 
     - name: Copy out bin directory
       id: copydir
-      if: (!cancelled())
+      if: env.SKIP_TARGET == '0' && !cancelled()
       run: |
         . scripts/host/docker.sh
         if [ ! -d "$(pwd)/openwrt" ]; then
@@ -232,14 +224,14 @@ jobs:
 
     # - name: Upload bin directory
     #   uses: actions/upload-artifact@master
-    #   if: steps.copydir.outputs.status == 'success' && !cancelled()
+    #   if: env.SKIP_TARGET == '0' && steps.copydir.outputs.status == 'success' && !cancelled()
     #   with:
     #     name: OpenWrt_bin
     #     path: openwrt/bin
 
     - name: Organize files
       id: organize
-      if: steps.copydir.outputs.status == 'success' && !cancelled()
+      if: env.SKIP_TARGET == '0' && steps.copydir.outputs.status == 'success' && !cancelled()
       run: |
         shopt -s extglob
         mkdir "$(pwd)/openwrt/firmware"
@@ -250,14 +242,14 @@ jobs:
   
     - name: Upload firmware
       uses: actions/upload-artifact@master
-      if: steps.organize.outputs.status == 'success' && !cancelled()
+      if: env.SKIP_TARGET == '0' && steps.organize.outputs.status == 'success' && !cancelled()
       with:
         name: OpenWrt_firmware
         path: openwrt/firmware
 
     - name: Upload packages
       uses: actions/upload-artifact@master
-      if: steps.organize.outputs.status == 'success' && !cancelled()
+      if: env.SKIP_TARGET == '0' && steps.organize.outputs.status == 'success' && !cancelled()
       with:
         name: OpenWrt_packages
         path: openwrt/bin
@@ -265,16 +257,16 @@ jobs:
     # failure checking
     - name: Failed/debug set, wait for SSH connection (timeout 30min. You are safe to cancel the job now.)
       if: |
-        failure()
-        || env.OPT_DEBUG == '1'
+        env.SKIP_TARGET == '0'
+        && (failure() || env.OPT_DEBUG == '1')
       env:
         TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
       uses: tete1030/debugger-action@dev
     
     - name: Upload debugging changes
       if: |
-        (failure() && env.OPT_PUSH_WHEN_FAIL == '1')
-        || env.OPT_DEBUG == '1'
+        env.SKIP_TARGET == '0'
+        && ((failure() && env.OPT_PUSH_WHEN_FAIL == '1') || env.OPT_DEBUG == '1')
       run: |
         . scripts/host/docker.sh
         docker tag "${DK_LAST_BUILD_TARGET}" "$(_get_full_image_name_tag_for_build)"

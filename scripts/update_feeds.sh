@@ -34,4 +34,6 @@ install_package() {
   fi
 }
 
-source ../packages.txt
+if [ -f "../user/packages.txt" ]; then
+  source ../user/packages.txt
+fi

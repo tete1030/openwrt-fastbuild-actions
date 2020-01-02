@@ -9,10 +9,11 @@
 
 set -eo pipefail
 
-[ -e "${CONFIG_FILE}" ] && cp "${CONFIG_FILE}" openwrt/.config
+cp user/config.diff openwrt/.config
 
 cd openwrt
 
+if [ -d "../user/patches" ]; then
 (
     if [ "x${NONSTRICT_PATCH}" = "x1" ]; then
         set +eo pipefail
@@ -22,6 +23,7 @@ cd openwrt
     # To set final status of the subprocess to 0, because outside the parentheses the '-eo pipefail' is still on
     true
 )
+fi
 
 make defconfig
 make oldconfig

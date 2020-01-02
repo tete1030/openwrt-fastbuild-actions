@@ -1,5 +1,15 @@
 #!/bin/bash
 
+_check_missing_vars() {
+    declare -a missing_vars
+    for var_name in $@ ; do
+        if [ -z "${!var_name}" ]; then
+            missing_vars+=( ${var_name} )
+        fi
+    done
+    echo -n "${missing_vars[@]}"
+}
+
 _set_env() {
     for var_name in $@ ; do
         echo "::set-env name=${var_name}::${!var_name}"
@@ -69,19 +79,35 @@ _load_opt() {
     _set_env ${ENV_OPT_NAME}
 }
 
-# Not recommended to change unless you understand how it is used
-# 以下参数不推荐修改
+# Fixed parameters
 DK_BUILDX_DRIVER=docker
 DK_CONTEXT=.
 DK_NO_REMOTE_CACHE=1
 DK_NO_BUILDTIME_PUSH=1
 DK_CONVERT_MULTISTAGE_TO_IMAGE=1
-DK_BUILD_ARGS='REPO_URL REPO_BRANCH CONFIG_FILE DK_IMAGE_BASE OPT_UPDATE_REPO OPT_UPDATE_FEEDS OPT_PACKAGE_ONLY'
+DK_BUILD_ARGS='REPO_URL REPO_BRANCH CONFIG_FILE DK_IMAGE_BASE OPT_UPDATE_REPO OPT_UPDATE_FEEDS OPT_PACKAGE_ONLY BUILD_TARGET'
 DOCKERFILE_BASE=Dockerfile
 DOCKERFILE_INC=Dockerfile-inc
 CONFIG_FILE_DEFAULT='config.diff.default'
-_set_env_prefix DK_ DOCKERFILE_ CONFIG_FILE
+_set_env_prefix DK_ DOCKERFILE_ CONFIG_FILE_DEFAULT
 
+# Set for target
+BUILD_TARGET="$(_pyjq "${MATRIX_CONTEXT}" "target")"
+_set_env BUILD_TARGET
+CONFIG_FILE="user/${BUILD_TARGET}/config.diff"
+_set_env CONFIG_FILE
+
+# Load user configuration
+SETTING_VARS=( BUILDER_NAME BUILDER_TAG REPO_URL REPO_BRANCH )
+source "user/${BUILD_TARGET}/settings.sh"
+setting_missing_vars="$(_check_missing_vars ${SETTING_VARS[@]})"
+if [ ! -z "${setting_missing_vars}" ]; then
+    echo "::error::Variables missing in 'user/${BUILD_TARGET}/settings.sh': ${setting_missing_vars}"
+    exit 1
+fi
+_set_env ${SETTING_VARS[@]}
+
+# Prepare for test
 if [ "x$(_pyjq "${MATRIX_CONTEXT}" "mode")" = "xtest" ]; then
     for var_dockerfile in ${!DOCKERFILE_@}; do
         eval ${var_dockerfile}="tests/${!var_dockerfile}"
@@ -111,12 +137,13 @@ _set_env_prefix DK_IMAGE_
 _set_env DK_DOCKERFILE
 
 if [ -z "${CONFIG_FILE}" -o ! -f "${CONFIG_FILE}" ]; then
-    echo "CONFIG_FILE='${CONFIG_FILE}' does not exist, using default" >&2
-    [ ! -z "${CONFIG_FILE_DEFAULT}" -a -f "${CONFIG_FILE_DEFAULT}" ] || ( echo "::error::CONFIG_FILE_DEFAULT='${CONFIG_FILE_DEFAULT}' does not exist!" >&2 && exit 1 )
+    echo "Config file '${CONFIG_FILE}' does not exist, using default" >&2
+    [ ! -z "${CONFIG_FILE_DEFAULT}" -a -f "${CONFIG_FILE_DEFAULT}" ] || ( echo "::error::Both config file '${CONFIG_FILE}' and default config file '${CONFIG_FILE_DEFAULT}' do not exist!" >&2 && exit 1 )
     export CONFIG_FILE="${CONFIG_FILE_DEFAULT}"
     _set_env CONFIG_FILE
 fi
 
+# Load building options
 for opt_name in ${BUILD_OPTS[@]}; do
     _load_opt "${opt_name}"
 done
