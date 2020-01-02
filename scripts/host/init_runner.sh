@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eo pipefail
+
 _check_missing_vars() {
     declare -a missing_vars
     for var_name in $@ ; do
@@ -37,7 +39,7 @@ try:
     else:
       json_obj = json_obj[comp]
   print(json.dumps(json_obj), end="")
-except KeyError, IndexError:
+except (KeyError, IndexError) as e:
   print("${DEFAULT}", end="")
 EOF
 }
