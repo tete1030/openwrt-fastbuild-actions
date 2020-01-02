@@ -144,7 +144,7 @@ check_image_health() {
     exit 1
   fi
 
-  LAYER_NUMBER=$(($(docker history "${DK_IMAGE_BASE}" | wc -l)-1))
+  LAYER_NUMBER=$(($(docker registry history "${DK_IMAGE_BASE}" | wc -l)-1))
   echo "Number of docker layers: ${LAYER_NUMBER}"
   if (( LAYER_NUMBER > 100 )); then
     echo "The number of docker layers has exceeded the limitation 100, squashing it..."
