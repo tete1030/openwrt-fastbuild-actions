@@ -145,6 +145,15 @@ if [ -z "${CONFIG_FILE}" -o ! -f "${CONFIG_FILE}" ]; then
     _set_env CONFIG_FILE
 fi
 
+# Load building action
+if [ "x${GITHUB_EVENT_NAME}" = "xrepository_dispatch" ]; then
+    REPO_DISPATCH_ACTION="$(_pyjq "${GITHUB_CONTEXT}" "event.action" "")"
+    _set_env REPO_DISPATCH_ACTION
+elif [ "x${GITHUB_EVENT_NAME}" = "xdeployment" ]; then
+    DEPLOYMENTS_TASK="$(_pyjq "${GITHUB_CONTEXT}" "event.deployment.task" "")"
+    _set_env DEPLOYMENTS_TASK
+fi
+
 # Load building options
 for opt_name in ${BUILD_OPTS[@]}; do
     _load_opt "${opt_name}"

@@ -54,15 +54,9 @@ jobs:
     #     github.event_name == 'watch' && github.event.action == 'started' && github.event.repository.owner.id == github.event.sender.id
     # For `github.event` structures, see: https://developer.github.com/v3/activity/events/types/
     if: |
-      (
-        github.event_name == 'push'
-      ) || (
-        github.event_name == 'repository_dispatch'
-        && github.event.action == 'build'
-      ) || (
-        github.event_name == 'deployment'
-        && github.event.deployment.task == 'build'
-      )
+      github.event_name == 'push'
+      || github.event_name == 'repository_dispatch'
+      || github.event_name == 'deployment'
     name: ${{matrix.title}} ${{matrix.target}}
     strategy:
       fail-fast: true
@@ -93,11 +87,19 @@ jobs:
         BUILD_TARGET_ESC="$(echo "${BUILD_TARGET}" | sed 's/[^[:alnum:]_-]/\\&/g')"
         git show --pretty="" --name-only | grep -q '^user/'"${BUILD_TARGET_SEC}"'/'
         ret_val=$?
-        if [ ${ret_val} -eq 0 ] ; then
-          echo "::set-env name=SKIP_TARGET::0"
+        SKIP_TARGET=1
+        if [ ! -z "${REPO_DISPATCH_ACTION}" -o ! -z "${DEPLOYMENTS_TASK}" ]; then
+          if [ "x${REPO_DISPATCH_ACTION}" = "x${BUILD_TARGET}" -o "x${DEPLOYMENTS_TASK}" = "x${BUILD_TARGET}" ]; then
+            SKIP_TARGET=0
+          else
+            SKIP_TARGET=1
+          fi
+        elif [ ${ret_val} -eq 0 ]; then
+          SKIP_TARGET=0
         else
-          echo "::set-env name=SKIP_TARGET::1"
+          SKIP_TARGET=1
         fi
+        echo "::set-env name=SKIP_TARGET::${SKIP_TARGET}"
 
     - name: Clean up for extra space
       if: env.SKIP_TARGET == '0' && env.TEST != '1'
