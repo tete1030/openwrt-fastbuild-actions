@@ -2,47 +2,10 @@
 
 set -eo pipefail
 
-_check_missing_vars() {
-    declare -a missing_vars
-    for var_name in $@ ; do
-        if [ -z "${!var_name}" ]; then
-            missing_vars+=( ${var_name} )
-        fi
-    done
-    echo -n "${missing_vars[@]}"
-}
+echo "Installing json processor 'jq'..."
+sudo -E apt-get -qq update && sudo -E apt-get -qq install jq
 
-_set_env() {
-    for var_name in $@ ; do
-        echo "::set-env name=${var_name}::${!var_name}"
-    done
-}
-
-_set_env_prefix() {
-    for var_name_prefix in $@ ; do
-        eval '_set_env ${!'"${var_name_prefix}"'@}'
-    done
-}
-
-_pyjq() {
-    OPT_PATH="${2}"
-    DEFAULT="${3}"
-    JSON="${1}" python3 <<EOF
-import json, os
-json_obj = json.loads( os.environ["JSON"] )
-
-path_components = "${OPT_PATH}".split(".")
-try:
-  for comp in path_components:
-    if comp.isdigit():
-      json_obj = json_obj[int(comp)]
-    else:
-      json_obj = json_obj[comp]
-  print(json_obj, end="")
-except (KeyError, IndexError) as e:
-  print("${DEFAULT}", end="")
-EOF
-}
+source scripts/host/utils.sh
 
 _get_opt() {
 OPT_NAME="${1}"
@@ -94,7 +57,7 @@ CONFIG_FILE_DEFAULT='config.diff.default'
 _set_env_prefix DK_ DOCKERFILE_ CONFIG_FILE_DEFAULT
 
 # Set for target
-BUILD_TARGET="$(_pyjq "${MATRIX_CONTEXT}" "target")"
+BUILD_TARGET="$(echo "${MATRIX_CONTEXT}" | jq -crMe ".target")"
 _set_env BUILD_TARGET
 CONFIG_FILE="user/${BUILD_TARGET}/config.diff"
 _set_env CONFIG_FILE
@@ -110,7 +73,7 @@ fi
 _set_env ${SETTING_VARS[@]}
 
 # Prepare for test
-if [ "x$(_pyjq "${MATRIX_CONTEXT}" "mode")" = "xtest" ]; then
+if [ "x$(echo "${MATRIX_CONTEXT}" | jq -crMe ".mode")" = "xtest" ]; then
     for var_dockerfile in ${!DOCKERFILE_@}; do
         eval ${var_dockerfile}="tests/${!var_dockerfile}"
         _set_env ${var_dockerfile}
@@ -147,10 +110,10 @@ fi
 
 # Load building action
 if [ "x${GITHUB_EVENT_NAME}" = "xrepository_dispatch" ]; then
-    REPO_DISPATCH_ACTION="$(_pyjq "${GITHUB_CONTEXT}" "event.action" "")"
+    REPO_DISPATCH_ACTION="$(echo "${GITHUB_CONTEXT}" | jq -crM '.event.action // ""')"
     _set_env REPO_DISPATCH_ACTION
 elif [ "x${GITHUB_EVENT_NAME}" = "xdeployment" ]; then
-    DEPLOYMENTS_TASK="$(_pyjq "${GITHUB_CONTEXT}" "event.deployment.task" "")"
+    DEPLOYMENTS_TASK="$(echo "${GITHUB_CONTEXT}" | jq -crM '.event.deployment.task // ""')"
     _set_env DEPLOYMENTS_TASK
 fi
 

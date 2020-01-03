@@ -10,5 +10,3 @@ BUILDER_TAG="latest"
 # 在这里指定你的OpenWrt的Repo URL和Branch
 REPO_URL="https://github.com/coolsnowwolf/lede"
 REPO_BRANCH="master"
-# REPO_URL="https://github.com/openwrt/openwrt"
-# REPO_BRANCH="openwrt-19.07"
