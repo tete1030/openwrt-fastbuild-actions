@@ -29,7 +29,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        target: [x86_64]
+        target: [x86_64, wdr4310v1]
     steps:
     - name: Checkout
       uses: actions/checkout@master

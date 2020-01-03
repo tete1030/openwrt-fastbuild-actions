@@ -52,7 +52,7 @@ jobs:
       fail-fast: true
       matrix:
         mode: [normal, test]
-        target: [x86_64]
+        target: [x86_64, wdr4310v1]
         include:
         - mode: normal
           title: Build
