@@ -33,16 +33,6 @@ on:
   #   types: [started]
 
 jobs:
-  context:
-    name: Print runner context (for debugging)
-    runs-on: ubuntu-18.04
-    steps:
-    - name: Dump github context
-      run: |
-        cat << 'EOF'
-        ${{toJSON(github)}}
-        EOF
-
   build:
     runs-on: ubuntu-18.04
     # Always activate this job
@@ -156,7 +146,7 @@ jobs:
       run: |
         . scripts/host/docker.sh
         pull_image
-        check_image_health
+        squash_image_when_necessary "${DK_IMAGE_BASE}"
 
     - name: Initialize environment for base builder
       if: env.SKIP_TARGET == '0' && env.OPT_REBUILD == '1'
@@ -212,6 +202,9 @@ jobs:
         )
       run: |
         . scripts/host/docker.sh
+        if [ "x${OPT_REBUILD}" != '1' ]; then
+          squash_image_when_necessary "$(_get_full_image_name_tag_for_build)"
+        fi
         push_image_and_cache
         if [ "x${OPT_REBUILD}" = "x1" ]; then
           create_remote_tag_alias "${BUILDER_ID_INC}" "${BUILDER_ID_BASE}"

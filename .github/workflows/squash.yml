@@ -1,0 +1,90 @@
+#=================================================
+# https://github.com/tete1030/openwrt-fastbuild-actions
+# Description: FAST building OpenWrt with Github Actions and Docker!
+# Lisence: MIT
+# Author: Texot
+#=================================================
+
+env:
+  # DO NOT CHANGE the following here, set them only in forked repo's Settings->Secrets page
+  # You don't need to set docker_registry if you are using the default Docker Hub
+  # 安全起见以下参数请不要在此更改，在你Fork的repo中，Settings->Secrets页面更改
+  # 如果你想使用默认的Docker Hub，你不需要在secrets页面设置docker_registry
+  DK_REGISTRY: ${{secrets.docker_registry}}
+  DK_USERNAME: ${{secrets.docker_username}}
+  DK_PASSWORD: ${{secrets.docker_password}}
+  SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
+  TMATE_ENCRYPT_PASSWORD: ${{secrets.TMATE_ENCRYPT_PASSWORD}}
+
+name: Compress builders
+
+# Start every 72 hours
+on:
+  schedule:
+  - cron: '0 */72 * * *'
+
+jobs:
+  squash:
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: true
+      matrix:
+        target: [x86_64]
+    steps:
+    - name: Checkout
+      uses: actions/checkout@master
+    
+    - name: Init build env
+      env:
+        GITHUB_CONTEXT: ${{toJSON(github)}}
+        MATRIX_CONTEXT: ${{toJSON(matrix)}}
+      run: |
+        . scripts/host/init_runner.sh
+
+    - name: Clean up for extra space
+      run: scripts/host/cleanup.sh
+
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: crazy-max/ghaction-docker-buildx@v1
+      with:
+        version: latest
+
+    - name: Configure docker
+      run: |
+        . scripts/host/docker.sh
+        configure_docker
+        login_to_registry
+
+    - name: Check status of builder
+      run: |
+        . scripts/host/docker.sh
+        # temporarily disable failure guarder
+        set +eo pipefail
+          docker buildx imagetools inspect "${DK_IMAGE_BASE}" 2>&1 >/dev/null
+          image_base_ret_val=$?
+        set -eo pipefail
+
+        if [ "x${image_base_ret_val}" != "x0" ]; then
+          echo "::set-env name=SKIP::1"
+        else
+          echo "::set-env name=SKIP::0"
+        fi
+
+    - name: Download last incremental builder
+      if: env.SKIP == '0'
+      run: |
+        . scripts/host/docker.sh
+        STRICT_PULL=1 pull_image
+
+    - name: Compress builder when necessary
+      if: env.SKIP == '0'
+      run: |
+        . scripts/host/docker.sh
+        DK_LAYER_NUMBER_LIMIT=25 squash_image_when_necessary "${DK_IMAGE_BASE}"
+
+    - name: Upload back builder
+      if: env.SKIP == '0'
+      run: |
+        . scripts/host/docker.sh
+        docker push "${DK_IMAGE_BASE}"

@@ -124,33 +124,44 @@ pull_image() {
     echo "Buildx driver '${DK_BUILDX_DRIVER}' does not support pulling and image management" >&2
     exit 1
   fi
-  # docker pull --all-tags "$(_get_full_image_name)" 2> /dev/null || true
   if [ ! -z "${DK_IMAGE_BASE}" ]; then
-    docker pull "${DK_IMAGE_BASE}" 2> /dev/null || true
+    (
+      set +eo pipefail
+      docker pull "${DK_IMAGE_BASE}" | tee /tmp/dockerpull.log
+      ret_val=$?
+      if [ ${ret_val} -ne 0 ] && ( grep -q "max depth exceeded" /tmp/dockerpull.log ) ; then
+        echo "::error::Your image has exceeded maximum layer limit. Normally this should have already been automatically handled, but obviously haven't. You need to manually rebase or rebuild this builder, or delete it on the Docker Hub website." >&2
+        exit 1
+      fi
+      [ "x${STRICT_PULL}" != "x1" ] || exit $ret_val
+    )
   else
     echo "No DK_IMAGE_BASE configured for pulling" >&2
     exit 1
   fi
 }
 
-check_image_health() {
+squash_image_when_necessary() {
+  if [ $# -ne 1 ]; then
+    printf "Wrong parameters!\nUsage: squash_image_when_necessary IMAGE" >&2
+    exit 1
+  fi
+  SQUASH_IMAGE="${1}"
   if [ "x${DK_BUILDX_DRIVER}" != "xdocker" ]; then
-    echo "Buildx driver '${DK_BUILDX_DRIVER}' does not support image health management" >&2
+    echo "Buildx driver '${DK_BUILDX_DRIVER}' does not support image squashing" >&2
     exit 1
   fi
 
-  if [ -z "${DK_IMAGE_BASE}" ]; then
-    echo "No DK_IMAGE_BASE configured for health checking" >&2
-    exit 1
-  fi
-
-  LAYER_NUMBER=$(($(docker registry history "${DK_IMAGE_BASE}" | wc -l)-1))
+  LAYER_NUMBER=$(($(docker history "${SQUASH_IMAGE}" | wc -l)-1))
+  DK_LAYER_NUMBER_LIMIT=${DK_LAYER_NUMBER_LIMIT:-50}
   echo "Number of docker layers: ${LAYER_NUMBER}"
-  if (( LAYER_NUMBER > 100 )); then
-    echo "The number of docker layers has exceeded the limitation 100, squashing it..."
-    DOCKER_BUILDKIT=1 docker build --build-arg BUILDKIT_INLINE_CACHE=1 --squash "--tag=${DK_IMAGE_BASE}" << EOF
-FROM "${DK_IMAGE_BASE}"
+  if (( LAYER_NUMBER > DK_LAYER_NUMBER_LIMIT )); then
+    echo "The number of docker layers has exceeded the limitation ${DK_LAYER_NUMBER_LIMIT}, squashing... (This may take some time)"
+    # Use buildkit to squash since it squashes all layers together instead of just current Dockerfile
+    DOCKER_BUILDKIT=1 docker build --squash "--tag=${SQUASH_IMAGE}" . << EOF
+FROM "${SQUASH_IMAGE}"
 EOF
+    echo "Squashing finished!"
   fi
 }
 
@@ -426,7 +437,7 @@ push_image() {
     if [ "x${DK_BUILDX_DRIVER}" = "xdocker" ]; then
       docker push "$(_get_full_image_name_tag_for_build)"
     else
-      echo "Warning: separated pushing in '${DK_BUILDX_DRIVER}' driver can be very slow, because the final image needs to be unpacked and repacked again"
+      echo "Warning: pushing in '${DK_BUILDX_DRIVER}' driver can be very slow, because the final image needs to be unpacked and repacked again"
       if [ -z "${DK_LAST_BUILD_TARGET}" ]; then
         echo "DK_LAST_BUILD_TARGET not set" >&2
         exit 1
