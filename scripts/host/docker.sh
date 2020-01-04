@@ -152,15 +152,27 @@ squash_image_when_necessary() {
     exit 1
   fi
 
-  LAYER_NUMBER=$(($(docker history "${SQUASH_IMAGE}" | wc -l)-1))
+  LAYER_NUMBER=$(docker image inspect -f '{{.RootFS.Layers}}' "${SQUASH_IMAGE}" | grep -o 'sha256:' | wc -l)
   DK_LAYER_NUMBER_LIMIT=${DK_LAYER_NUMBER_LIMIT:-50}
   echo "Number of docker layers: ${LAYER_NUMBER}"
   if (( LAYER_NUMBER > DK_LAYER_NUMBER_LIMIT )); then
     echo "The number of docker layers has exceeded the limitation ${DK_LAYER_NUMBER_LIMIT}, squashing... (This may take some time)"
     # Use buildkit to squash since it squashes all layers together instead of just current Dockerfile
-    echo "FROM \"${SQUASH_IMAGE}\"" | DOCKER_BUILDKIT=1 docker build --squash "--tag=${SQUASH_IMAGE}" --file=- . << EOF
-EOF
-    echo "Squashing finished!"
+    # Though it is probably a bug not a feature: https://github.com/moby/moby/issues/38903
+    # This is faster and reliable than tools like 'docker-squash'
+    echo "Current docker system df:"
+    docker system df
+    echo "Current docker images:"
+    docker image ls -a
+
+    echo "FROM \"${SQUASH_IMAGE}\"" | DOCKER_BUILDKIT=1 docker build --squash "--tag=${SQUASH_IMAGE}" --file=- .
+    echo "Squashing finished! Cleaning up dangling images ..."
+    docker system prune -f
+
+    echo "Current docker system df:"
+    docker system df
+    echo "Current docker images:"
+    docker image ls -a
   fi
 }
 
