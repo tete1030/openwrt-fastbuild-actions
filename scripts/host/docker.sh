@@ -158,8 +158,7 @@ squash_image_when_necessary() {
   if (( LAYER_NUMBER > DK_LAYER_NUMBER_LIMIT )); then
     echo "The number of docker layers has exceeded the limitation ${DK_LAYER_NUMBER_LIMIT}, squashing... (This may take some time)"
     # Use buildkit to squash since it squashes all layers together instead of just current Dockerfile
-    DOCKER_BUILDKIT=1 docker build --squash "--tag=${SQUASH_IMAGE}" . << EOF
-FROM "${SQUASH_IMAGE}"
+    echo "FROM \"${SQUASH_IMAGE}\"" | DOCKER_BUILDKIT=1 docker build --squash "--tag=${SQUASH_IMAGE}" --file=- . << EOF
 EOF
     echo "Squashing finished!"
   fi
