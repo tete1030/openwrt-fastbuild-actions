@@ -104,7 +104,7 @@ jobs:
       if: env.SKIP_TARGET == '0'
       run: |
         . scripts/host/docker.sh
-        DK_LAYER_NUMBER_LIMIT=5 squash_image_when_necessary "${DK_IMAGE_BASE}"
+        DK_LAYER_NUMBER_LIMIT=20 squash_image_when_necessary "${DK_IMAGE_BASE}"
 
     - name: Upload squashed builder
       if: env.SKIP_TARGET == '0'
@@ -129,7 +129,3 @@ jobs:
         else
           create_remote_tag_alias "${TMP_IMAEG_BASE}" "${DK_IMAGE_BASE}"
         fi
-
-        docker tag "scratch" "${TMP_IMAEG_BASE}"
-        docker push "${TMP_IMAEG_BASE}"
-
