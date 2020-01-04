@@ -38,13 +38,13 @@ if [ "x${GITHUB_EVENT_NAME}" = "xpush" ]; then
         fi
     fi
 
-elif [ "x${RD_TASK}" = "xbuild" ]; then
-    echo "Repo dispatch or deployments event target: ${RD_TARGET}"
-    if [ "x${RD_TARGET}" = "xall" -o "x${RD_TARGET}" = "x${BUILD_TARGET}" ]; then
+elif [ "x${GITHUB_EVENT_NAME}" = "xrepository_dispatch" -o "x${GITHUB_EVENT_NAME}" = "xdeployment" ]; then
+    echo "Repo dispatch or deployment event task: ${RD_TASK} target: ${RD_TARGET}"
+    if [[ "${RD_TASK}" == "build" && ( "${RD_TARGET}" == "all" || "${RD_TARGET}" == "${BUILD_TARGET}" ) ]]; then
         SKIP_TARGET=0
     fi
 else
-    echo "::warning::Unknown triggering event, no skipping" >&2
+    echo "::warning::Unknown default target for triggering event: ${GITHUB_EVENT_NAME}" >&2
     SKIP_TARGET=0
 fi
 
