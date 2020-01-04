@@ -126,6 +126,13 @@ jobs:
         fi
         echo "::set-env name=OPT_REBUILD::${OPT_REBUILD}"
 
+    - name: Debug set, wait for SSH connection (timeout 5min)
+      if: env.SKIP_TARGET == '0' && env.OPT_DEBUG == '1' && env.TEST != '1'
+      env:
+        TIMEOUT_MIN: 5
+        TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
+      uses: tete1030/debugger-action@dev
+
     - name: Download last incremental builder
       if: env.SKIP_TARGET == '0' && env.OPT_REBUILD == '0'
       run: |
