@@ -198,7 +198,7 @@ jobs:
 
     # Allow intermediate customization
     - name: Debug set, wait for SSH connection (timeout 5min)
-      if: env.SKIP_TARGET == '0' && env.OPT_DEBUG == '1'
+      if: env.SKIP_TARGET == '0' && env.OPT_DEBUG == '1' && env.TEST != '1'
       env:
         TIMEOUT_MIN: 5
         TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
@@ -293,7 +293,7 @@ jobs:
     - name: Failed/debug set, wait for SSH connection (timeout 30min. You are safe to cancel the job now.)
       if: |
         env.SKIP_TARGET == '0'
-        && (failure() || env.OPT_DEBUG == '1')
+        && (failure() || (env.OPT_DEBUG == '1' && env.TEST != '1'))
       env:
         TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
       uses: tete1030/debugger-action@dev
