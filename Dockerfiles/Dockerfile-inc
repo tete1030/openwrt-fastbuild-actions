@@ -31,6 +31,7 @@ RUN scripts/download.sh
 
 FROM download-stage AS compile-stage
 ARG OPT_PACKAGE_ONLY=0
+RUN rm -rf openwrt/bin
 RUN if [ "x${OPT_PACKAGE_ONLY}" != "x1" ]; then \
     scripts/compile.sh m || scripts/compile.sh s ;\
   else \
