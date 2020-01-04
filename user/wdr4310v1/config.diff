@@ -1,3 +1,4 @@
 CONFIG_TARGET_ar71xx=y
 CONFIG_TARGET_ar71xx_generic=y
-CONFIG_TARGET_DEVICE_ar71xx_generic_DEVICE_tl-wdr4310-v1=y
+CONFIG_TARGET_ar71xx_generic_DEVICE_tl-wdr4310-v1=y
+CONFIG_PACKAGE_kmod-usb-ohci=y
