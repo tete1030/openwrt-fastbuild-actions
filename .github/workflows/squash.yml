@@ -16,7 +16,7 @@ env:
   SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
   TMATE_ENCRYPT_PASSWORD: ${{secrets.TMATE_ENCRYPT_PASSWORD}}
 
-name: Compress builders
+name: Squash builders
 
 # Start every 72 hours
 on:
@@ -82,15 +82,16 @@ jobs:
         . scripts/host/docker.sh
         # temporarily disable failure guarder
         set +eo pipefail
-          docker buildx imagetools inspect "${DK_IMAGE_BASE}" 2>&1 >/dev/null
-          image_base_ret_val=$?
+          IMAGE_DIGEST="$(docker buildx imagetools inspect --raw "${DK_IMAGE_BASE}" | perl -pe 'chomp if eof' | openssl dgst -sha256 2>/dev/null ;  exit ${PIPESTATUS[0]})"
+          image_check_ret_val=$?
         set -eo pipefail
 
-        if [ "x${image_base_ret_val}" != "x0" ]; then
+        if [ "x${image_check_ret_val}" != "x0" ]; then
           echo "No builder found, skipping"
           echo "::set-env name=SKIP_TARGET::1"
         else
           echo "::set-env name=SKIP_TARGET::0"
+          echo "::set-env name=IMAGE_DIGEST::${IMAGE_DIGEST}"
         fi
 
     - name: Download last incremental builder
@@ -99,14 +100,36 @@ jobs:
         . scripts/host/docker.sh
         STRICT_PULL=1 pull_image
 
-    - name: Compress builder when necessary
+    - name: Squash builder when necessary
       if: env.SKIP_TARGET == '0'
       run: |
         . scripts/host/docker.sh
         DK_LAYER_NUMBER_LIMIT=5 squash_image_when_necessary "${DK_IMAGE_BASE}"
 
-    - name: Upload back builder
+    - name: Upload squashed builder
       if: env.SKIP_TARGET == '0'
       run: |
         . scripts/host/docker.sh
-        docker push "${DK_IMAGE_BASE}"
+        TMP_IMAEG_BASE="${DK_IMAGE_BASE}-squashtmp"
+        docker tag "${DK_IMAGE_BASE}" "${TMP_IMAEG_BASE}"
+        docker push "${TMP_IMAEG_BASE}"
+
+        set +eo pipefail
+          CUR_IMAGE_DIGEST="$(docker buildx imagetools inspect --raw "${DK_IMAGE_BASE}" | perl -pe 'chomp if eof' | openssl dgst -sha256 2>/dev/null ;  exit ${PIPESTATUS[0]})"
+          image_check_ret_val=$?
+        set -eo pipefail
+
+        if [ "x${image_check_ret_val}" != "x0" ]; then
+          echo "::error::Image disappeared!?" >&2
+          exit 1
+        fi
+
+        if [ "x${CUR_IMAGE_DIGEST}" != "x${IMAGE_DIGEST}" ]; then
+          echo "::error::Image '${DK_IMAGE_BASE}' has changed during squashing, aborting" >&2
+        else
+          create_remote_tag_alias "${TMP_IMAEG_BASE}" "${DK_IMAGE_BASE}"
+        fi
+
+        docker tag "scratch" "${TMP_IMAEG_BASE}"
+        docker push "${TMP_IMAEG_BASE}"
+
