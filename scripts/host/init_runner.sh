@@ -110,12 +110,13 @@ fi
 
 # Load building action
 if [ "x${GITHUB_EVENT_NAME}" = "xrepository_dispatch" ]; then
-    REPO_DISPATCH_ACTION="$(echo "${GITHUB_CONTEXT}" | jq -crM '.event.action // ""')"
-    _set_env REPO_DISPATCH_ACTION
+    RD_TASK="$(echo "${GITHUB_CONTEXT}" | jq -crM '.event.action // ""')"
+    RD_TARGET="$(echo "${GITHUB_CONTEXT}" | jq -crM '.event.client_payload.target // ""')"
 elif [ "x${GITHUB_EVENT_NAME}" = "xdeployment" ]; then
-    DEPLOYMENTS_TASK="$(echo "${GITHUB_CONTEXT}" | jq -crM '.event.deployment.task // ""')"
-    _set_env DEPLOYMENTS_TASK
+    RD_TASK="$(echo "${GITHUB_CONTEXT}" | jq -crM '.event.deployment.task // ""')"
+    RD_TARGET="$(echo "${GITHUB_CONTEXT}" | jq -crM '.event.deployment.payload.target // ""')"
 fi
+_set_env RD_TASK RD_TARGET
 
 # Load building options
 for opt_name in ${BUILD_OPTS[@]}; do

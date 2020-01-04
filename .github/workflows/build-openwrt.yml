@@ -49,7 +49,7 @@ jobs:
       || github.event_name == 'deployment'
     name: ${{matrix.title}} ${{matrix.target}}
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         mode: [normal, test]
         target: [x86_64, wdr4310v1]
@@ -58,6 +58,9 @@ jobs:
           title: Build
         - mode: test
           title: Fast check
+    env:
+      GITHUB_CONTEXT: ${{toJSON(github)}}
+      MATRIX_CONTEXT: ${{toJSON(matrix)}}
 
     steps:
     - name: Checkout
@@ -67,65 +70,11 @@ jobs:
 
     - name: Init build env
       env:
-        GITHUB_CONTEXT: ${{toJSON(github)}}
-        MATRIX_CONTEXT: ${{toJSON(matrix)}}
         BUILD_OPTS: 'update_feeds update_repo rebase rebuild debug push_when_fail package_only'
-      run: |
-        . scripts/host/init_runner.sh
+      run: scripts/host/init_runner.sh
 
     - name: Check if skip this job
-      run: |
-        SKIP_TARGET=1
-        if [ "x${GITHUB_EVENT_NAME}" = "xpush" ]; then
-          push_before="${{github.event.before}}"
-          push_after="${{github.event.after}}"
-
-          if [ -z "${push_before}" -o -z "${push_after}" ]; then
-            echo "::error::Oops! Something went wrong! Github push event does not exist!" >&2
-            exit 1
-          fi
-
-          # when forcing push, we cannot compare
-          if git cat-file -e ${push_before}^{commit} ; then
-            true
-          else
-            echo "::error::Force push not supported, skipping job" >&2
-            echo "::set-env name=SKIP_TARGET::1"
-            exit 0
-          fi
-
-          echo "Changes in this push:"
-          git --no-pager diff --name-status ${push_before} ${push_after}
-          changed_files="$(git --no-pager diff --name-only ${push_before} ${push_after})"
-
-          BUILD_TARGET_ESC="$(echo "${BUILD_TARGET}" | sed 's/[^[:alnum:]_-]/\\&/g')"
-          set +e
-            echo "${changed_files}" | grep -q '^user/'"${BUILD_TARGET_ESC}"'/'
-            ret_val=$?
-          set -e
-
-          if [ ${ret_val} -eq 0 ]; then
-            SKIP_TARGET=0
-          else
-            SKIP_TARGET=1
-          fi
-        elif [ ! -z "${REPO_DISPATCH_ACTION}" -o ! -z "${DEPLOYMENTS_TASK}" ]; then
-          if [ "x${REPO_DISPATCH_ACTION}" = "x${BUILD_TARGET}" -o "x${DEPLOYMENTS_TASK}" = "x${BUILD_TARGET}" ]; then
-            SKIP_TARGET=0
-          else
-            SKIP_TARGET=1
-          fi
-        else
-          echo "::warning::Unknown triggering event, no skipping" >&2
-          SKIP_TARGET=0
-        fi
-
-        if [ "x${SKIP_TARGET}" = "x1" ]; then
-          echo "Skipping current job"
-        else
-          echo "Not skipping current job"
-        fi
-        echo "::set-env name=SKIP_TARGET::${SKIP_TARGET}"
+      run: scripts/host/check_target.sh
 
     - name: Clean up for extra space
       if: env.SKIP_TARGET == '0' && env.TEST != '1'

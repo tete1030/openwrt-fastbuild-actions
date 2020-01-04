@@ -20,6 +20,7 @@ name: Compress builders
 
 # Start every 72 hours
 on:
+  deployment:
   schedule:
   - cron: '0 */72 * * *'
 
@@ -27,36 +28,47 @@ jobs:
   squash:
     runs-on: ubuntu-18.04
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         target: [x86_64, wdr4310v1]
+    env:
+      GITHUB_CONTEXT: ${{toJSON(github)}}
+      MATRIX_CONTEXT: ${{toJSON(matrix)}}
     steps:
     - name: Checkout
-      uses: actions/checkout@master
-    
+      uses: actions/checkout@v2
+
     - name: Init build env
-      env:
-        GITHUB_CONTEXT: ${{toJSON(github)}}
-        MATRIX_CONTEXT: ${{toJSON(matrix)}}
+      run: scripts/host/init_runner.sh
+
+    - name: Check if skip this job
       run: |
-        . scripts/host/init_runner.sh
+        SKIP_TARGET=1
+        if [[ ${RD_TASK} == "squash" && ( ${RD_TARGET} == "all" || ${RD_TARGET} == ${BUILD_TARGET} ) ]]; then
+          SKIP_TARGET=0
+        fi
+        echo "::set-env name=SKIP_TARGET::${SKIP_TARGET}"
 
     - name: Clean up for extra space
+      if: env.SKIP_TARGET == '0'
       run: scripts/host/cleanup.sh
 
     - name: Set up Docker Buildx
       id: buildx
+      if: env.SKIP_TARGET == '0'
       uses: crazy-max/ghaction-docker-buildx@v1
       with:
         version: latest
 
     - name: Configure docker
+      if: env.SKIP_TARGET == '0'
       run: |
         . scripts/host/docker.sh
         configure_docker
         login_to_registry
 
     - name: Check status of builder
+      if: env.SKIP_TARGET == '0'
       run: |
         . scripts/host/docker.sh
         # temporarily disable failure guarder
@@ -66,25 +78,26 @@ jobs:
         set -eo pipefail
 
         if [ "x${image_base_ret_val}" != "x0" ]; then
-          echo "::set-env name=SKIP::1"
+          echo "No builder found, skipping"
+          echo "::set-env name=SKIP_TARGET::1"
         else
-          echo "::set-env name=SKIP::0"
+          echo "::set-env name=SKIP_TARGET::0"
         fi
 
     - name: Download last incremental builder
-      if: env.SKIP == '0'
+      if: env.SKIP_TARGET == '0'
       run: |
         . scripts/host/docker.sh
         STRICT_PULL=1 pull_image
 
     - name: Compress builder when necessary
-      if: env.SKIP == '0'
+      if: env.SKIP_TARGET == '0'
       run: |
         . scripts/host/docker.sh
-        DK_LAYER_NUMBER_LIMIT=25 squash_image_when_necessary "${DK_IMAGE_BASE}"
+        DK_LAYER_NUMBER_LIMIT=5 squash_image_when_necessary "${DK_IMAGE_BASE}"
 
     - name: Upload back builder
-      if: env.SKIP == '0'
+      if: env.SKIP_TARGET == '0'
       run: |
         . scripts/host/docker.sh
         docker push "${DK_IMAGE_BASE}"
