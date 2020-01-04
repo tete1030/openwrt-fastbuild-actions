@@ -127,9 +127,9 @@ pull_image() {
   if [ ! -z "${DK_IMAGE_BASE}" ]; then
     (
       set +eo pipefail
-      docker pull "${DK_IMAGE_BASE}" | tee /tmp/dockerpull.log
+      docker pull "${DK_IMAGE_BASE}" 2> >(tee /tmp/dockerpull_stderr.log >&2)
       ret_val=$?
-      if [ ${ret_val} -ne 0 ] && ( grep -q "max depth exceeded" /tmp/dockerpull.log ) ; then
+      if [ ${ret_val} -ne 0 ] && ( grep -q "max depth exceeded" /tmp/dockerpull_stderr.log ) ; then
         echo "::error::Your image has exceeded maximum layer limit. Normally this should have already been automatically handled, but obviously haven't. You need to manually rebase or rebuild this builder, or delete it on the Docker Hub website." >&2
         exit 1
       fi
