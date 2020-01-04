@@ -240,7 +240,7 @@ jobs:
     # failure checking
     - name: Failed/debug set, wait for SSH connection (timeout 30min. You are safe to cancel the job now.)
       if: |
-        env.SKIP_TARGET == '0'
+        env.SKIP_TARGET == '0' && !cancelled()
         && (failure() || (env.OPT_DEBUG == '1' && env.TEST != '1'))
       env:
         TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
@@ -248,8 +248,8 @@ jobs:
     
     - name: Upload debugging changes
       if: |
-        env.SKIP_TARGET == '0'
-        && ((failure() && env.OPT_PUSH_WHEN_FAIL == '1') || env.OPT_DEBUG == '1')
+        env.SKIP_TARGET == '0' && !cancelled()
+        && ((failure() && env.OPT_PUSH_WHEN_FAIL == '1') || (env.OPT_DEBUG == '1' && env.TEST != '1'))
       run: |
         . scripts/host/docker.sh
         docker tag "${DK_LAST_BUILD_TARGET}" "$(_get_full_image_name_tag_for_build)"
