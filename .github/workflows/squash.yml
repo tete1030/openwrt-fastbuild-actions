@@ -44,7 +44,9 @@ jobs:
     - name: Check if skip this job
       run: |
         SKIP_TARGET=1
-        if [[ ${RD_TASK} == "squash" && ( ${RD_TARGET} == "all" || ${RD_TARGET} == ${BUILD_TARGET} ) ]]; then
+        if [[ ( "${GITHUB_EVENT_NAME}" == "repository_dispatch" || "${GITHUB_EVENT_NAME}" == "deployment" ) && ${RD_TASK} == "squash" && ( ${RD_TARGET} == "all" || ${RD_TARGET} == ${BUILD_TARGET} ) ]]; then
+          SKIP_TARGET=0
+        elif [[ "${GITHUB_EVENT_NAME}" == "schedule" ]]; then
           SKIP_TARGET=0
         fi
         echo "::set-env name=SKIP_TARGET::${SKIP_TARGET}"
