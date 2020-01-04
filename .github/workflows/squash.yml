@@ -26,11 +26,18 @@ on:
 
 jobs:
   squash:
+    name: ${{matrix.title}} ${{matrix.target}}
     runs-on: ubuntu-18.04
     strategy:
       fail-fast: false
       matrix:
+        mode: [normal, test]
         target: [x86_64, wdr4310v1]
+        include:
+        - mode: normal
+          title: Squashing builder
+        - mode: test
+          title: Squashing test builder
     env:
       GITHUB_CONTEXT: ${{toJSON(github)}}
       MATRIX_CONTEXT: ${{toJSON(matrix)}}
