@@ -19,7 +19,7 @@ fi
 # of unchanged files (even if their timestamp changed)
 # and make changed files' timestamps most recent
 if [ -d openwrt ]; then
-  if [! -d openwrt_ori ]; then
+  if [ ! -d openwrt_ori ]; then
     mv openwrt openwrt_ori
   else
     # probably caused by a failure builder upload, we should use openwrt_ori
