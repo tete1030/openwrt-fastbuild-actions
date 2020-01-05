@@ -66,8 +66,8 @@ _set_env BUILD_TARGET
 cp -r user/default user/current
 rsync -aI "user/${BUILD_TARGET}/" user/current/
 
-if [ -f "user/current/config.diff" ]; then
-    echo "::error::Config file does not exist, using default" >&2
+if [ ! -f "user/current/config.diff" ]; then
+    echo "::error::Config file does not exist" >&2
     exit 1
 fi
 
