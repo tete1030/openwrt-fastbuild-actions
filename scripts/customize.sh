@@ -11,22 +11,22 @@ set -eo pipefail
 
 cd openwrt
 
-cp ../user/config.diff .config
+cp ../user/current/config.diff .config
 
-if [ "$(ls -A ../user/patches 2>/dev/null)" ]; then
+if [ "$(ls -A ../user/current/patches 2>/dev/null)" ]; then
 (
     if [ "x${NONSTRICT_PATCH}" = "x1" ]; then
         set +eo pipefail
     fi
 
-    find ../user/patches -type f -name '*.patch' -print0 | sort -z | xargs -t -0 -n 1 patch -p0 --forward -i
+    find ../user/current/patches -type f -name '*.patch' -print0 | sort -z | xargs -t -0 -n 1 patch -p0 --forward -i
     # To set final status of the subprocess to 0, because outside the parentheses the '-eo pipefail' is still on
     true
 )
 fi
 
-if [ "$(ls -A ../user/files 2>/dev/null)" ]; then
-  cp -r ../user/files files
+if [ "$(ls -A ../user/current/files 2>/dev/null)" ]; then
+  cp -r ../user/current/files files
 fi
 
 make defconfig

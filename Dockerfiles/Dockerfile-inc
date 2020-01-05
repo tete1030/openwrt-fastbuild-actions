@@ -11,19 +11,18 @@
 # 不推荐修改，已处在最优状态。如果仍要修改，确保tests文件夹中的对应文件以类似方式修改。
 
 ARG DK_IMAGE_BASE
-ARG BUILD_TARGET
 
 FROM ${DK_IMAGE_BASE} AS clone-stage
+ARG REPO_URL
+ARG REPO_BRANCH
 ARG OPT_UPDATE_REPO
 ARG OPT_UPDATE_FEEDS
 COPY --chown=builder:builder scripts ./scripts
-COPY --chown=builder:builder "user/${BUILD_TARGET}" ./user
-RUN OPT_UPDATE_REPO="${OPT_UPDATE_REPO}" scripts/update_repo.sh
+COPY --chown=builder:builder user ./user
+RUN REPO_URL="${REPO_URL}" REPO_BRANCH="${REPO_BRANCH}" OPT_UPDATE_REPO="${OPT_UPDATE_REPO}" scripts/update_repo.sh
 RUN OPT_UPDATE_FEEDS="${OPT_UPDATE_FEEDS}" scripts/update_feeds.sh
 
 FROM clone-stage AS custom-stage
-ARG CONFIG_FILE
-COPY --chown=builder:builder "${CONFIG_FILE}" ./user/config.diff
 RUN NONSTRICT_PATCH=0 scripts/customize.sh
 
 FROM custom-stage AS download-stage

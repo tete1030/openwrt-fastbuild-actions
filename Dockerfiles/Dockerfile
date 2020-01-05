@@ -18,8 +18,7 @@ USER builder
 WORKDIR /home/builder
 COPY --chown=builder:builder scripts ./scripts
 RUN scripts/initenv.sh
-ARG BUILD_TARGET
-COPY --chown=builder:builder "user/${BUILD_TARGET}" ./user
+COPY --chown=builder:builder user ./user
 
 FROM init-env-stage AS clone-stage
 ARG REPO_URL
@@ -28,8 +27,6 @@ RUN REPO_URL="${REPO_URL}" REPO_BRANCH="${REPO_BRANCH}" OPT_UPDATE_REPO=1 script
 RUN OPT_UPDATE_FEEDS=1 scripts/update_feeds.sh
 
 FROM clone-stage AS custom-stage
-ARG CONFIG_FILE
-COPY --chown=builder:builder "${CONFIG_FILE}" ./user/config.diff
 RUN scripts/customize.sh
 
 FROM custom-stage AS download-stage

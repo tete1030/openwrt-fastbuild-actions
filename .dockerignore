@@ -1,5 +1,6 @@
 .github
 .gitattributes
+.gitignore
 LICENSE
 README.md
 README_CN.md

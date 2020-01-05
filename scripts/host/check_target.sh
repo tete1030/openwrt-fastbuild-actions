@@ -24,12 +24,24 @@ if [ "x${GITHUB_EVENT_NAME}" = "xpush" ]; then
             changed_files="$(git --no-pager diff --name-only ${commit_before} ${commit_after})"
 
             BUILD_TARGET_ESC="$(echo "${BUILD_TARGET}" | sed 's/[^[:alnum:]_-]/\\&/g')"
-            set +e
+            target_files_changed=0
+            set +eo pipefail
                 echo "${changed_files}" | grep -q '^user/'"${BUILD_TARGET_ESC}"'/'
-                ret_val=$?
-            set -e
+                target_ret_val=$?
+                if [ ${target_ret_val} -eq 0 ]; then
+                    target_files_changed=1
+                else
+                    default_changed_files_to_target="$(echo "${changed_files}" | grep '^user/default/' | sed 's/^user\/default\//user\/'"${BUILD_TARGET_ESC}"'\//g')"
+                    while IFS= read -r line; do
+                        if [ ! -e "$line" ]; then
+                            target_files_changed=1
+                            break
+                        fi
+                    done <<< "${default_changed_files_to_target}"
+                fi
+            set -eo pipefail
 
-            if [ ${ret_val} -eq 0 ]; then
+            if [ ${target_files_changed} -eq 1 ]; then
                 echo "File changes of current target detected"
                 SKIP_TARGET=0
             fi

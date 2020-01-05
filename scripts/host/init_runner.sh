@@ -50,24 +50,33 @@ DK_CONTEXT=.
 DK_NO_REMOTE_CACHE=1
 DK_NO_BUILDTIME_PUSH=1
 DK_CONVERT_MULTISTAGE_TO_IMAGE=1
-DK_BUILD_ARGS='REPO_URL REPO_BRANCH CONFIG_FILE DK_IMAGE_BASE OPT_UPDATE_REPO OPT_UPDATE_FEEDS OPT_PACKAGE_ONLY BUILD_TARGET'
+DK_BUILD_ARGS='REPO_URL REPO_BRANCH DK_IMAGE_BASE OPT_UPDATE_REPO OPT_UPDATE_FEEDS OPT_PACKAGE_ONLY'
 DOCKERFILE_BASE=Dockerfile
 DOCKERFILE_INC=Dockerfile-inc
-CONFIG_FILE_DEFAULT='config.diff.default'
-_set_env_prefix DK_ DOCKERFILE_ CONFIG_FILE_DEFAULT
 
 # Set for target
 BUILD_TARGET="$(echo "${MATRIX_CONTEXT}" | jq -crMe ".target")"
+if [ ! -d "user/${BUILD_TARGET}" ]; then
+    echo "::error::Failed to find the target ${BUILD_TARGET}" >&2
+    exit 1
+fi
 _set_env BUILD_TARGET
-CONFIG_FILE="user/${BUILD_TARGET}/config.diff"
-_set_env CONFIG_FILE
 
-# Load user configuration
+# Load default and target configs
+cp -r user/default user/current
+rsync -aI "user/${BUILD_TARGET}/" user/current/
+
+if [ -f "user/current/config.diff" ]; then
+    echo "::error::Config file does not exist, using default" >&2
+    exit 1
+fi
+
+# Load settings
 SETTING_VARS=( BUILDER_NAME BUILDER_TAG REPO_URL REPO_BRANCH )
-source "user/${BUILD_TARGET}/settings.sh"
+source "user/current/settings.sh"
 setting_missing_vars="$(_check_missing_vars ${SETTING_VARS[@]})"
 if [ ! -z "${setting_missing_vars}" ]; then
-    echo "::error::Variables missing in 'user/${BUILD_TARGET}/settings.sh': ${setting_missing_vars}"
+    echo "::error::Variables missing in 'user/default/settings.sh' or 'user/${BUILD_TARGET}/settings.sh': ${setting_missing_vars}"
     exit 1
 fi
 _set_env ${SETTING_VARS[@]}
@@ -100,13 +109,6 @@ DK_IMAGE_TAG="${BUILDER_TAG_INC}"
 DK_DOCKERFILE="${DOCKERFILE_INC}"
 _set_env_prefix DK_IMAGE_
 _set_env DK_DOCKERFILE
-
-if [ -z "${CONFIG_FILE}" -o ! -f "${CONFIG_FILE}" ]; then
-    echo "Config file '${CONFIG_FILE}' does not exist, using default" >&2
-    [ ! -z "${CONFIG_FILE_DEFAULT}" -a -f "${CONFIG_FILE_DEFAULT}" ] || ( echo "::error::Both config file '${CONFIG_FILE}' and default config file '${CONFIG_FILE_DEFAULT}' do not exist!" >&2 && exit 1 )
-    export CONFIG_FILE="${CONFIG_FILE_DEFAULT}"
-    _set_env CONFIG_FILE
-fi
 
 # Load building action
 if [ "x${GITHUB_EVENT_NAME}" = "xrepository_dispatch" ]; then

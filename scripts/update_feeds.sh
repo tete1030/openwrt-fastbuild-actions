@@ -29,9 +29,9 @@ if [ -d "../openwrt_ori" ]; then
     get_prev_feeds_suc=1
   fi
 fi
-if [[ ( "${OPT_UPDATE_FEEDS}" == "1" || $get_prev_feeds_suc != 1 ) && -f "../user/feeds.conf" ]]; then
+if [[ ( "${OPT_UPDATE_FEEDS}" == "1" || $get_prev_feeds_suc != 1 ) && -f "../user/current/feeds.conf" ]]; then
   # Only use feeds.conf when specified 'update_feeds'
-  cp ../user/feeds.conf feeds.conf
+  cp ../user/current/feeds.conf feeds.conf
 fi
 
 ./scripts/feeds update -a
@@ -68,6 +68,6 @@ install_package() {
 
 }
 
-if [ -f "../user/packages.txt" ]; then
-  source ../user/packages.txt
+if [ -f "../user/current/packages.txt" ]; then
+  source ../user/current/packages.txt
 fi

@@ -7,10 +7,10 @@ version: "1"
 rules:
   - base: master
     upstream: tete1030:master
-    mergeMethod: base
+    mergeMethod: rebase
   - base: sample
     upstream: tete1030:sample
-    mergeMethod: base
+    mergeMethod: rebase
   - base: openwrt_official
     upstream: tete1030:openwrt_official
-    mergeMethod: base
+    mergeMethod: rebase
