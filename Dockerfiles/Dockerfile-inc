@@ -18,20 +18,19 @@ ARG OPT_UPDATE_REPO
 ARG OPT_UPDATE_FEEDS
 COPY --chown=builder:builder scripts ./scripts
 COPY --chown=builder:builder "user/${BUILD_TARGET}" ./user
-RUN [ "x${OPT_UPDATE_REPO}" != "x1" ] || scripts/update_repo.sh
+RUN OPT_UPDATE_REPO="${OPT_UPDATE_REPO}" scripts/update_repo.sh
 RUN OPT_UPDATE_FEEDS="${OPT_UPDATE_FEEDS}" scripts/update_feeds.sh
 
 FROM clone-stage AS custom-stage
 ARG CONFIG_FILE
 COPY --chown=builder:builder "${CONFIG_FILE}" ./user/config.diff
-RUN NONSTRICT_PATCH=1 scripts/customize.sh
+RUN NONSTRICT_PATCH=0 scripts/customize.sh
 
 FROM custom-stage AS download-stage
 RUN scripts/download.sh
 
 FROM download-stage AS compile-stage
 ARG OPT_PACKAGE_ONLY=0
-RUN rm -rf openwrt/bin
 RUN if [ "x${OPT_PACKAGE_ONLY}" != "x1" ]; then \
     scripts/compile.sh m || scripts/compile.sh s ;\
   else \

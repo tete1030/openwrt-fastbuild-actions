@@ -19,7 +19,7 @@ COPY --chown=builder:builder "user/${BUILD_TARGET}" ./user
 FROM init-env-stage AS clone-stage
 ARG REPO_URL
 ARG REPO_BRANCH
-# RUN REPO_URL="${REPO_URL}" REPO_BRANCH="${REPO_BRANCH}" scripts/update_repo.sh
+# RUN REPO_URL="${REPO_URL}" REPO_BRANCH="${REPO_BRANCH}" OPT_UPDATE_REPO=1 scripts/update_repo.sh
 # RUN OPT_UPDATE_FEEDS=1 scripts/update_feeds.sh
 
 FROM clone-stage AS custom-stage

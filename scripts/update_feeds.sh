@@ -9,29 +9,63 @@
 
 set -eo pipefail
 
-echo "Updating and installing feeds ..."
 cd openwrt
-[ "x${OPT_UPDATE_FEEDS}" != "x1" ] || ./scripts/feeds update -a
-./scripts/feeds install -a
 
-mkdir -p package/openwrt-packages || true
-if [ -d "package/z-last-build-packages" ]; then
-  echo "Migrating from 'package/z-last-build-packages' to 'package/openwrt-packages'"
-  mv -nv package/z-last-build-packages/* package/openwrt-packages/
-  rm -rf package/z-last-build-packages
+echo "Updating and installing feeds ..."
+get_prev_feeds_suc=0
+if [ -d "../openwrt_ori" ]; then
+  # Use previous feeds
+  (
+    set +eo pipefail
+    # Use previous feeds status
+    cd ../openwrt_ori/
+    ./scripts/feeds list -fs > ../openwrt/feeds.conf
+  )
+  ret_val=$?
+  if [ $ret_val -ne 0 ]; then
+    echo "::warning::Something went wrong in previous builder. Not using last feeds.conf"
+    rm feeds.conf
+  else
+    get_prev_feeds_suc=1
+  fi
+fi
+if [[ ( "${OPT_UPDATE_FEEDS}" == "1" || $get_prev_feeds_suc != 1 ) && -f "../user/feeds.conf" ]]; then
+  # Only use feeds.conf when specified 'update_feeds'
+  cp ../user/feeds.conf feeds.conf
 fi
 
-# install_package PACKAGE_DIR GIT_URL
+./scripts/feeds update -a
+./scripts/feeds install -a
+
+mkdir -p package/openwrt-packages
+
+# install_package PACKAGE_DIR GIT_URL REF
 install_package() {
-  if (( $# != 2 )); then
-    echo "Wrong arguments for install_package" >&2
+  if (( $# < 2 || $# > 3 )); then
+    echo "Wrong arguments. Usage: install_package PACKAGE_DIR GIT_URL [REF]" >&2
     exit 1
   fi
-  if [ -d "${1}" ]; then
-    [ "x${OPT_UPDATE_FEEDS}" != "x1" ] || ( git -C "package/openwrt-packages/${1}" reset --hard && git -C "package/openwrt-packages/${1}" pull --ff )
-  else
-    git -C "package/openwrt-packages" clone "${2}" "${1}"
+  full_package_path="package/openwrt-packages/${1}"
+  full_ori_package_path="../openwrt_ori/${full_package_path}"
+  if [ -d "${full_package_path}" ]; then
+    echo "Duplicated package: ${1}" >&2
+    exit 1
   fi
+  # Use previous git to preserve version
+  if [ -d "${full_ori_package_path}/.git" -a "x${OPT_UPDATE_FEEDS}" != "x1" ]; then
+    git clone "${full_ori_package_path}" "${full_package_path}"
+    git -C "${full_package_path}" remote set-url origin "${2}"
+    git -C "${full_package_path}" fetch
+    if [ "${3}" ]; then
+      git -C "${full_package_path}" checkout "${3}"
+    fi
+  else
+    git clone "${2}" "${full_package_path}"
+    if [ "${3}" ]; then
+      git -C "${full_package_path}" checkout "${3}"
+    fi
+  fi
+
 }
 
 if [ -f "../user/packages.txt" ]; then

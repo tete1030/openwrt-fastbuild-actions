@@ -9,11 +9,11 @@
 
 set -eo pipefail
 
-cp user/config.diff openwrt/.config
-
 cd openwrt
 
-if [ -d "../user/patches" ]; then
+cp ../user/config.diff .config
+
+if [ "$(ls -A ../user/patches 2>/dev/null)" ]; then
 (
     if [ "x${NONSTRICT_PATCH}" = "x1" ]; then
         set +eo pipefail
@@ -25,5 +25,29 @@ if [ -d "../user/patches" ]; then
 )
 fi
 
+if [ "$(ls -A ../user/files 2>/dev/null)" ]; then
+  cp -r ../user/files files
+fi
+
 make defconfig
 make oldconfig
+
+# Restore build cache and timestamps
+if [ -d "../openwrt_ori" ]; then
+(
+    cd ..
+    # sync files by comparing checksum
+    rsync -ca --no-t --delete \
+        --exclude="/dl" \
+        --exclude="/tmp" \
+        --exclude="/build_dir" \
+        --exclude="/staging_dir" \
+        --exclude="/toolchain" \
+        --exclude="/logs" \
+        openwrt/ openwrt_ori/
+
+    mv openwrt openwrt_new
+    mv openwrt_ori openwrt
+    rm -rf openwrt_new
+)
+fi
