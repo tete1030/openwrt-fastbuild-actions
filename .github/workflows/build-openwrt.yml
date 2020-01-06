@@ -236,25 +236,25 @@ jobs:
 
     - name: Organize files
       id: organize
-      if: env.SKIP_TARGET == '0' && !cancelled()
+      if: env.SKIP_TARGET == '0' && env.OPT_PACKAGE_ONLY != '1' && !cancelled()
       run: |
         shopt -s extglob
         mkdir "$(pwd)/openwrt_firmware"
         cd openwrt_bin/targets/*/*
         all_firmware_files=( !(packages) )
-        mv "${all_firmware_files[@]}" ../../../../openwrt_firmware/
+        [ ${#all_firmware_files[@]} -gt 0 ] && mv "${all_firmware_files[@]}" ../../../../openwrt_firmware/ || true
         echo "::set-output name=status::success"
-  
+
     - name: Upload firmware
       uses: actions/upload-artifact@master
-      if: env.SKIP_TARGET == '0' && steps.organize.outputs.status == 'success' && !cancelled()
+      if: env.SKIP_TARGET == '0' && env.OPT_PACKAGE_ONLY != '1' && steps.organize.outputs.status == 'success' && !cancelled()
       with:
         name: OpenWrt_firmware
         path: openwrt_firmware
 
     - name: Upload packages
       uses: actions/upload-artifact@master
-      if: env.SKIP_TARGET == '0' && steps.organize.outputs.status == 'success' && !cancelled()
+      if: env.SKIP_TARGET == '0' && (env.OPT_PACKAGE_ONLY == '1' || steps.organize.outputs.status == 'success') && !cancelled()
       with:
         name: OpenWrt_packages
         path: openwrt_bin
