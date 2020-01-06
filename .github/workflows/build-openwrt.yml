@@ -216,6 +216,7 @@ jobs:
         )
       run: |
         . scripts/host/docker.sh
+        docker_exec "${BUILDER_CONTAINER_ID}" scripts/pre_commit.sh
         docker commit -a "tete1030/openwrt-fastbuild-actions" -m "Building at $(date)" "${BUILDER_CONTAINER_ID}" "${BUILDER_ID_INC}"
         docker container rm -fv "${BUILDER_CONTAINER_ID}"
         docker container prune -f

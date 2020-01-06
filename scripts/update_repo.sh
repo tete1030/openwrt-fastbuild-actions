@@ -25,13 +25,13 @@ link_bin() {
   fi
 }
 
-if [ -z "${OPENWRT_DIR}" -o -z "${OPENWRT_WORK_DIR}" ]; then
-  echo "'OPENWRT_DIR' or 'OPENWRT_WORK_DIR' is empty" >&2
+if [ -z "${OPENWRT_DIR}" -o -z "${OPENWRT_WORK_DIR}" -o -z "${OPENWRT_SOURCE_RECONS_DIR}" ]; then
+  echo "::error::'OPENWRT_DIR', 'OPENWRT_WORK_DIR' or 'OPENWRT_SOURCE_RECONS_DIR' is empty" >&2
   exit 1
 fi
 
 if [ -z "${REPO_URL}" -o -z "${REPO_BRANCH}" ]; then
-  echo "'REPO_URL' or 'REPO_BRANCH' is empty" >&2
+  echo "::error::'REPO_URL' or 'REPO_BRANCH' is empty" >&2
   exit 1
 fi
 

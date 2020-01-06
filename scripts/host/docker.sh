@@ -427,7 +427,12 @@ EOF
 }
 
 docker_exec() {
-  docker exec -i -e TEST="${TEST}" -e OPENWRT_WORK_DIR="${OPENWRT_WORK_DIR}" -e OPENWRT_DIR="${OPENWRT_DIR}" "$@"
+  EXEC_ENV_NAMES=( TEST OPENWRT_WORK_DIR OPENWRT_DIR OPENWRT_SOURCE_RECONS_DIR )
+  declare -a exec_envs=()
+  for env_name in ${EXEC_ENV_NAMES[@]}; do
+    exec_envs+=( -e "${env_name}=${!env_name}" )
+  done
+  docker exec -i "${exec_envs[@]}" "$@"
 }
 
 push_git_tag() {
