@@ -43,6 +43,10 @@ fi
 # Restore build cache and timestamps
 if [ "x${OPENWRT_WORK_DIR}" != "x${OPENWRT_DIR}" ]; then
 (
+    if [ ! -x "$(command -v rsync)" ]; then
+        echo "rsync not found, installing for backward compatibility"
+        sudo -E apt-get -qq update && sudo -E apt-get -qq install rsync
+    fi
     # sync files by comparing checksum
     rsync -ca --no-t --delete \
         --exclude="/bin" \
