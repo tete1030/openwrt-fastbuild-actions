@@ -135,12 +135,12 @@ jobs:
     - name: Get builder
       if: env.SKIP_TARGET == '0'
       run: |
+        . scripts/host/docker.sh
         BUILDER_CONTAINER_ID="builder"
         echo "::set-env name=BUILDER_CONTAINER_ID::${BUILDER_CONTAINER_ID}"
         mkdir openwrt_bin
         MOUNT=( -v "$(pwd)/scripts:/home/builder/scripts" -v "$(pwd)/user:/home/builder/user" -v "$(pwd)/openwrt_bin:/home/builder/openwrt_bin" )
         if [ "x${OPT_REBUILD}" != "x1" ]; then
-          . scripts/host/docker.sh
           pull_image
           squash_image_when_necessary "${DK_IMAGE_BASE}"
           docker run -d -t --name "${BUILDER_CONTAINER_ID}" "${MOUNT[@]}" "${DK_IMAGE_BASE}"
@@ -152,6 +152,7 @@ jobs:
     - name: Clone/update source codes
       if: env.SKIP_TARGET == '0'
       run: |
+        . scripts/host/docker.sh
         docker_exec -e REPO_URL="${REPO_URL}" -e REPO_BRANCH="${REPO_BRANCH}" -e OPT_UPDATE_REPO=${OPT_UPDATE_REPO} "${BUILDER_CONTAINER_ID}" scripts/update_repo.sh
         docker_exec -e OPT_UPDATE_FEEDS=${OPT_UPDATE_FEEDS} "${BUILDER_CONTAINER_ID}" scripts/update_feeds.sh
 
@@ -165,11 +166,13 @@ jobs:
     - name: Apply customizations
       if: env.SKIP_TARGET == '0'
       run: |
+        . scripts/host/docker.sh
         docker_exec "${BUILDER_CONTAINER_ID}" scripts/customize.sh
 
     - name: Download packages
       if: env.SKIP_TARGET == '0'
       run: |
+        . scripts/host/docker.sh
         docker_exec "${BUILDER_CONTAINER_ID}" scripts/download.sh
 
     - name: Print disk space
@@ -182,12 +185,14 @@ jobs:
       continue-on-error: true
       run: |
         echo "::set-output name=started::1"
+        . scripts/host/docker.sh
         docker_exec -e MODE=m -e OPT_PACKAGE_ONLY="${OPT_PACKAGE_ONLY}" "${BUILDER_CONTAINER_ID}" scripts/compile.sh
         echo "::set-output name=status::success"
 
     - name: Compile firmware and packages with single threads when failed
       if: env.SKIP_TARGET == '0' && steps.mtcompile.outputs.started == '1' && steps.mtcompile.outputs.status != 'success'
       run: |
+        . scripts/host/docker.sh
         docker_exec -e MODE=s -e OPT_PACKAGE_ONLY="${OPT_PACKAGE_ONLY}" "${BUILDER_CONTAINER_ID}" scripts/compile.sh
 
     - name: Print disk space
