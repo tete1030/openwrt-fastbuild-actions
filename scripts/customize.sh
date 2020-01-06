@@ -24,7 +24,7 @@ if [ -n "$(ls -A user/current/patches 2>/dev/null)" ]; then
         set +eo pipefail
     fi
 
-    find user/current/patches -type f -name '*.patch' -print0 | sort -z | xargs -J % -t -0 -n 1 sh -c "cat '%'  | patch -d '${OPENWRT_WORK_DIR}' -p0 --forward"
+    find user/current/patches -type f -name '*.patch' -print0 | sort -z | xargs -I % -t -0 -n 1 sh -c "cat '%'  | patch -d '${OPENWRT_WORK_DIR}' -p0 --forward"
     # To set final status of the subprocess to 0, because outside the parentheses the '-eo pipefail' is still on
     true
 )
