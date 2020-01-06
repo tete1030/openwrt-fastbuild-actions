@@ -5,15 +5,31 @@
 
 set -eo pipefail
 
-cd openwrt
-if [ "x$1" = "xm" ]; then
-    nthread=$(($(nproc) + 1)) 
-    echo "${nthread} thread compile: $COMPILE_OPTIONS"
-    make $COMPILE_OPTIONS -j${nthread}
-elif [ "x$1" = "xs" ]; then
-    echo "Fallback to single thread compile: $COMPILE_OPTIONS"
-    make $COMPILE_OPTIONS -j1 V=s
+if [ -z "${OPENWRT_DIR}" -o -z "${OPENWRT_WORK_DIR}" ]; then
+  echo "'OPENWRT_DIR' or 'OPENWRT_WORK_DIR' is empty" >&2
+  exit 1
+fi
+
+compile() {
+    (
+        cd "${OPENWRT_WORK_DIR}"
+        if [ "x${MODE}" = "xm" ]; then
+            nthread=$(($(nproc) + 1)) 
+            echo "${nthread} thread compile: $@"
+            make -j${nthread} "$@"
+        elif [ "x${MODE}" = "xs" ]; then
+            echo "Fallback to single thread compile: $@"
+            make -j1 V=s "$@"
+        else
+            echo "No MODE specified" >&2
+            exit 1
+        fi
+    )
+}
+
+if [ "x${OPT_PACKAGE_ONLY}" != "x1" ]; then
+    compile
 else
-    echo "Wrong option for compile.sh" >&2
-    exit 1
+    compile "package/compile"
+    compile "package/index"
 fi

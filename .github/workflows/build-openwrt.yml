@@ -126,63 +126,82 @@ jobs:
         fi
         echo "::set-env name=OPT_REBUILD::${OPT_REBUILD}"
 
-    - name: Debug set, wait for SSH connection (timeout 5min)
+    - name: '[Debug] Wait for SSH connection (timeout 5min)'
       if: env.SKIP_TARGET == '0' && env.OPT_DEBUG == '1' && env.TEST != '1'
       env:
         TIMEOUT_MIN: 5
       uses: tete1030/debugger-action@dev
 
-    - name: Download last incremental builder
-      if: env.SKIP_TARGET == '0' && env.OPT_REBUILD == '0'
+    - name: Get builder
+      if: env.SKIP_TARGET == '0'
       run: |
-        . scripts/host/docker.sh
-        pull_image
-        squash_image_when_necessary "${DK_IMAGE_BASE}"
-
-    - name: Initialize environment for base builder
-      if: env.SKIP_TARGET == '0' && env.OPT_REBUILD == '1'
-      run: |
-        . scripts/host/docker.sh
-        build_image init-env
+        BUILDER_CONTAINER_ID="builder"
+        echo "::set-env name=BUILDER_CONTAINER_ID::${BUILDER_CONTAINER_ID}"
+        mkdir openwrt_bin
+        MOUNT=( -v "$(pwd)/scripts:/home/builder/scripts" -v "$(pwd)/user:/home/builder/user" -v "$(pwd)/openwrt_bin:/home/builder/openwrt_bin" )
+        if [ "x${OPT_REBUILD}" != "x1" ]; then
+          . scripts/host/docker.sh
+          pull_image
+          squash_image_when_necessary "${DK_IMAGE_BASE}"
+          docker run -d -t --name "${BUILDER_CONTAINER_ID}" "${MOUNT[@]}" "${DK_IMAGE_BASE}"
+        else
+          docker run -d -t --name "${BUILDER_CONTAINER_ID}" "${MOUNT[@]}" tete1030/openwrt-buildenv:latest
+        fi
+        docker_exec "${BUILDER_CONTAINER_ID}" scripts/init_env.sh
 
     - name: Clone/update source codes
       if: env.SKIP_TARGET == '0'
       run: |
-        . scripts/host/docker.sh
-        build_image clone
+        docker_exec -e REPO_URL="${REPO_URL}" -e REPO_BRANCH="${REPO_BRANCH}" -e OPT_UPDATE_REPO=${OPT_UPDATE_REPO} "${BUILDER_CONTAINER_ID}" scripts/update_repo.sh
+        docker_exec -e OPT_UPDATE_FEEDS=${OPT_UPDATE_FEEDS} "${BUILDER_CONTAINER_ID}" scripts/update_feeds.sh
 
     # Allow intermediate customization
-    - name: Debug set, wait for SSH connection (timeout 30min)
+    - name: '[Debug] Wait for SSH connection (timeout 30min)'
       if: env.SKIP_TARGET == '0' && env.OPT_DEBUG == '1' && env.TEST != '1'
       env:
-        TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
+        TMATE_DOCKER_CONTAINER: ${{env.BUILDER_CONTAINER_ID}}
       uses: tete1030/debugger-action@dev
 
     - name: Apply customizations
       if: env.SKIP_TARGET == '0'
       run: |
-        . scripts/host/docker.sh
-        build_image custom
+        docker_exec "${BUILDER_CONTAINER_ID}" scripts/customize.sh
 
     - name: Download packages
       if: env.SKIP_TARGET == '0'
       run: |
-        . scripts/host/docker.sh
-        build_image download
+        docker_exec "${BUILDER_CONTAINER_ID}" scripts/download.sh
 
     - name: Print disk space
       if: env.SKIP_TARGET == '0'
       run: df -h
 
-    - name: Compile firmware and packages
+    - name: Compile firmware and packages with multiple threads
+      id: mtcompile
       if: env.SKIP_TARGET == '0'
+      continue-on-error: true
       run: |
-        . scripts/host/docker.sh
-        build_image compile
+        echo "::set-output name=started::1"
+        docker_exec -e MODE=m -e OPT_PACKAGE_ONLY="${OPT_PACKAGE_ONLY}" "${BUILDER_CONTAINER_ID}" scripts/compile.sh
+        echo "::set-output name=status::success"
+
+    - name: Compile firmware and packages with single threads when failed
+      if: env.SKIP_TARGET == '0' && steps.mtcompile.outputs.started == '1' && steps.mtcompile.outputs.status != 'success'
+      run: |
+        docker_exec -e MODE=s -e OPT_PACKAGE_ONLY="${OPT_PACKAGE_ONLY}" "${BUILDER_CONTAINER_ID}" scripts/compile.sh
 
     - name: Print disk space
       if: env.SKIP_TARGET == '0'
       run: df -h
+
+    # failure checking
+    - name: '[Failure/Debug] Wait for SSH connection (timeout 30min)'
+      if: |
+        env.SKIP_TARGET == '0' && !cancelled()
+        && (job.status == 'failure' || (env.OPT_DEBUG == '1' && env.TEST != '1'))
+      env:
+        TMATE_DOCKER_CONTAINER: ${{env.BUILDER_CONTAINER_ID}}
+      uses: tete1030/debugger-action@dev
 
     - name: Upload current builder
       if: |
@@ -192,41 +211,34 @@ jobs:
         )
       run: |
         . scripts/host/docker.sh
+        docker commit -a "tete1030/openwrt-fastbuild-actions" -m "Building at $(date)" "${BUILDER_CONTAINER_ID}" "${BUILDER_ID_INC}"
+        docker container rm -fv "${BUILDER_CONTAINER_ID}"
+        docker container prune -f
+        docker system prune -f --volumes
         if [ "x${OPT_REBUILD}" != '1' ]; then
-          squash_image_when_necessary "$(_get_full_image_name_tag_for_build)"
+          squash_image_when_necessary "${BUILDER_ID_INC}"
         fi
-        push_image_and_cache
+        docker push "${BUILDER_ID_INC}"
         if [ "x${OPT_REBUILD}" = "x1" ]; then
           create_remote_tag_alias "${BUILDER_ID_INC}" "${BUILDER_ID_BASE}"
         fi
 
-    - name: Copy out bin directory
-      id: copydir
-      if: env.SKIP_TARGET == '0' && !cancelled()
-      run: |
-        . scripts/host/docker.sh
-        if [ ! -d "$(pwd)/openwrt" ]; then
-          mkdir "$(pwd)/openwrt"
-        fi
-        copy_files /home/builder/openwrt/bin "$(pwd)/openwrt/bin"
-        echo "::set-output name=status::success"
-
     # - name: Upload bin directory
     #   uses: actions/upload-artifact@master
-    #   if: env.SKIP_TARGET == '0' && steps.copydir.outputs.status == 'success' && !cancelled()
+    #   if: env.SKIP_TARGET == '0' && !cancelled()
     #   with:
     #     name: OpenWrt_bin
-    #     path: openwrt/bin
+    #     path: openwrt_bin
 
     - name: Organize files
       id: organize
-      if: env.SKIP_TARGET == '0' && steps.copydir.outputs.status == 'success' && !cancelled()
+      if: env.SKIP_TARGET == '0' && !cancelled()
       run: |
         shopt -s extglob
-        mkdir "$(pwd)/openwrt/firmware"
-        cd openwrt/bin/targets/*/*
+        mkdir "$(pwd)/openwrt_firmware"
+        cd openwrt_bin/targets/*/*
         all_firmware_files=( !(packages) )
-        mv "${all_firmware_files[@]}" ../../../../firmware/
+        mv "${all_firmware_files[@]}" ../../../../openwrt_firmware/
         echo "::set-output name=status::success"
   
     - name: Upload firmware
@@ -234,29 +246,18 @@ jobs:
       if: env.SKIP_TARGET == '0' && steps.organize.outputs.status == 'success' && !cancelled()
       with:
         name: OpenWrt_firmware
-        path: openwrt/firmware
+        path: openwrt_firmware
 
     - name: Upload packages
       uses: actions/upload-artifact@master
       if: env.SKIP_TARGET == '0' && steps.organize.outputs.status == 'success' && !cancelled()
       with:
         name: OpenWrt_packages
-        path: openwrt/bin
+        path: openwrt_bin
 
     # failure checking
-    - name: Failed/debug set, wait for SSH connection (timeout 30min. You are safe to cancel the job now.)
+    - name: '[Failure/Debug] wait for SSH connection (timeout 30min. You are safe to cancel the job now.)'
       if: |
         env.SKIP_TARGET == '0' && !cancelled()
         && (job.status == 'failure' || (env.OPT_DEBUG == '1' && env.TEST != '1'))
-      env:
-        TMATE_DOCKER_IMAGE: ${{env.DK_LAST_BUILD_TARGET}}
       uses: tete1030/debugger-action@dev
-    
-    - name: Upload debugging changes
-      if: |
-        env.SKIP_TARGET == '0' && !cancelled()
-        && ((job.status == 'failure'  && env.OPT_PUSH_WHEN_FAIL == '1') || (env.OPT_DEBUG == '1' && env.TEST != '1'))
-      run: |
-        . scripts/host/docker.sh
-        docker tag "${DK_LAST_BUILD_TARGET}" "$(_get_full_image_name_tag_for_build)"
-        push_image_and_cache

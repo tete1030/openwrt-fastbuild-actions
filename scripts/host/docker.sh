@@ -153,7 +153,7 @@ squash_image_when_necessary() {
   fi
 
   LAYER_NUMBER=$(docker image inspect -f '{{.RootFS.Layers}}' "${SQUASH_IMAGE}" | grep -o 'sha256:' | wc -l)
-  DK_LAYER_NUMBER_LIMIT=${DK_LAYER_NUMBER_LIMIT:-50}
+  DK_LAYER_NUMBER_LIMIT=${DK_LAYER_NUMBER_LIMIT:-20}
   echo "Number of docker layers: ${LAYER_NUMBER}"
   if (( LAYER_NUMBER > DK_LAYER_NUMBER_LIMIT )); then
     echo "The number of docker layers has exceeded the limitation ${DK_LAYER_NUMBER_LIMIT}, squashing... (This may take some time)"
@@ -376,7 +376,7 @@ build_image() {
   IFS="$IFS_ORI"
 }
 
-copy_files() {
+copy_files_from_image() {
   SOURCE_IMAGE="$(_get_full_image_name_tag_for_build)"
   if [ "x${DK_BUILDX_DRIVER}" = "xdocker" ]; then
     echo "Buildx driver 'docker', using direct copying method"
@@ -427,6 +427,10 @@ EOF
     all_other_files=( "${COPY_CACHE_DIR}"/* )
     rm -rf "${all_other_files[@]}" || true
   fi
+}
+
+docker_exec() {
+  docker exec -e -i OPENWRT_WORK_DIR="${OPENWRT_WORK_DIR}" -e OPENWRT_DIR="${OPENWRT_DIR}" "$@"
 }
 
 push_git_tag() {

@@ -9,6 +9,11 @@
 
 set -eo pipefail
 
+if [ -z "${OPENWRT_DIR}" -o -z "${OPENWRT_WORK_DIR}" ]; then
+  echo "'OPENWRT_DIR' or 'OPENWRT_WORK_DIR' is empty" >&2
+  exit 1
+fi
+
 if [ -z "${REPO_URL}" -o -z "${REPO_BRANCH}" ]; then
   echo "'REPO_URL' or 'REPO_BRANCH' is empty" >&2
   exit 1
@@ -18,20 +23,26 @@ fi
 # including some not managed by git, preseve timestamps
 # of unchanged files (even if their timestamp changed)
 # and make changed files' timestamps most recent
-if [ -d openwrt ]; then
-  if [ ! -d openwrt_ori ]; then
-    mv openwrt openwrt_ori
-  else
-    # probably caused by a failure builder upload, we should use openwrt_ori
-    rm -rf openwrt
-  fi
+
+if [ "x${OPENWRT_WORK_DIR}" != "x${OPENWRT_DIR}" -a -d "${OPENWRT_DIR}/.git" -a "x${OPT_UPDATE_REPO}" != "x1" ]; then
+  git clone "${OPENWRT_DIR}" "${OPENWRT_WORK_DIR}"
+  git -C "${OPENWRT_WORK_DIR}" remote set-url origin "${REPO_URL}"
+  git -C "${OPENWRT_WORK_DIR}" fetch
+  git -C "${OPENWRT_WORK_DIR}" checkout "${REPO_BRANCH}"
+else
+  git clone -b "${REPO_BRANCH}" "${REPO_URL}" "${OPENWRT_WORK_DIR}"
 fi
 
-if [ -d openwrt_ori -a "x${OPT_UPDATE_REPO}" != "x1" ]; then
-  git clone openwrt_ori openwrt
-  git -C openwrt remote set-url origin "${REPO_URL}"
-  git -C openwrt fetch
-  git -C openwrt checkout "${REPO_BRANCH}"
+BIN_DIR="${OPENWRT_DIR}/bin"
+BIN_MOUNT_POINT="$(pwd)/openwrt_bin"
+
+if mountpoint "${BIN_MOUNT_POINT}" ; then
+  if [[ ! -L "${BIN_DIR}" || ! -d "${BIN_DIR}" || "$(readlink "${BIN_DIR}")" != "${BIN_MOUNT_POINT}" ]]; then
+    echo "'bin' link does not exist, creating"
+    rm -rf "${BIN_DIR}" || true
+    ln -sf "${BIN_MOUNT_POINT}" "${BIN_DIR}"
+  fi
 else
-  git clone -b "${REPO_BRANCH}" "${REPO_URL}" openwrt
+  echo "::error::'${BIN_MOUNT_POINT}' not mounted!" >&2
+  exit 1
 fi
