@@ -14,6 +14,8 @@ if [ -z "${OPENWRT_DIR}" -o -z "${OPENWRT_WORK_DIR}" ]; then
   exit 1
 fi
 
+[ "x${TEST}" != "x1" ] || exit 0
+
 echo "Updating and installing feeds ..."
 get_prev_feeds_suc=0
 if [ "x${OPENWRT_WORK_DIR}" != "x${OPENWRT_DIR}" ]; then

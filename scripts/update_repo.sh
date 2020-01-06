@@ -9,6 +9,22 @@
 
 set -eo pipefail
 
+link_bin() {
+  BIN_DIR="${OPENWRT_DIR}/bin"
+  BIN_MOUNT_POINT="$(pwd)/openwrt_bin"
+
+  if mountpoint "${BIN_MOUNT_POINT}" ; then
+    if [[ ! -L "${BIN_DIR}" || ! -d "${BIN_DIR}" || "$(readlink "${BIN_DIR}")" != "${BIN_MOUNT_POINT}" ]]; then
+      echo "'bin' link does not exist, creating"
+      rm -rf "${BIN_DIR}" || true
+      ln -sf "${BIN_MOUNT_POINT}" "${BIN_DIR}"
+    fi
+  else
+    echo "::error::'${BIN_MOUNT_POINT}' not mounted!" >&2
+    exit 1
+  fi
+}
+
 if [ -z "${OPENWRT_DIR}" -o -z "${OPENWRT_WORK_DIR}" ]; then
   echo "'OPENWRT_DIR' or 'OPENWRT_WORK_DIR' is empty" >&2
   exit 1
@@ -17,6 +33,12 @@ fi
 if [ -z "${REPO_URL}" -o -z "${REPO_BRANCH}" ]; then
   echo "'REPO_URL' or 'REPO_BRANCH' is empty" >&2
   exit 1
+fi
+
+if [ "x${TEST}" = "x1" ]; then
+  mkdir -p "${OPENWRT_DIR}" || true
+  link_bin
+  exit 0
 fi
 
 # The following will reset all non-building changes,
@@ -33,16 +55,4 @@ else
   git clone -b "${REPO_BRANCH}" "${REPO_URL}" "${OPENWRT_WORK_DIR}"
 fi
 
-BIN_DIR="${OPENWRT_DIR}/bin"
-BIN_MOUNT_POINT="$(pwd)/openwrt_bin"
-
-if mountpoint "${BIN_MOUNT_POINT}" ; then
-  if [[ ! -L "${BIN_DIR}" || ! -d "${BIN_DIR}" || "$(readlink "${BIN_DIR}")" != "${BIN_MOUNT_POINT}" ]]; then
-    echo "'bin' link does not exist, creating"
-    rm -rf "${BIN_DIR}" || true
-    ln -sf "${BIN_MOUNT_POINT}" "${BIN_DIR}"
-  fi
-else
-  echo "::error::'${BIN_MOUNT_POINT}' not mounted!" >&2
-  exit 1
-fi
+link_bin

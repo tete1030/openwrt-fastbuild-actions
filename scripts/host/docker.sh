@@ -58,10 +58,6 @@ _get_image_from_target() {
 check_required_input() {
   _exit_if_empty DK_USERNAME "${DK_USERNAME}"
   _exit_if_empty DK_PASSWORD "${DK_PASSWORD}"
-  _exit_if_empty DK_IMAGE_NAME "${DK_IMAGE_NAME}"
-  _exit_if_empty DK_IMAGE_TAG "${DK_IMAGE_TAG}"
-  _exit_if_empty DK_CONTEXT "${DK_CONTEXT}"
-  _exit_if_empty DK_DOCKERFILE "${DK_DOCKERFILE}"
 }
 
 configure_docker() {
@@ -124,10 +120,11 @@ pull_image() {
     echo "Buildx driver '${DK_BUILDX_DRIVER}' does not support pulling and image management" >&2
     exit 1
   fi
-  if [ ! -z "${DK_IMAGE_BASE}" ]; then
+  IMAGE_TO_PULL="${1}"
+  if [ ! -z "${IMAGE_TO_PULL}" ]; then
     (
       set +eo pipefail
-      docker pull "${DK_IMAGE_BASE}" 2> >(tee /tmp/dockerpull_stderr.log >&2)
+      docker pull "${IMAGE_TO_PULL}" 2> >(tee /tmp/dockerpull_stderr.log >&2)
       ret_val=$?
       if [ ${ret_val} -ne 0 ] && ( grep -q "max depth exceeded" /tmp/dockerpull_stderr.log ) ; then
         echo "::error::Your image has exceeded maximum layer limit. Normally this should have already been automatically handled, but obviously haven't. You need to manually rebase or rebuild this builder, or delete it on the Docker Hub website." >&2
@@ -136,7 +133,7 @@ pull_image() {
       [ "x${STRICT_PULL}" != "x1" ] || exit $ret_val
     )
   else
-    echo "No DK_IMAGE_BASE configured for pulling" >&2
+    echo "No argument for pulling" >&2
     exit 1
   fi
 }
@@ -430,7 +427,7 @@ EOF
 }
 
 docker_exec() {
-  docker exec -i -e OPENWRT_WORK_DIR="${OPENWRT_WORK_DIR}" -e OPENWRT_DIR="${OPENWRT_DIR}" "$@"
+  docker exec -i -e TEST="${TEST}" -e OPENWRT_WORK_DIR="${OPENWRT_WORK_DIR}" -e OPENWRT_DIR="${OPENWRT_DIR}" "$@"
 }
 
 push_git_tag() {

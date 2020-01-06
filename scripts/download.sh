@@ -10,6 +10,8 @@ if [ -z "${OPENWRT_DIR}" -o -z "${OPENWRT_WORK_DIR}" ]; then
   exit 1
 fi
 
+[ "x${TEST}" != "x1" ] || exit 0
+
 cd "${OPENWRT_WORK_DIR}"
 make download -j8
 find dl -size -1024c -exec ls -l {} \;

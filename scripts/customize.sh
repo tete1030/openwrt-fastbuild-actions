@@ -14,6 +14,8 @@ if [ -z "${OPENWRT_DIR}" -o -z "${OPENWRT_WORK_DIR}" ]; then
   exit 1
 fi
 
+[ "x${TEST}" != "x1" ] || exit 0
+
 cp user/current/config.diff "${OPENWRT_WORK_DIR}/.config"
 
 if [ -n "$(ls -A user/current/patches 2>/dev/null)" ]; then
