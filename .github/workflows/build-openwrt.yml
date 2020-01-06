@@ -138,6 +138,7 @@ jobs:
         BUILDER_CONTAINER_ID="builder"
         echo "::set-env name=BUILDER_CONTAINER_ID::${BUILDER_CONTAINER_ID}"
         mkdir openwrt_bin
+        chmod 777 openwrt_bin
         MOUNT=( -v "$(pwd)/scripts:/home/builder/scripts" -v "$(pwd)/user:/home/builder/user" -v "$(pwd)/openwrt_bin:/home/builder/openwrt_bin" )
         if [ "x${OPT_REBUILD}" != "x1" ]; then
           pull_image "${BUILDER_ID_INC}"
@@ -236,13 +237,16 @@ jobs:
 
     - name: Organize files
       id: organize
-      if: env.SKIP_TARGET == '0' && env.OPT_PACKAGE_ONLY != '1' && !cancelled()
+      if: env.SKIP_TARGET == '0' && !cancelled()
       run: |
         shopt -s extglob
-        mkdir "$(pwd)/openwrt_firmware"
-        cd openwrt_bin/targets/*/*
-        all_firmware_files=( !(packages) )
-        [ ${#all_firmware_files[@]} -gt 0 ] && mv "${all_firmware_files[@]}" ../../../../openwrt_firmware/ || true
+        sudo chown -R $(id -u):$(id -g) openwrt_bin
+        if [ "x${OPT_PACKAGE_ONLY}" != "x1" ]; then
+          mkdir "$(pwd)/openwrt_firmware"
+          cd openwrt_bin/targets/*/*
+          all_firmware_files=( !(packages) )
+          [ ${#all_firmware_files[@]} -gt 0 ] && mv "${all_firmware_files[@]}" ../../../../openwrt_firmware/ || true
+        fi
         echo "::set-output name=status::success"
 
     - name: Upload firmware
@@ -254,7 +258,7 @@ jobs:
 
     - name: Upload packages
       uses: actions/upload-artifact@master
-      if: env.SKIP_TARGET == '0' && (env.OPT_PACKAGE_ONLY == '1' || steps.organize.outputs.status == 'success') && !cancelled()
+      if: env.SKIP_TARGET == '0' && steps.organize.outputs.status == 'success' && !cancelled()
       with:
         name: OpenWrt_packages
         path: openwrt_bin
