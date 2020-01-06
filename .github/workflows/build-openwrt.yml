@@ -122,7 +122,6 @@ jobs:
 
         if [ "x${OPT_REBUILD}" = "x1" ]; then
           echo "Re-creating base builder '${BUILDER_ID_BASE}'"
-          echo "::set-env name=DK_DOCKERFILE::${DOCKERFILE_BASE}"
         fi
         echo "::set-env name=OPT_REBUILD::${OPT_REBUILD}"
 
@@ -141,9 +140,9 @@ jobs:
         mkdir openwrt_bin
         MOUNT=( -v "$(pwd)/scripts:/home/builder/scripts" -v "$(pwd)/user:/home/builder/user" -v "$(pwd)/openwrt_bin:/home/builder/openwrt_bin" )
         if [ "x${OPT_REBUILD}" != "x1" ]; then
-          pull_image
-          squash_image_when_necessary "${DK_IMAGE_BASE}"
-          docker run -d -t --name "${BUILDER_CONTAINER_ID}" "${MOUNT[@]}" "${DK_IMAGE_BASE}"
+          pull_image "${BUILDER_ID_INC}"
+          squash_image_when_necessary "${BUILDER_ID_INC}"
+          docker run -d -t --name "${BUILDER_CONTAINER_ID}" "${MOUNT[@]}" "${BUILDER_ID_INC}"
         else
           docker run -d -t --name "${BUILDER_CONTAINER_ID}" "${MOUNT[@]}" tete1030/openwrt-buildenv:latest
         fi

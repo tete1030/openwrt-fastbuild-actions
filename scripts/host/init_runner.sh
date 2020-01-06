@@ -46,14 +46,12 @@ _load_opt() {
 
 # Fixed parameters
 DK_BUILDX_DRIVER=docker
-DK_CONTEXT=.
-DK_NO_REMOTE_CACHE=1
-DK_NO_BUILDTIME_PUSH=1
-DK_CONVERT_MULTISTAGE_TO_IMAGE=1
-DK_BUILD_ARGS='REPO_URL REPO_BRANCH DK_IMAGE_BASE OPT_UPDATE_REPO OPT_UPDATE_FEEDS OPT_PACKAGE_ONLY'
-DOCKERFILE_BASE=Dockerfile
-DOCKERFILE_INC=Dockerfile-inc
-_set_env_prefix DK_ DOCKERFILE_
+# DK_CONTEXT=.
+# DK_NO_REMOTE_CACHE=1
+# DK_NO_BUILDTIME_PUSH=1
+# DK_CONVERT_MULTISTAGE_TO_IMAGE=1
+# DK_BUILD_ARGS='REPO_URL REPO_BRANCH DK_IMAGE_BASE OPT_UPDATE_REPO OPT_UPDATE_FEEDS OPT_PACKAGE_ONLY'
+_set_env_prefix DK_
 
 # Set for target
 BUILD_TARGET="$(echo "${MATRIX_CONTEXT}" | jq -crMe ".target")"
@@ -84,10 +82,6 @@ _set_env ${SETTING_VARS[@]}
 
 # Prepare for test
 if [ "x$(echo "${MATRIX_CONTEXT}" | jq -crMe ".mode")" = "xtest" ]; then
-    for var_dockerfile in ${!DOCKERFILE_@}; do
-        eval ${var_dockerfile}="tests/${!var_dockerfile}"
-        _set_env ${var_dockerfile}
-    done
     eval BUILDER_TAG="test-${BUILDER_TAG}"
     TEST=1
     _set_env BUILDER_TAG TEST
@@ -98,18 +92,6 @@ BUILDER_TAG_INC="${BUILDER_TAG}-inc"
 BUILDER_ID_BASE="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG}"
 BUILDER_ID_INC="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG_INC}"
 _set_env BUILDER_ID_BASE BUILDER_ID_INC
-
-for var_dockerfile in ${!DOCKERFILE_@}; do
-    eval ${var_dockerfile}="Dockerfiles/${!var_dockerfile}"
-    _set_env ${var_dockerfile}
-done
-
-DK_IMAGE_BASE="${BUILDER_ID_INC}"
-DK_IMAGE_NAME="${BUILDER_NAME}"
-DK_IMAGE_TAG="${BUILDER_TAG_INC}"
-DK_DOCKERFILE="${DOCKERFILE_INC}"
-_set_env_prefix DK_IMAGE_
-_set_env DK_DOCKERFILE
 
 # Load building action
 if [ "x${GITHUB_EVENT_NAME}" = "xrepository_dispatch" ]; then
