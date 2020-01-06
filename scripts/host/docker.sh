@@ -430,7 +430,7 @@ EOF
 }
 
 docker_exec() {
-  docker exec -e -i OPENWRT_WORK_DIR="${OPENWRT_WORK_DIR}" -e OPENWRT_DIR="${OPENWRT_DIR}" "$@"
+  docker exec -i -e OPENWRT_WORK_DIR="${OPENWRT_WORK_DIR}" -e OPENWRT_DIR="${OPENWRT_DIR}" "$@"
 }
 
 push_git_tag() {
