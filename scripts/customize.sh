@@ -56,6 +56,8 @@ if [ "x${OPENWRT_WORK_DIR}" != "x${OPENWRT_DIR}" ]; then
         --exclude="/staging_dir" \
         --exclude="/toolchain" \
         --exclude="/logs" \
+        --exclude="*.o" \
+        --exclude="key-build*" \
         "${OPENWRT_WORK_DIR}/" "${OPENWRT_DIR}/"
 
     rm -rf "${OPENWRT_WORK_DIR}"
