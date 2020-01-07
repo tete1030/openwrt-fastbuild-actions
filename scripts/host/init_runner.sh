@@ -62,13 +62,14 @@ DK_BUILDX_DRIVER=docker
 BUILDER_IMAGE_ID_BUILDENV="tete1030/openwrt-buildenv:latest"
 BUILDER_CONTAINER_ID="builder"
 BUILDER_HOME_DIR="/home/builder"
-BUILDER_TMP_DIR="/tmp/dockermounted"
+BUILDER_TMP_DIR="/tmp/builder"
+BUILDER_TMP_DIR_HOST="/tmp/builder"
 BUILDER_PROFILE_DIR="${BUILDER_HOME_DIR}/user/current"
 BUILDER_MOUNTPOINT="
   -v '${GITHUB_WORKSPACE}/scripts:${BUILDER_HOME_DIR}/scripts'
   -v '${GITHUB_WORKSPACE}/user:${BUILDER_HOME_DIR}/user'
   -v '${GITHUB_WORKSPACE}/openwrt_bin:${BUILDER_HOME_DIR}/openwrt_bin'
-  --mount 'type=tmpfs,destination=${BUILDER_TMP_DIR},tmpfs-mode=1777'
+  -v '${BUILDER_TMP_DIR_HOST}:${BUILDER_TMP_DIR}'
 "
 _set_env_prefix DK_
 _set_env BUILDER_IMAGE_ID_BUILDENV BUILDER_CONTAINER_ID BUILDER_HOME_DIR BUILDER_TMP_DIR BUILDER_PROFILE_DIR BUILDER_MOUNTPOINT
@@ -143,3 +144,5 @@ fi
 
 mkdir -p "${GITHUB_WORKSPACE}/openwrt_bin"
 chmod 777 "${GITHUB_WORKSPACE}/openwrt_bin"
+sudo mkdir "${BUILDER_TMP_DIR_HOST}"
+sudo chmod 777 "${BUILDER_TMP_DIR_HOST}"
