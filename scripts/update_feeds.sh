@@ -23,21 +23,20 @@ if [ "x${OPENWRT_CUR_DIR}" != "x${OPENWRT_COMPILE_DIR}" ]; then
   (
     set +eo pipefail
     # Use previous feeds status
-    cd "${OPENWRT_COMPILE_DIR}"
-    ./scripts/feeds list -fs > /tmp/feeds.conf
+    cd "${OPENWRT_COMPILE_DIR}" && ./scripts/feeds list -fs > "${BUILDER_TMP_DIR}/feeds.conf"
   )
   ret_val=$?
   if [ $ret_val -ne 0 ]; then
     echo "::warning::Something went wrong in previous builder. Not using last feeds.conf"
-    rm /tmp/feeds.conf || true
+    rm "${BUILDER_TMP_DIR}/feeds.conf" || true
   else
-    mv /tmp/feeds.conf "${OPENWRT_CUR_DIR}/feeds.conf"
+    mv "${BUILDER_TMP_DIR}/feeds.conf" "${OPENWRT_CUR_DIR}/feeds.conf"
     get_prev_feeds_suc=1
   fi
 fi
-if [[ ( "${OPT_UPDATE_FEEDS}" == "1" || $get_prev_feeds_suc != 1 ) && -f "user/current/feeds.conf" ]]; then
+if [[ ( "${OPT_UPDATE_FEEDS}" == "1" || $get_prev_feeds_suc != 1 ) && -f "${BUILDER_HOME_DIR}/user/current/feeds.conf" ]]; then
   # Only use feeds.conf when specified 'update_feeds'
-  cp user/current/feeds.conf "${OPENWRT_CUR_DIR}/feeds.conf"
+  cp "${BUILDER_HOME_DIR}/user/current/feeds.conf" "${OPENWRT_CUR_DIR}/feeds.conf"
 fi
 
 (
@@ -76,6 +75,6 @@ install_package() {
   fi
 }
 
-if [ -f "user/current/packages.txt" ]; then
-  source user/current/packages.txt
+if [ -f "${BUILDER_HOME_DIR}/user/current/packages.txt" ]; then
+  source "${BUILDER_HOME_DIR}/user/current/packages.txt"
 fi

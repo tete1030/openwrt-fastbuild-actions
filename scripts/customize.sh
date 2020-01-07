@@ -16,22 +16,22 @@ fi
 
 [ "x${TEST}" != "x1" ] || exit 0
 
-cp user/current/config.diff "${OPENWRT_CUR_DIR}/.config"
+cp "${BUILDER_HOME_DIR}/user/current/config.diff" "${OPENWRT_CUR_DIR}/.config"
 
-if [ -n "$(ls -A user/current/patches 2>/dev/null)" ]; then
+if [ -n "$(ls -A "${BUILDER_HOME_DIR}/user/current/patches" 2>/dev/null)" ]; then
 (
     if [ "x${NONSTRICT_PATCH}" = "x1" ]; then
         set +eo pipefail
     fi
 
-    find user/current/patches -type f -name '*.patch' -print0 | sort -z | xargs -I % -t -0 -n 1 sh -c "cat '%'  | patch -d '${OPENWRT_CUR_DIR}' -p0 --forward"
+    find "${BUILDER_HOME_DIR}/user/current/patches" -type f -name '*.patch' -print0 | sort -z | xargs -I % -t -0 -n 1 sh -c "cat '%'  | patch -d '${OPENWRT_CUR_DIR}' -p0 --forward"
     # To set final status of the subprocess to 0, because outside the parentheses the '-eo pipefail' is still on
     true
 )
 fi
 
-if [ -n "$(ls -A user/current/files 2>/dev/null)" ]; then
-  cp -r user/current/files "${OPENWRT_CUR_DIR}/files"
+if [ -n "$(ls -A "${BUILDER_HOME_DIR}/user/current/files" 2>/dev/null)" ]; then
+  cp -r "${BUILDER_HOME_DIR}/user/current/files" "${OPENWRT_CUR_DIR}/files"
 fi
 
 (

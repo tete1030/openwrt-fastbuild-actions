@@ -101,27 +101,27 @@ jobs:
         if [ "x${OPT_REBUILD}" != "x1" ]; then
           # temporarily disable failure guarder
           set +eo pipefail
-            docker buildx imagetools inspect "${BUILDER_ID_INC}" 2>&1 >/dev/null
+            docker buildx imagetools inspect "${BUILDER_IMAGE_ID_INC}" 2>&1 >/dev/null
             builder_inc_ret_val=$?
           set -eo pipefail
 
           if [ "x${OPT_REBASE}" = "x1" -o "x${builder_inc_ret_val}" != "x0" ]; then
             set +eo pipefail
-              docker buildx imagetools inspect "${BUILDER_ID_BASE}" 2>&1 >/dev/null
+              docker buildx imagetools inspect "${BUILDER_IMAGE_ID_BASE}" 2>&1 >/dev/null
               builder_base_ret_val=$?
             set -eo pipefail
             if [ "x${builder_base_ret_val}" != "x0" ]; then
-              echo "Base builder '${BUILDER_ID_BASE}' does not exist, creating one"
+              echo "Base builder '${BUILDER_IMAGE_ID_BASE}' does not exist, creating one"
               OPT_REBUILD=1
             else
-              echo "Creating incremental builder '${BUILDER_ID_INC}' from base builder '${BUILDER_ID_BASE}'"
-              create_remote_tag_alias "${BUILDER_ID_BASE}" "${BUILDER_ID_INC}"
+              echo "Creating incremental builder '${BUILDER_IMAGE_ID_INC}' from base builder '${BUILDER_IMAGE_ID_BASE}'"
+              create_remote_tag_alias "${BUILDER_IMAGE_ID_BASE}" "${BUILDER_IMAGE_ID_INC}"
             fi
           fi
         fi
 
         if [ "x${OPT_REBUILD}" = "x1" ]; then
-          echo "Re-creating base builder '${BUILDER_ID_BASE}'"
+          echo "Re-creating base builder '${BUILDER_IMAGE_ID_BASE}'"
         fi
         echo "::set-env name=OPT_REBUILD::${OPT_REBUILD}"
 
@@ -135,26 +135,22 @@ jobs:
       if: env.SKIP_TARGET == '0'
       run: |
         . scripts/host/docker.sh
-        BUILDER_CONTAINER_ID="builder"
-        echo "::set-env name=BUILDER_CONTAINER_ID::${BUILDER_CONTAINER_ID}"
-        mkdir openwrt_bin
-        chmod 777 openwrt_bin
-        MOUNT=( -v "$(pwd)/scripts:/home/builder/scripts" -v "$(pwd)/user:/home/builder/user" -v "$(pwd)/openwrt_bin:/home/builder/openwrt_bin" )
+        declare -a MOUNT_OPTS=( ${BUILDER_MOUNTPOINT[@]} )
         if [ "x${OPT_REBUILD}" != "x1" ]; then
-          pull_image "${BUILDER_ID_INC}"
-          squash_image_when_necessary "${BUILDER_ID_INC}"
-          docker run -d -t --name "${BUILDER_CONTAINER_ID}" "${MOUNT[@]}" "${BUILDER_ID_INC}"
+          pull_image "${BUILDER_IMAGE_ID_INC}"
+          squash_image_when_necessary "${BUILDER_IMAGE_ID_INC}"
+          docker run -d -t --name "${BUILDER_CONTAINER_ID}" "${MOUNT_OPTS[@]}" "${BUILDER_IMAGE_ID_INC}"
         else
-          docker run -d -t --name "${BUILDER_CONTAINER_ID}" "${MOUNT[@]}" tete1030/openwrt-buildenv:latest
+          docker run -d -t --name "${BUILDER_CONTAINER_ID}" "${MOUNT_OPTS[@]}" "${BUILDER_IMAGE_ID_BUILDENV}"
         fi
-        docker_exec "${BUILDER_CONTAINER_ID}" scripts/init_env.sh
+        docker_exec "${BUILDER_CONTAINER_ID}" "${BUILDER_HOME_DIR}/scripts/init_env.sh"
 
     - name: Clone/update source codes
       if: env.SKIP_TARGET == '0'
       run: |
         . scripts/host/docker.sh
-        docker_exec -e REPO_URL="${REPO_URL}" -e REPO_BRANCH="${REPO_BRANCH}" -e OPT_UPDATE_REPO=${OPT_UPDATE_REPO} "${BUILDER_CONTAINER_ID}" scripts/update_repo.sh
-        docker_exec -e OPT_UPDATE_FEEDS=${OPT_UPDATE_FEEDS} "${BUILDER_CONTAINER_ID}" scripts/update_feeds.sh
+        docker_exec "${BUILDER_CONTAINER_ID}" "${BUILDER_HOME_DIR}/scripts/update_repo.sh"
+        docker_exec "${BUILDER_CONTAINER_ID}" "${BUILDER_HOME_DIR}/scripts/update_feeds.sh"
 
     # Allow intermediate customization
     - name: '[Debug] Wait for SSH connection (timeout 30min)'
@@ -167,13 +163,13 @@ jobs:
       if: env.SKIP_TARGET == '0'
       run: |
         . scripts/host/docker.sh
-        docker_exec "${BUILDER_CONTAINER_ID}" scripts/customize.sh
+        docker_exec "${BUILDER_CONTAINER_ID}" "${BUILDER_HOME_DIR}/scripts/customize.sh"
 
     - name: Download packages
       if: env.SKIP_TARGET == '0'
       run: |
         . scripts/host/docker.sh
-        docker_exec "${BUILDER_CONTAINER_ID}" scripts/download.sh
+        docker_exec "${BUILDER_CONTAINER_ID}" "${BUILDER_HOME_DIR}/scripts/download.sh"
 
     - name: Print disk space
       if: env.SKIP_TARGET == '0'
@@ -186,14 +182,14 @@ jobs:
       run: |
         echo "::set-output name=started::1"
         . scripts/host/docker.sh
-        docker_exec -e MODE=m -e OPT_PACKAGE_ONLY="${OPT_PACKAGE_ONLY}" "${BUILDER_CONTAINER_ID}" scripts/compile.sh
+        docker_exec -e MODE=m "${BUILDER_CONTAINER_ID}" "${BUILDER_HOME_DIR}/scripts/compile.sh"
         echo "::set-output name=status::success"
 
     - name: Compile firmware and packages with single threads when failed
       if: env.SKIP_TARGET == '0' && steps.mtcompile.outputs.started == '1' && steps.mtcompile.outputs.status != 'success'
       run: |
         . scripts/host/docker.sh
-        docker_exec -e MODE=s -e OPT_PACKAGE_ONLY="${OPT_PACKAGE_ONLY}" "${BUILDER_CONTAINER_ID}" scripts/compile.sh
+        docker_exec -e MODE=s "${BUILDER_CONTAINER_ID}" "${BUILDER_HOME_DIR}/scripts/compile.sh"
 
     - name: Print disk space
       if: env.SKIP_TARGET == '0'
@@ -216,17 +212,17 @@ jobs:
         )
       run: |
         . scripts/host/docker.sh
-        docker_exec "${BUILDER_CONTAINER_ID}" scripts/pre_commit.sh
-        docker commit -a "tete1030/openwrt-fastbuild-actions" -m "Building at $(date)" "${BUILDER_CONTAINER_ID}" "${BUILDER_ID_INC}"
+        docker_exec "${BUILDER_CONTAINER_ID}" "${BUILDER_HOME_DIR}/scripts/pre_commit.sh"
+        docker commit -a "tete1030/openwrt-fastbuild-actions" -m "Building at $(date)" "${BUILDER_CONTAINER_ID}" "${BUILDER_IMAGE_ID_INC}"
         docker container rm -fv "${BUILDER_CONTAINER_ID}"
         docker container prune -f
         docker system prune -f --volumes
         if [ "x${OPT_REBUILD}" != '1' ]; then
-          squash_image_when_necessary "${BUILDER_ID_INC}"
+          squash_image_when_necessary "${BUILDER_IMAGE_ID_INC}"
         fi
-        docker push "${BUILDER_ID_INC}"
+        docker push "${BUILDER_IMAGE_ID_INC}"
         if [ "x${OPT_REBUILD}" = "x1" ]; then
-          create_remote_tag_alias "${BUILDER_ID_INC}" "${BUILDER_ID_BASE}"
+          create_remote_tag_alias "${BUILDER_IMAGE_ID_INC}" "${BUILDER_IMAGE_ID_BASE}"
         fi
 
     # - name: Upload bin directory
@@ -243,10 +239,10 @@ jobs:
         shopt -s extglob
         sudo chown -R $(id -u):$(id -g) openwrt_bin
         if [ "x${OPT_PACKAGE_ONLY}" != "x1" ]; then
-          mkdir "$(pwd)/openwrt_firmware"
-          cd openwrt_bin/targets/*/*
+          mkdir "${GITHUB_WORKSPACE}/openwrt_firmware"
+          cd "${GITHUB_WORKSPACE}"/openwrt_bin/targets/*/*
           all_firmware_files=( !(packages) )
-          [ ${#all_firmware_files[@]} -gt 0 ] && mv "${all_firmware_files[@]}" ../../../../openwrt_firmware/ || true
+          [ ${#all_firmware_files[@]} -gt 0 ] && mv "${all_firmware_files[@]}" "${GITHUB_WORKSPACE}/openwrt_firmware/" || true
         fi
         echo "::set-output name=status::success"
 

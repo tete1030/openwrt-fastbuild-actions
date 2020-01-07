@@ -36,22 +36,42 @@ EOF
 
 _load_opt() {
     OPT_NAME="${1}"
-    OPT_DEFAULT="${2:-0}"
+    OPT_DEFAULT="${2}"
     UPPER_OPT_NAME="$(echo "${OPT_NAME}" | tr '[:lower:]' '[:upper:]')"
     LOWER_OPT_NAME="$(echo "${OPT_NAME}" | tr '[:upper:]' '[:lower:]')"
     ENV_OPT_NAME="OPT_${UPPER_OPT_NAME}"
     eval ${ENV_OPT_NAME}="$(_get_opt "${LOWER_OPT_NAME}")"
     _set_env ${ENV_OPT_NAME}
+    _append_docker_exec_env ${ENV_OPT_NAME}
 }
 
-# Fixed parameters
+_append_docker_exec_env() {
+  for env_name in $@; do
+    export DK_EXEC_ENVS="${DK_EXEC_ENVS} ${env_name}"
+  done
+  _set_env DK_EXEC_ENVS
+}
+
+# Fixed parameters, do not change the following values
 DK_BUILDX_DRIVER=docker
 # DK_CONTEXT=.
 # DK_NO_REMOTE_CACHE=1
 # DK_NO_BUILDTIME_PUSH=1
 # DK_CONVERT_MULTISTAGE_TO_IMAGE=1
 # DK_BUILD_ARGS='REPO_URL REPO_BRANCH DK_IMAGE_BASE OPT_UPDATE_REPO OPT_UPDATE_FEEDS OPT_PACKAGE_ONLY'
+BUILDER_IMAGE_ID_BUILDENV="tete1030/openwrt-buildenv:latest"
+BUILDER_HOME_DIR="/home/builder"
+BUILDER_TMP_DIR="/tmp/dockermounted"
+BUILDER_CONTAINER_ID="builder"
+BUILDER_MOUNTPOINT="
+  -v '${GITHUB_WORKSPACE}/scripts:${BUILDER_HOME_DIR}/scripts'
+  -v '${GITHUB_WORKSPACE}/user:${BUILDER_HOME_DIR}/user'
+  -v '${GITHUB_WORKSPACE}/openwrt_bin:${BUILDER_HOME_DIR}/openwrt_bin'
+  --mount type=tmpfs,destination='${BUILDER_TMP_DIR}',tmpfs-mode=1770
+"
 _set_env_prefix DK_
+_set_env BUILDER_IMAGE_ID_BUILDENV BUILDER_HOME_DIR BUILDER_TMP_DIR BUILDER_CONTAINER_ID BUILDER_MOUNTPOINT
+_append_docker_exec_env TEST OPENWRT_CUR_DIR OPENWRT_COMPILE_DIR OPENWRT_SOURCE_DIR BUILDER_HOME_DIR BUILDER_TMP_DIR
 
 # Set for target
 BUILD_TARGET="$(echo "${MATRIX_CONTEXT}" | jq -crMe ".target")"
@@ -79,6 +99,7 @@ if [ ! -z "${setting_missing_vars}" ]; then
     exit 1
 fi
 _set_env ${SETTING_VARS[@]}
+_append_docker_exec_env ${SETTING_VARS[@]}
 
 # Prepare for test
 if [ "x$(echo "${MATRIX_CONTEXT}" | jq -crMe ".mode")" = "xtest" ]; then
@@ -89,9 +110,9 @@ fi
 
 BUILDER_NAME="${DK_USERNAME}/${BUILDER_NAME}"
 BUILDER_TAG_INC="${BUILDER_TAG}-inc"
-BUILDER_ID_BASE="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG}"
-BUILDER_ID_INC="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG_INC}"
-_set_env BUILDER_ID_BASE BUILDER_ID_INC
+BUILDER_IMAGE_ID_BASE="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG}"
+BUILDER_IMAGE_ID_INC="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG_INC}"
+_set_env BUILDER_IMAGE_ID_BASE BUILDER_IMAGE_ID_INC
 
 # Load building action
 if [ "x${GITHUB_EVENT_NAME}" = "xrepository_dispatch" ]; then
@@ -104,12 +125,18 @@ fi
 _set_env RD_TASK RD_TARGET
 
 # Load building options
-for opt_name in ${BUILD_OPTS[@]}; do
-    _load_opt "${opt_name}"
-done
+(
+  IFS=$'\x20'
+  for opt_name in ${BUILD_OPTS[@]}; do
+      _load_opt "${opt_name}"
+  done
+)
 
 if [ "x${OPT_DEBUG}" = "x1" -a -z "${TMATE_ENCRYPT_PASSWORD}" -a -z "${SLACK_WEBHOOK_URL}" ]; then
     echo "::error::To use debug mode, you should set either TMATE_ENCRYPT_PASSWORD or SLACK_WEBHOOK_URL in the 'Secrets' page for safety of your sensitive information. For details, please refer to https://github.com/tete103%30/debugger-action/blob/master/README.md"
     echo "::error::In the reference URL you are instructed to use environment variables for them. However in this repo, you should set them in the 'Secrets' page"
     exit 1
 fi
+
+mkdir -p "${GITHUB_WORKSPACE}/openwrt_bin"
+chmod 777 "${GITHUB_WORKSPACE}/openwrt_bin"
