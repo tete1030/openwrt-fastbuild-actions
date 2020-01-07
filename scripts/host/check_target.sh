@@ -33,7 +33,7 @@ if [ "x${GITHUB_EVENT_NAME}" = "xpush" ]; then
                 else
                     default_changed_files_to_target="$(echo "${changed_files}" | grep '^user/default/' | sed 's/^user\/default\//user\/'"${BUILD_TARGET_ESC}"'\//g')"
                     while IFS= read -r line; do
-                        if [ ! -e "$line" ]; then
+                        if [ -n "${line// }" -a ! -e "$line" ]; then
                             target_files_changed=1
                             break
                         fi
