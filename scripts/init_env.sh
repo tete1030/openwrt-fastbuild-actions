@@ -15,3 +15,10 @@ fi
 echo "::set-env name=OPENWRT_COMPILE_DIR::${OPENWRT_COMPILE_DIR}"
 echo "::set-env name=OPENWRT_CUR_DIR::${OPENWRT_CUR_DIR}"
 echo "::set-env name=OPENWRT_SOURCE_DIR::${OPENWRT_SOURCE_DIR}"
+
+[ "x${TEST}" != "x1" ] || exit 0
+
+if [ ! -x "$(command -v rsync)" ]; then
+    echo "rsync not found, installing for backward compatibility"
+    sudo -E apt-get -qq update && sudo -E apt-get -qq install rsync
+fi

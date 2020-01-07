@@ -34,9 +34,9 @@ if [ "x${OPENWRT_CUR_DIR}" != "x${OPENWRT_COMPILE_DIR}" ]; then
     get_prev_feeds_suc=1
   fi
 fi
-if [[ ( "${OPT_UPDATE_FEEDS}" == "1" || $get_prev_feeds_suc != 1 ) && -f "${BUILDER_HOME_DIR}/user/current/feeds.conf" ]]; then
+if [[ ( "${OPT_UPDATE_FEEDS}" == "1" || $get_prev_feeds_suc != 1 ) && -f "${BUILDER_PROFILE_DIR}/feeds.conf" ]]; then
   # Only use feeds.conf when specified 'update_feeds'
-  cp "${BUILDER_HOME_DIR}/user/current/feeds.conf" "${OPENWRT_CUR_DIR}/feeds.conf"
+  cp "${BUILDER_PROFILE_DIR}/feeds.conf" "${OPENWRT_CUR_DIR}/feeds.conf"
 fi
 
 (
@@ -75,6 +75,6 @@ install_package() {
   fi
 }
 
-if [ -f "${BUILDER_HOME_DIR}/user/current/packages.txt" ]; then
-  source "${BUILDER_HOME_DIR}/user/current/packages.txt"
+if [ -f "${BUILDER_PROFILE_DIR}/packages.txt" ]; then
+  source "${BUILDER_PROFILE_DIR}/packages.txt"
 fi

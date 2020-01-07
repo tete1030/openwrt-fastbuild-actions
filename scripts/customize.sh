@@ -16,42 +16,61 @@ fi
 
 [ "x${TEST}" != "x1" ] || exit 0
 
-cp "${BUILDER_HOME_DIR}/user/current/config.diff" "${OPENWRT_CUR_DIR}/.config"
+cp "${BUILDER_PROFILE_DIR}/config.diff" "${OPENWRT_CUR_DIR}/.config"
 
-if [ -n "$(ls -A "${BUILDER_HOME_DIR}/user/current/patches" 2>/dev/null)" ]; then
+echo "Applying patches..."
+if [ -n "$(ls -A "${BUILDER_PROFILE_DIR}/patches" 2>/dev/null)" ]; then
 (
     if [ "x${NONSTRICT_PATCH}" = "x1" ]; then
         set +eo pipefail
     fi
 
-    find "${BUILDER_HOME_DIR}/user/current/patches" -type f -name '*.patch' -print0 | sort -z | xargs -I % -t -0 -n 1 sh -c "cat '%'  | patch -d '${OPENWRT_CUR_DIR}' -p0 --forward"
+    find "${BUILDER_PROFILE_DIR}/patches" -type f -name '*.patch' -print0 | sort -z | xargs -I % -t -0 -n 1 sh -c "cat '%'  | patch -d '${OPENWRT_CUR_DIR}' -p0 --forward"
     # To set final status of the subprocess to 0, because outside the parentheses the '-eo pipefail' is still on
     true
 )
 fi
 
-if [ -n "$(ls -A "${BUILDER_HOME_DIR}/user/current/files" 2>/dev/null)" ]; then
-  cp -r "${BUILDER_HOME_DIR}/user/current/files" "${OPENWRT_CUR_DIR}/files"
+SYNC_EXCLUDES="
+/bin
+/dl
+/tmp
+/build_dir
+/staging_dir
+/toolchain
+/logs
+*.o
+key-build*
+"
+declare -a sync_exclude_opts=()
+while IFS= read -r line; do
+    line="${line// }"
+    if [[ -z "${line}" ]]; then
+        continue
+    fi
+    sync_exclude_opts+=( --exclude="${line}" )
+done <<< "${SYNC_EXCLUDES}"
+
+echo "Copying base files..."
+if [ -n "$(ls -A "${BUILDER_PROFILE_DIR}/files" 2>/dev/null)" ]; then
+  rsync -cav --no-t "${sync_exclude_opts[@]}" \
+    "${BUILDER_PROFILE_DIR}/files/" "${OPENWRT_CUR_DIR}/"
+fi
+
+echo "Executing custom.sh"
+if [ -f "${BUILDER_PROFILE_DIR}/custom.sh" ]; then
+(
+    set +eo pipefail
+    cd "${OPENWRT_CUR_DIR}"
+    /bin/bash "${BUILDER_PROFILE_DIR}/custom.sh"
+)
 fi
 
 # Restore build cache and timestamps
 if [ "x${OPENWRT_CUR_DIR}" != "x${OPENWRT_COMPILE_DIR}" ]; then
-    if [ ! -x "$(command -v rsync)" ]; then
-        echo "rsync not found, installing for backward compatibility"
-        sudo -E apt-get -qq update && sudo -E apt-get -qq install rsync
-    fi
     echo "Syncing rebuilt source code to work directory..."
     # sync files by comparing checksum
-    rsync -cav --no-t --delete \
-        --exclude="/bin" \
-        --exclude="/dl" \
-        --exclude="/tmp" \
-        --exclude="/build_dir" \
-        --exclude="/staging_dir" \
-        --exclude="/toolchain" \
-        --exclude="/logs" \
-        --exclude="*.o" \
-        --exclude="key-build*" \
+    rsync -cav --no-t --delete "${sync_exclude_opts[@]}" \
         "${OPENWRT_CUR_DIR}/" "${OPENWRT_COMPILE_DIR}/"
 
     rm -rf "${OPENWRT_CUR_DIR}"
