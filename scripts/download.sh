@@ -5,14 +5,14 @@
 
 set -eo pipefail
 
-if [ -z "${OPENWRT_DIR}" -o -z "${OPENWRT_WORK_DIR}" -o -z "${OPENWRT_SOURCE_RECONS_DIR}" ]; then
-  echo "::error::'OPENWRT_DIR', 'OPENWRT_WORK_DIR' or 'OPENWRT_SOURCE_RECONS_DIR' is empty" >&2
+if [ -z "${OPENWRT_COMPILE_DIR}" -o -z "${OPENWRT_CUR_DIR}" -o -z "${OPENWRT_SOURCE_DIR}" ]; then
+  echo "::error::'OPENWRT_COMPILE_DIR', 'OPENWRT_CUR_DIR' or 'OPENWRT_SOURCE_DIR' is empty" >&2
   exit 1
 fi
 
 [ "x${TEST}" != "x1" ] || exit 0
 
-cd "${OPENWRT_WORK_DIR}"
+cd "${OPENWRT_CUR_DIR}"
 make download -j8
 find dl -size -1024c -exec ls -l {} \;
 find dl -size -1024c -exec rm -f {} \;

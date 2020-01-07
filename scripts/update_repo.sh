@@ -10,7 +10,7 @@
 set -eo pipefail
 
 link_bin() {
-  BIN_DIR="${OPENWRT_DIR}/bin"
+  BIN_DIR="${OPENWRT_COMPILE_DIR}/bin"
   BIN_MOUNT_POINT="$(pwd)/openwrt_bin"
 
   if mountpoint "${BIN_MOUNT_POINT}" ; then
@@ -25,8 +25,8 @@ link_bin() {
   fi
 }
 
-if [ -z "${OPENWRT_DIR}" -o -z "${OPENWRT_WORK_DIR}" -o -z "${OPENWRT_SOURCE_RECONS_DIR}" ]; then
-  echo "::error::'OPENWRT_DIR', 'OPENWRT_WORK_DIR' or 'OPENWRT_SOURCE_RECONS_DIR' is empty" >&2
+if [ -z "${OPENWRT_COMPILE_DIR}" -o -z "${OPENWRT_CUR_DIR}" -o -z "${OPENWRT_SOURCE_DIR}" ]; then
+  echo "::error::'OPENWRT_COMPILE_DIR', 'OPENWRT_CUR_DIR' or 'OPENWRT_SOURCE_DIR' is empty" >&2
   exit 1
 fi
 
@@ -36,7 +36,7 @@ if [ -z "${REPO_URL}" -o -z "${REPO_BRANCH}" ]; then
 fi
 
 if [ "x${TEST}" = "x1" ]; then
-  mkdir -p "${OPENWRT_DIR}" || true
+  mkdir -p "${OPENWRT_COMPILE_DIR}" || true
   link_bin
   exit 0
 fi
@@ -46,13 +46,13 @@ fi
 # of unchanged files (even if their timestamp changed)
 # and make changed files' timestamps most recent
 
-if [ "x${OPENWRT_WORK_DIR}" != "x${OPENWRT_DIR}" -a -d "${OPENWRT_DIR}/.git" -a "x${OPT_UPDATE_REPO}" != "x1" ]; then
-  git clone "${OPENWRT_DIR}" "${OPENWRT_WORK_DIR}"
-  git -C "${OPENWRT_WORK_DIR}" remote set-url origin "${REPO_URL}"
-  git -C "${OPENWRT_WORK_DIR}" fetch
-  git -C "${OPENWRT_WORK_DIR}" checkout "${REPO_BRANCH}"
+if [ "x${OPENWRT_CUR_DIR}" != "x${OPENWRT_COMPILE_DIR}" -a -d "${OPENWRT_COMPILE_DIR}/.git" -a "x${OPT_UPDATE_REPO}" != "x1" ]; then
+  git clone "${OPENWRT_COMPILE_DIR}" "${OPENWRT_CUR_DIR}"
+  git -C "${OPENWRT_CUR_DIR}" remote set-url origin "${REPO_URL}"
+  git -C "${OPENWRT_CUR_DIR}" fetch
+  git -C "${OPENWRT_CUR_DIR}" checkout "${REPO_BRANCH}"
 else
-  git clone -b "${REPO_BRANCH}" "${REPO_URL}" "${OPENWRT_WORK_DIR}"
+  git clone -b "${REPO_BRANCH}" "${REPO_URL}" "${OPENWRT_CUR_DIR}"
 fi
 
 link_bin

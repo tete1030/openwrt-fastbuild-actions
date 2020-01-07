@@ -427,7 +427,7 @@ EOF
 }
 
 docker_exec() {
-  EXEC_ENV_NAMES=( TEST OPENWRT_WORK_DIR OPENWRT_DIR OPENWRT_SOURCE_RECONS_DIR )
+  EXEC_ENV_NAMES=( TEST OPENWRT_CUR_DIR OPENWRT_COMPILE_DIR OPENWRT_SOURCE_DIR )
   declare -a exec_envs=()
   for env_name in ${EXEC_ENV_NAMES[@]}; do
     exec_envs+=( -e "${env_name}=${!env_name}" )

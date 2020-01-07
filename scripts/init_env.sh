@@ -1,17 +1,17 @@
 #!/bin/bash
 
-OPENWRT_DIR="openwrt"
-OPENWRT_WORK_DIR="${OPENWRT_DIR}"
-OPENWRT_SOURCE_RECONS_DIR="${OPENWRT_DIR}_new"
+OPENWRT_COMPILE_DIR="openwrt"
+OPENWRT_SOURCE_DIR="tmp/openwrt"
+OPENWRT_CUR_DIR="${OPENWRT_COMPILE_DIR}"
 
-if [ -d "${OPENWRT_DIR}" ]; then
-  OPENWRT_WORK_DIR="${OPENWRT_SOURCE_RECONS_DIR}"
-  if [ -d "${OPENWRT_WORK_DIR}" ]; then
+if [ -d "${OPENWRT_COMPILE_DIR}" ]; then
+  OPENWRT_CUR_DIR="${OPENWRT_SOURCE_DIR}"
+  if [ -d "${OPENWRT_CUR_DIR}" ]; then
     # probably caused by a failure builder upload
-    rm -rf "${OPENWRT_WORK_DIR}"
+    rm -rf "${OPENWRT_CUR_DIR}"
   fi
 fi
 
-echo "::set-env name=OPENWRT_DIR::${OPENWRT_DIR}"
-echo "::set-env name=OPENWRT_WORK_DIR::${OPENWRT_WORK_DIR}"
-echo "::set-env name=OPENWRT_SOURCE_RECONS_DIR::${OPENWRT_SOURCE_RECONS_DIR}"
+echo "::set-env name=OPENWRT_COMPILE_DIR::${OPENWRT_COMPILE_DIR}"
+echo "::set-env name=OPENWRT_CUR_DIR::${OPENWRT_CUR_DIR}"
+echo "::set-env name=OPENWRT_SOURCE_DIR::${OPENWRT_SOURCE_DIR}"

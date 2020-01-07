@@ -5,23 +5,23 @@
 
 set -eo pipefail
 
-if [ -z "${OPENWRT_DIR}" -o -z "${OPENWRT_WORK_DIR}" -o -z "${OPENWRT_SOURCE_RECONS_DIR}" ]; then
-  echo "::error::'OPENWRT_DIR', 'OPENWRT_WORK_DIR' or 'OPENWRT_SOURCE_RECONS_DIR' is empty" >&2
+if [ -z "${OPENWRT_COMPILE_DIR}" -o -z "${OPENWRT_CUR_DIR}" -o -z "${OPENWRT_SOURCE_DIR}" ]; then
+  echo "::error::'OPENWRT_COMPILE_DIR', 'OPENWRT_CUR_DIR' or 'OPENWRT_SOURCE_DIR' is empty" >&2
   exit 1
 fi
 
 if [ "x${TEST}" = "x1" ]; then
-  mkdir -p "${OPENWRT_DIR}/bin/targets/x86/64/packages"
-  mkdir -p "${OPENWRT_DIR}/bin/packages"
-  echo "Dummy firmware" > "${OPENWRT_DIR}/bin/targets/x86/64/firmware.bin"
-  echo "Dummy packages" > "${OPENWRT_DIR}/bin/targets/x86/64/packages/packages.tar.gz"
-  echo "Dummy packages" > "${OPENWRT_DIR}/bin/packages/packages.tar.gz"
+  mkdir -p "${OPENWRT_COMPILE_DIR}/bin/targets/x86/64/packages"
+  mkdir -p "${OPENWRT_COMPILE_DIR}/bin/packages"
+  echo "Dummy firmware" > "${OPENWRT_COMPILE_DIR}/bin/targets/x86/64/firmware.bin"
+  echo "Dummy packages" > "${OPENWRT_COMPILE_DIR}/bin/targets/x86/64/packages/packages.tar.gz"
+  echo "Dummy packages" > "${OPENWRT_COMPILE_DIR}/bin/packages/packages.tar.gz"
   exit 0
 fi
 
 compile() {
     (
-        cd "${OPENWRT_WORK_DIR}"
+        cd "${OPENWRT_CUR_DIR}"
         if [ "x${MODE}" = "xm" ]; then
             nthread=$(($(nproc) + 1)) 
             echo "${nthread} thread compile: $@"
