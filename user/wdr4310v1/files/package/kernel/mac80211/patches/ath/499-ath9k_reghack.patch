@@ -1,6 +1,6 @@
 --- a/drivers/net/wireless/ath/ath9k/common-init.c
 +++ b/drivers/net/wireless/ath/ath9k/common-init.c
-@@ -22,7 +22,7 @@
+@@ -22,14 +22,14 @@
  	.band = NL80211_BAND_2GHZ, \
  	.center_freq = (_freq), \
  	.hw_value = (_idx), \
@@ -9,6 +9,14 @@
  }
  
  #define CHAN5G(_freq, _idx) { \
+ 	.band = NL80211_BAND_5GHZ, \
+ 	.center_freq = (_freq), \
+ 	.hw_value = (_idx), \
+-	.max_power = 20, \
++	.max_power = 30, \
+ }
+ 
+ /* Some 2 GHz radios are actually tunable on 2312-2732
 @@ -37,6 +37,50 @@
   * we have calibration data for all cards though to make
   * this static */
