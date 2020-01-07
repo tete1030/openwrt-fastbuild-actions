@@ -233,7 +233,7 @@ jobs:
     #   uses: actions/upload-artifact@master
     #   if: env.SKIP_TARGET == '0' && !cancelled()
     #   with:
-    #     name: OpenWrt_bin
+    #     name: OpenWrt_bin_${{env.BUILD_TARGET}}
     #     path: openwrt_bin
 
     - name: Organize files
@@ -254,14 +254,14 @@ jobs:
       uses: actions/upload-artifact@master
       if: env.SKIP_TARGET == '0' && env.OPT_PACKAGE_ONLY != '1' && steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: OpenWrt_firmware
+        name: OpenWrt_firmware_${{env.BUILD_TARGET}}
         path: openwrt_firmware
 
     - name: Upload packages
       uses: actions/upload-artifact@master
       if: env.SKIP_TARGET == '0' && steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: OpenWrt_packages
+        name: OpenWrt_packages_${{env.BUILD_TARGET}}
         path: openwrt_bin
 
     # failure checking
