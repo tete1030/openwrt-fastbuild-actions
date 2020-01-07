@@ -1,8 +1,8 @@
-.github
+/.github
 .gitattributes
 .gitignore
 LICENSE
-README.md
-README_CN.md
-scripts/host
-imgs
+README*.md
+/scripts/host
+/imgs
+/user/current

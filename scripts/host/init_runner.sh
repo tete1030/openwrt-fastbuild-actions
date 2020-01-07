@@ -2,10 +2,10 @@
 
 set -eo pipefail
 
-echo "Installing json processor 'jq'..."
-sudo -E apt-get -qq update && sudo -E apt-get -qq install jq
+echo "Installing necessary commands..."
+sudo -E apt-get -qq update && sudo -E apt-get -qq install jq tree
 
-source scripts/host/utils.sh
+source "${GITHUB_WORKSPACE}/scripts/host/utils.sh"
 
 _get_opt() {
 OPT_NAME="${1}"
@@ -76,24 +76,26 @@ _append_docker_exec_env TEST OPENWRT_CUR_DIR OPENWRT_COMPILE_DIR OPENWRT_SOURCE_
 
 # Set for target
 BUILD_TARGET="$(echo "${MATRIX_CONTEXT}" | jq -crMe ".target")"
-if [ ! -d "user/${BUILD_TARGET}" ]; then
+if [ ! -d "${GITHUB_WORKSPACE}/user/${BUILD_TARGET}" ]; then
     echo "::error::Failed to find the target ${BUILD_TARGET}" >&2
     exit 1
 fi
 _set_env BUILD_TARGET
 
 # Load default and target configs
-cp -r user/default user/current
-rsync -aI "user/${BUILD_TARGET}/" user/current/
+cp -r "${GITHUB_WORKSPACE}/user/default" "${GITHUB_WORKSPACE}/user/current"
+rsync -aI "${GITHUB_WORKSPACE}/user/${BUILD_TARGET}/" "${GITHUB_WORKSPACE}/user/current/"
+echo "Merged target profile structure:"
+tree "${GITHUB_WORKSPACE}/user/current"
 
-if [ ! -f "user/current/config.diff" ]; then
-    echo "::error::Config file does not exist" >&2
+if [ ! -f "${GITHUB_WORKSPACE}/user/current/config.diff" ]; then
+    echo "::error::Config file 'config.diff' does not exist" >&2
     exit 1
 fi
 
 # Load settings
 SETTING_VARS=( BUILDER_NAME BUILDER_TAG REPO_URL REPO_BRANCH )
-source "user/current/settings.sh"
+source "${GITHUB_WORKSPACE}/user/current/settings.sh"
 setting_missing_vars="$(_check_missing_vars ${SETTING_VARS[@]})"
 if [ ! -z "${setting_missing_vars}" ]; then
     echo "::error::Variables missing in 'user/default/settings.sh' or 'user/${BUILD_TARGET}/settings.sh': ${setting_missing_vars}"
