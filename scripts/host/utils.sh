@@ -22,7 +22,7 @@ _set_env() {
         # var_value="${var_value//%/%25}"
         var_value="${var_value//$'\n'/%0A}"
         var_value="${var_value//$'\r'/%0D}"
-        echo -e -n "\n::set-env name=${var_name}::${var_value}"
+        echo "::set-env name=${var_name}::${var_value}"
     done
 }
 
