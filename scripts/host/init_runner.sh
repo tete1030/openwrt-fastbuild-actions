@@ -68,7 +68,7 @@ BUILDER_MOUNTPOINT="
   -v '${GITHUB_WORKSPACE}/scripts:${BUILDER_HOME_DIR}/scripts'
   -v '${GITHUB_WORKSPACE}/user:${BUILDER_HOME_DIR}/user'
   -v '${GITHUB_WORKSPACE}/openwrt_bin:${BUILDER_HOME_DIR}/openwrt_bin'
-  --mount 'type=tmpfs,destination=${BUILDER_TMP_DIR},tmpfs-mode=1770'
+  --mount 'type=tmpfs,destination=${BUILDER_TMP_DIR},tmpfs-mode=1777'
 "
 _set_env_prefix DK_
 _set_env BUILDER_IMAGE_ID_BUILDENV BUILDER_CONTAINER_ID BUILDER_HOME_DIR BUILDER_TMP_DIR BUILDER_PROFILE_DIR BUILDER_MOUNTPOINT
