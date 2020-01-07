@@ -34,21 +34,15 @@ if [ -n "$(ls -A "${BUILDER_HOME_DIR}/user/current/files" 2>/dev/null)" ]; then
   cp -r "${BUILDER_HOME_DIR}/user/current/files" "${OPENWRT_CUR_DIR}/files"
 fi
 
-(
-    cd "${OPENWRT_CUR_DIR}"
-    make defconfig
-    make oldconfig
-)
-
 # Restore build cache and timestamps
 if [ "x${OPENWRT_CUR_DIR}" != "x${OPENWRT_COMPILE_DIR}" ]; then
-(
     if [ ! -x "$(command -v rsync)" ]; then
         echo "rsync not found, installing for backward compatibility"
         sudo -E apt-get -qq update && sudo -E apt-get -qq install rsync
     fi
+    echo "Syncing rebuilt source code to work directory..."
     # sync files by comparing checksum
-    rsync -ca --no-t --delete \
+    rsync -cav --no-t --delete \
         --exclude="/bin" \
         --exclude="/dl" \
         --exclude="/tmp" \
@@ -63,5 +57,4 @@ if [ "x${OPENWRT_CUR_DIR}" != "x${OPENWRT_COMPILE_DIR}" ]; then
     rm -rf "${OPENWRT_CUR_DIR}"
     OPENWRT_CUR_DIR="${OPENWRT_COMPILE_DIR}"
     echo "::set-env name=OPENWRT_CUR_DIR::${OPENWRT_CUR_DIR}"
-)
 fi

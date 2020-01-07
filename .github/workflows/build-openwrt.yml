@@ -152,18 +152,18 @@ jobs:
         docker_exec "${BUILDER_CONTAINER_ID}" "${BUILDER_HOME_DIR}/scripts/update_repo.sh"
         docker_exec "${BUILDER_CONTAINER_ID}" "${BUILDER_HOME_DIR}/scripts/update_feeds.sh"
 
-    # Allow intermediate customization
-    - name: '[Debug] Wait for SSH connection (timeout 30min)'
-      if: env.SKIP_TARGET == '0' && env.OPT_DEBUG == '1' && env.TEST != '1'
-      env:
-        TMATE_DOCKER_CONTAINER: ${{env.BUILDER_CONTAINER_ID}}
-      uses: tete1030/debugger-action@dev
-
     - name: Apply customizations
       if: env.SKIP_TARGET == '0'
       run: |
         . scripts/host/docker.sh
         docker_exec "${BUILDER_CONTAINER_ID}" "${BUILDER_HOME_DIR}/scripts/customize.sh"
+
+    # Allow intermediate customization
+    - name: '[Debug/Menuconfig] Wait for SSH connection (timeout 30min)'
+      if: env.SKIP_TARGET == '0' && env.OPT_DEBUG == '1' && env.TEST != '1'
+      env:
+        TMATE_DOCKER_CONTAINER: ${{env.BUILDER_CONTAINER_ID}}
+      uses: tete1030/debugger-action@dev
 
     - name: Download packages
       if: env.SKIP_TARGET == '0'
