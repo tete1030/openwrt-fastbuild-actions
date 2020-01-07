@@ -44,8 +44,7 @@ key-build*
 "
 declare -a sync_exclude_opts=()
 while IFS= read -r line; do
-    line="${line// }"
-    if [[ -z "${line}" ]]; then
+    if [[ -z "${line// }" ]]; then
         continue
     fi
     sync_exclude_opts+=( --exclude="${line}" )
