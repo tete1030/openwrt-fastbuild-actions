@@ -394,7 +394,7 @@ copy_files_from_image() {
       exit 1
     fi
     echo "Using DK_LAST_BUILD_TARGET='${DK_LAST_BUILD_TARGET}'"
-    if [ -d "${COPY_CACHE_DIR}" ] && [ -n "$(eval ls -A \"${COPY_CACHE_DIR}\" 2>/dev/null)" ]; then
+    if [ -d "${COPY_CACHE_DIR}" ] && [ -n "$(ls -A "${COPY_CACHE_DIR}" 2>/dev/null)" ]; then
       echo "Error: \'${COPY_CACHE_DIR}\' directory already exists and not empty" >&2
       exit
     fi

@@ -117,7 +117,7 @@ _append_docker_exec_env "${SETTING_VARS[@]}"
 
 # Prepare for test
 if [ "x$(echo "${MATRIX_CONTEXT}" | jq -crMe ".mode")" = "xtest" ]; then
-    eval BUILDER_TAG="test-${BUILDER_TAG}"
+    BUILDER_TAG="test-${BUILDER_TAG}"
     TEST=1
     _set_env BUILDER_TAG TEST
 fi
