@@ -52,7 +52,8 @@ done <<< "${SYNC_EXCLUDES}"
 
 echo "Copying base files..."
 if [ -n "$(ls -A "${BUILDER_PROFILE_DIR}/files" 2>/dev/null)" ]; then
-  rsync -cav --no-t "${sync_exclude_opts[@]}" \
+  # feeds.conf is handled in update_feeds.sh
+  rsync -camv --no-t "${sync_exclude_opts[@]}" --exclude="/feeds.conf" --exclude="/.config" \
     "${BUILDER_PROFILE_DIR}/files/" "${OPENWRT_CUR_DIR}/"
 fi
 
@@ -69,7 +70,7 @@ fi
 if [ "x${OPENWRT_CUR_DIR}" != "x${OPENWRT_COMPILE_DIR}" ]; then
     echo "Syncing rebuilt source code to work directory..."
     # sync files by comparing checksum
-    rsync -cav --no-t --delete "${sync_exclude_opts[@]}" \
+    rsync -camv --no-t --delete "${sync_exclude_opts[@]}" \
         "${OPENWRT_CUR_DIR}/" "${OPENWRT_COMPILE_DIR}/"
 
     rm -rf "${OPENWRT_CUR_DIR}"

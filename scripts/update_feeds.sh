@@ -17,26 +17,32 @@ fi
 [ "x${TEST}" != "x1" ] || exit 0
 
 echo "Updating and installing feeds ..."
-get_prev_feeds_suc=0
-if [ "x${OPENWRT_CUR_DIR}" != "x${OPENWRT_COMPILE_DIR}" ]; then
+# priority when update_feeds=false: prev > user > legacy (> default)
+# priority when update_feeds=true:  user > legacy (> default), no prev
+
+if [ -f "${BUILDER_PROFILE_DIR}/files/feeds.conf" ]; then
+  cp "${BUILDER_PROFILE_DIR}/files/feeds.conf" "${OPENWRT_CUR_DIR}/feeds.conf"
+fi
+
+# Backup feeds.conf file
+if [ -f "${OPENWRT_CUR_DIR}/feeds.conf" ]; then
+  cp "${OPENWRT_CUR_DIR}/feeds.conf" "${BUILDER_TMP_DIR}/feeds.conf.bak"
+fi
+
+if [ "x${OPENWRT_CUR_DIR}" != "x${OPENWRT_COMPILE_DIR}" ] && [ "x${OPT_UPDATE_FEEDS}" != "x1" ]; then
   # Use previous feeds
   (
     set +eo pipefail
     # Use previous feeds status
-    cd "${OPENWRT_COMPILE_DIR}" && ./scripts/feeds list -fs > "${BUILDER_TMP_DIR}/feeds.conf"
+    cd "${OPENWRT_COMPILE_DIR}" && ./scripts/feeds list -fs > "${BUILDER_TMP_DIR}/feeds.conf.prev"
   )
   ret_val=$?
   if [ $ret_val -ne 0 ]; then
     echo "::warning::Something went wrong in previous builder. Not using last feeds.conf"
-    rm "${BUILDER_TMP_DIR}/feeds.conf" || true
+    rm "${BUILDER_TMP_DIR}/feeds.conf.prev" || true
   else
-    mv "${BUILDER_TMP_DIR}/feeds.conf" "${OPENWRT_CUR_DIR}/feeds.conf"
-    get_prev_feeds_suc=1
+    mv "${BUILDER_TMP_DIR}/feeds.conf.prev" "${OPENWRT_CUR_DIR}/feeds.conf"
   fi
-fi
-if [[ ( "${OPT_UPDATE_FEEDS}" == "1" || $get_prev_feeds_suc != 1 ) && -f "${BUILDER_PROFILE_DIR}/feeds.conf" ]]; then
-  # Only use feeds.conf when specified 'update_feeds'
-  cp "${BUILDER_PROFILE_DIR}/feeds.conf" "${OPENWRT_CUR_DIR}/feeds.conf"
 fi
 
 (
@@ -44,6 +50,10 @@ fi
   ./scripts/feeds update -a
   ./scripts/feeds install -a
 )
+
+if [ -f "${BUILDER_TMP_DIR}/feeds.conf.bak" ]; then
+  mv "${BUILDER_TMP_DIR}/feeds.conf.bak" "${OPENWRT_CUR_DIR}/feeds.conf" 
+fi
 
 PACKAGE_DIR="${OPENWRT_CUR_DIR}/package/openwrt-packages"
 mkdir -p "${PACKAGE_DIR}"
