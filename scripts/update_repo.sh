@@ -25,12 +25,12 @@ link_bin() {
   fi
 }
 
-if [ -z "${OPENWRT_COMPILE_DIR}" -o -z "${OPENWRT_CUR_DIR}" -o -z "${OPENWRT_SOURCE_DIR}" ]; then
+if [ -z "${OPENWRT_COMPILE_DIR}" ] || [ -z "${OPENWRT_CUR_DIR}" ] || [ -z "${OPENWRT_SOURCE_DIR}" ]; then
   echo "::error::'OPENWRT_COMPILE_DIR', 'OPENWRT_CUR_DIR' or 'OPENWRT_SOURCE_DIR' is empty" >&2
   exit 1
 fi
 
-if [ -z "${REPO_URL}" -o -z "${REPO_BRANCH}" ]; then
+if [ -z "${REPO_URL}" ] || [ -z "${REPO_BRANCH}" ]; then
   echo "::error::'REPO_URL' or 'REPO_BRANCH' is empty" >&2
   exit 1
 fi
@@ -46,7 +46,7 @@ fi
 # of unchanged files (even if their timestamp changed)
 # and make changed files' timestamps most recent
 
-if [ "x${OPENWRT_CUR_DIR}" != "x${OPENWRT_COMPILE_DIR}" -a -d "${OPENWRT_COMPILE_DIR}/.git" -a "x${OPT_UPDATE_REPO}" != "x1" ]; then
+if [ "x${OPENWRT_CUR_DIR}" != "x${OPENWRT_COMPILE_DIR}" ] && [ -d "${OPENWRT_COMPILE_DIR}/.git" ] && [ "x${OPT_UPDATE_REPO}" != "x1" ]; then
   git clone "${OPENWRT_COMPILE_DIR}" "${OPENWRT_CUR_DIR}"
   git -C "${OPENWRT_CUR_DIR}" remote set-url origin "${REPO_URL}"
   git -C "${OPENWRT_CUR_DIR}" fetch

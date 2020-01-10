@@ -6,23 +6,24 @@ if [ "x${GITHUB_EVENT_NAME}" = "xpush" ]; then
     if [[ $head_commit_message =~ \#target=(.*)\# ]]; then
         head_commit_message_target="${BASH_REMATCH[1]}" 
         echo "Commit message target: ${head_commit_message_target}"
-        if [ "x${head_commit_message_target}" = "xall" -o "x${head_commit_message_target}" = "x${BUILD_TARGET}" ]; then
+        if [ "x${head_commit_message_target}" = "xall" ] || [ "x${head_commit_message_target}" = "x${BUILD_TARGET}" ]; then
             SKIP_TARGET=0
         fi
     else
         commit_before=$(echo "${GITHUB_CONTEXT}" | jq -crM '.event.before // ""')
         commit_after=$(echo "${GITHUB_CONTEXT}" | jq -crM '.event.after // ""')
-        if [ -z "${commit_before}" -o -z "${commit_after}" ]; then
+        if [ -z "${commit_before}" ] || [ -z "${commit_after}" ]; then
             echo "::error::Oops! Something went wrong! Github push event does not exist!" >&2
             exit 1
         fi
 
         # when forcing push, we cannot compare
-        if git cat-file -e ${commit_before}^{commit} ; then
+        if git cat-file -e "${commit_before}^{commit}" ; then
             echo "Changes in this push:"
-            git --no-pager diff --name-status ${commit_before} ${commit_after}
-            changed_files="$(git --no-pager diff --name-only ${commit_before} ${commit_after})"
+            git --no-pager diff --name-status "${commit_before}" "${commit_after}"
+            changed_files="$(git --no-pager diff --name-only "${commit_before}" "${commit_after}")"
 
+            # shellcheck disable=SC2001
             BUILD_TARGET_ESC="$(echo "${BUILD_TARGET}" | sed 's/[^[:alnum:]_-]/\\&/g')"
             target_files_changed=0
             set +eo pipefail
@@ -33,7 +34,7 @@ if [ "x${GITHUB_EVENT_NAME}" = "xpush" ]; then
                 else
                     default_changed_files_to_target="$(echo "${changed_files}" | grep '^user/default/' | sed 's/^user\/default\//user\/'"${BUILD_TARGET_ESC}"'\//g')"
                     while IFS= read -r line; do
-                        if [ -n "${line// }" -a ! -e "$line" ]; then
+                        if [ -n "${line// }" ] && [ ! -e "$line" ]; then
                             target_files_changed=1
                             break
                         fi
@@ -50,7 +51,7 @@ if [ "x${GITHUB_EVENT_NAME}" = "xpush" ]; then
         fi
     fi
 
-elif [ "x${GITHUB_EVENT_NAME}" = "xrepository_dispatch" -o "x${GITHUB_EVENT_NAME}" = "xdeployment" ]; then
+elif [ "x${GITHUB_EVENT_NAME}" = "xrepository_dispatch" ] || [ "x${GITHUB_EVENT_NAME}" = "xdeployment" ]; then
     echo "Repo dispatch or deployment event task: ${RD_TASK} target: ${RD_TARGET}"
     if [[ "${RD_TASK}" == "build" && ( "${RD_TARGET}" == "all" || "${RD_TARGET}" == "${BUILD_TARGET}" ) ]]; then
         SKIP_TARGET=0

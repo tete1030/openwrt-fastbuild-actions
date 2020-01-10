@@ -9,7 +9,7 @@
 
 set -eo pipefail
 
-if [ -z "${OPENWRT_COMPILE_DIR}" -o -z "${OPENWRT_CUR_DIR}" -o -z "${OPENWRT_SOURCE_DIR}" ]; then
+if [ -z "${OPENWRT_COMPILE_DIR}" ] || [ -z "${OPENWRT_CUR_DIR}" ] || [ -z "${OPENWRT_SOURCE_DIR}" ]; then
   echo "::error::'OPENWRT_COMPILE_DIR', 'OPENWRT_CUR_DIR' or 'OPENWRT_SOURCE_DIR' is empty" >&2
   exit 1
 fi
@@ -62,7 +62,7 @@ install_package() {
     exit 1
   fi
   # Use previous git to preserve version
-  if [ "x${full_cur_package_path}" != "x${full_compile_package_path}" -a -d "${full_compile_package_path}/.git" -a "x${OPT_UPDATE_FEEDS}" != "x1" ]; then
+  if [ "x${full_cur_package_path}" != "x${full_compile_package_path}" ] && [ -d "${full_compile_package_path}/.git" ] && [ "x${OPT_UPDATE_FEEDS}" != "x1" ]; then
     git clone "${full_compile_package_path}" "${full_cur_package_path}"
     git -C "${full_cur_package_path}" remote set-url origin "${2}"
     git -C "${full_cur_package_path}" fetch
@@ -76,5 +76,6 @@ install_package() {
 }
 
 if [ -f "${BUILDER_PROFILE_DIR}/packages.txt" ]; then
+  # shellcheck disable=SC1090
   source "${BUILDER_PROFILE_DIR}/packages.txt"
 fi

@@ -25,7 +25,7 @@ _exit_if_empty() {
 }
 
 _get_full_image_name() {
-  echo ${DK_REGISTRY:+$DK_REGISTRY/}${DK_IMAGE_NAME}
+  echo "${DK_REGISTRY:+$DK_REGISTRY/}${DK_IMAGE_NAME}"
 }
 
 _get_full_image_name_tag() {
@@ -68,6 +68,7 @@ configure_docker() {
   }' | sudo tee /etc/docker/daemon.json
   sudo service docker restart
   docker buildx rm builder || true
+  # shellcheck disable=SC2086
   docker buildx create --use --name builder --node builder0 --driver docker-container ${DK_BUILDX_EXTRA_CREATE_OPTS}
   reconfigure_docker_buildx
 }
@@ -121,7 +122,7 @@ pull_image() {
     exit 1
   fi
   IMAGE_TO_PULL="${1}"
-  if [ ! -z "${IMAGE_TO_PULL}" ]; then
+  if [ -n "${IMAGE_TO_PULL}" ]; then
     (
       set +eo pipefail
       docker pull "${IMAGE_TO_PULL}" 2> >(tee /tmp/dockerpull_stderr.log >&2)
@@ -214,7 +215,7 @@ build_image() {
     perl -pi -e 's/^(\s*FROM\s+)([\w-]+?)'${STAGE_AFFIX}'/\1'${STAGE_CVT_IMAGE_PREFIX}'\2/g' "${DK_DOCKERFILE_TMP}"
     DK_DOCKERFILE_FULL="${DK_DOCKERFILE_TMP}"
     DK_DOCKERFILE_STDIN=1
-    build_other_opts+=( "--tag=$(_get_image_from_target ${TARGET})" )
+    build_other_opts+=( "--tag=$(_get_image_from_target "${TARGET}")" )
   fi
 
   if [ "x${DK_USE_INTEGRATED_BUILDKIT}" = "x1" ]; then
@@ -237,14 +238,14 @@ build_image() {
       if [ ! -d "./cache" ]; then
         mkdir ./cache
       fi
-      if [ "x${DK_USE_INTEGRATED_BUILDKIT}" = "x1" -a "x${DK_NO_CACHE_EXPT}" != "x1" ]; then
+      if [ "x${DK_USE_INTEGRATED_BUILDKIT}" = "x1" ] && [ "x${DK_NO_CACHE_EXPT}" != "x1" ]; then
         echo "Docker build command does not support --cache-to=type=local" >&2
         exit 1
       fi
     else
       cache_from+=( "--cache-from=type=registry,ref=$(_get_full_image_name_tag_for_build)" )
       if [ "x${DK_USE_INTEGRATED_BUILDKIT}" = "x1" ]; then
-        cache_to+=( --build-arg BUILDKIT_INLINE_CACHE=1 )
+        cache_to+=( --build-arg "BUILDKIT_INLINE_CACHE=1" )
       else
         cache_to+=( "--cache-to=type=inline,mode=min" )
       fi
@@ -254,7 +255,7 @@ build_image() {
       echo "Buildx driver 'docker' does not support registry cache" >&2
       exit 1
     fi
-    if [ "x${DK_USE_INTEGRATED_BUILDKIT}" = "x1" -a "x${DK_NO_CACHE_EXPT}" != "x1" ]; then
+    if [ "x${DK_USE_INTEGRATED_BUILDKIT}" = "x1" ] && [ "x${DK_NO_CACHE_EXPT}" != "x1" ]; then
       echo "Docker build command does not support --cache-to=type=registry" >&2
       exit 1
     fi
@@ -266,20 +267,20 @@ build_image() {
     cache_from+=( "--cache-from=type=registry,ref=$(_get_full_image_name_tag_for_build_cache)" )
     cache_to+=( "--cache-to=type=registry,ref=$(_get_full_image_name_tag_for_build_cache),mode=max" )
   fi
-  echo "From cache: ${cache_from[@]}"
+  echo "From cache: ${cache_from[*]}"
   if [ "x${DK_NO_CACHE_EXPT}" = "x1" ]; then
     echo "No saving cache"
     cache_to=()
   else
-    echo "To cache: ${cache_to[@]}"
+    echo "To cache: ${cache_to[*]}"
   fi
   
-  if [ ! -z "${TARGET}" ]; then
-    build_target+=( "--target=$(_get_stage_from_target ${TARGET})" )
+  if [ -n "${TARGET}" ]; then
+    build_target+=( "--target=$(_get_stage_from_target "${TARGET}")" )
   fi
 
-  if [ ! -z "${DK_BUILD_ARGS}" ]; then
-    for arg in ${DK_BUILD_ARGS[@]};
+  if [ -n "${DK_BUILD_ARGS}" ]; then
+    for arg in "${DK_BUILD_ARGS[@]}";
     do
       if [ -z "${!arg}" ]; then
         echo "Error: for error free coding, please do not leave variable \`${arg}\` empty. You can assign it a meaningless value if not used." >&2
@@ -289,7 +290,7 @@ build_image() {
     done
   fi
   
-  if [ ! -z "${DK_OUTPUT}" ]; then
+  if [ -n "${DK_OUTPUT}" ]; then
     if [ "x${DK_USE_INTEGRATED_BUILDKIT}" = "x1" ]; then
       echo "Warning: docker build command may not support this output type" >&2
     fi
@@ -300,7 +301,7 @@ build_image() {
         echo "Warning: buildx driver '${DK_BUILDX_DRIVER}' does not support image management. Images may lose when not pushing." >&2
       fi
       if [ "x${DK_USE_INTEGRATED_BUILDKIT}" != "x1" ]; then
-        build_other_opts+=( --output=type=image,push=false )
+        build_other_opts+=( "--output=type=image,push=false" )
       fi
     else
       if [ "x${DK_USE_INTEGRATED_BUILDKIT}" = "x1" ]; then
@@ -333,9 +334,9 @@ build_image() {
 
   if [ "x${DK_DOCKERFILE_STDIN}" = "x1" ]; then
     (
-      export DOCKER_BUILDKIT
       set -x
-      cat "${DK_DOCKERFILE_FULL}" | docker ${BUILD_COMMAND} \
+      # shellcheck disable=SC2086
+      DOCKER_BUILDKIT=${DOCKER_BUILDKIT} docker ${BUILD_COMMAND} \
         "${build_target[@]}" \
         "${build_args[@]}" \
         "${cache_from[@]}" \
@@ -343,13 +344,13 @@ build_image() {
         "${build_other_opts[@]}" \
         ${DK_BUILDX_EXTRA_BUILD_OPTS} \
         --file=- \
-        "${DK_CONTEXT}"
+        "${DK_CONTEXT}" <"${DK_DOCKERFILE_FULL}"
     )
   else
     (
-      export DOCKER_BUILDKIT
       set -x
-      docker ${BUILD_COMMAND} \
+      # shellcheck disable=SC2086
+      DOCKER_BUILDKIT=${DOCKER_BUILDKIT} docker ${BUILD_COMMAND} \
         "${build_target[@]}" \
         "${build_args[@]}" \
         "${cache_from[@]}" \
@@ -361,11 +362,11 @@ build_image() {
     )
   fi
 
-  if [ ! -z "${TARGET}" -a "x${DK_NO_TARGET_RECORD}" != "x1" ]; then
+  if [ -n "${TARGET}" ] && [ "x${DK_NO_TARGET_RECORD}" != "x1" ]; then
     if [ "x${DK_CONVERT_MULTISTAGE_TO_IMAGE}" = "x1" ]; then
-      LAST_BUILD_TARGET="$(_get_image_from_target ${TARGET})"
+      LAST_BUILD_TARGET="$(_get_image_from_target "${TARGET}")"
     else
-      LAST_BUILD_TARGET="$(_get_stage_from_target ${TARGET})"
+      LAST_BUILD_TARGET="$(_get_stage_from_target "${TARGET}")"
     fi
     echo "::set-env name=DK_LAST_BUILD_TARGET::${LAST_BUILD_TARGET}"
   fi
@@ -393,7 +394,7 @@ copy_files_from_image() {
       exit 1
     fi
     echo "Using DK_LAST_BUILD_TARGET='${DK_LAST_BUILD_TARGET}'"
-    if [ -d "${COPY_CACHE_DIR}" -a ! -z "$(eval ls -A \"${COPY_CACHE_DIR}\" 2>/dev/null)" ]; then
+    if [ -d "${COPY_CACHE_DIR}" ] && [ -n "$(eval ls -A \"${COPY_CACHE_DIR}\" 2>/dev/null)" ]; then
       echo "Error: \'${COPY_CACHE_DIR}\' directory already exists and not empty" >&2
       exit
     fi
@@ -430,7 +431,7 @@ docker_exec() {
   (
     declare -a exec_envs=()
     IFS=$'\x20'
-    for env_name in ${DK_EXEC_ENVS[@]}; do
+    for env_name in "${DK_EXEC_ENVS[@]}"; do
       exec_envs+=( -e "${env_name}=${!env_name}" )
     done
     docker exec -i "${exec_envs[@]}" "$@"

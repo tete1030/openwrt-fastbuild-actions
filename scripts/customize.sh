@@ -9,7 +9,7 @@
 
 set -eo pipefail
 
-if [ -z "${OPENWRT_COMPILE_DIR}" -o -z "${OPENWRT_CUR_DIR}" -o -z "${OPENWRT_SOURCE_DIR}" ]; then
+if [ -z "${OPENWRT_COMPILE_DIR}" ] || [ -z "${OPENWRT_CUR_DIR}" ] || [ -z "${OPENWRT_SOURCE_DIR}" ]; then
   echo "::error::'OPENWRT_COMPILE_DIR', 'OPENWRT_CUR_DIR' or 'OPENWRT_SOURCE_DIR' is empty" >&2
   exit 1
 fi
@@ -47,7 +47,7 @@ while IFS= read -r line; do
     if [[ -z "${line// }" ]]; then
         continue
     fi
-    sync_exclude_opts+=( --exclude="${line}" )
+    sync_exclude_opts+=( "--exclude=${line}" )
 done <<< "${SYNC_EXCLUDES}"
 
 echo "Copying base files..."

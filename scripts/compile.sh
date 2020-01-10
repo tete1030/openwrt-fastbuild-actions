@@ -5,7 +5,7 @@
 
 set -eo pipefail
 
-if [ -z "${OPENWRT_COMPILE_DIR}" -o -z "${OPENWRT_CUR_DIR}" -o -z "${OPENWRT_SOURCE_DIR}" ]; then
+if [ -z "${OPENWRT_COMPILE_DIR}" ] || [ -z "${OPENWRT_CUR_DIR}" ] || [ -z "${OPENWRT_SOURCE_DIR}" ]; then
   echo "::error::'OPENWRT_COMPILE_DIR', 'OPENWRT_CUR_DIR' or 'OPENWRT_SOURCE_DIR' is empty" >&2
   exit 1
 fi
@@ -24,10 +24,10 @@ compile() {
         cd "${OPENWRT_CUR_DIR}"
         if [ "x${MODE}" = "xm" ]; then
             nthread=$(($(nproc) + 1)) 
-            echo "${nthread} thread compile: $@"
+            echo "${nthread} thread compile: $*"
             make -j${nthread} "$@"
         elif [ "x${MODE}" = "xs" ]; then
-            echo "Fallback to single thread compile: $@"
+            echo "Fallback to single thread compile: $*"
             make -j1 V=s "$@"
         else
             echo "No MODE specified" >&2

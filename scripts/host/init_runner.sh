@@ -1,14 +1,17 @@
 #!/bin/bash
+# shellcheck disable=SC2034
 
 set -eo pipefail
 
 echo "Installing necessary commands..."
 sudo -E apt-get -qq update && sudo -E apt-get -qq install jq tree
 
+# shellcheck source=scripts/host/utils.sh disable=SC1091
 source "${GITHUB_WORKSPACE}/scripts/host/utils.sh"
 
 _get_opt() {
 OPT_NAME="${1}"
+OPT_DEFAULT="${2:-0}"
 GITHUB_CONTEXT="${GITHUB_CONTEXT}" python3 <<EOF
 import json, os
 github_ctx = json.loads( os.environ["GITHUB_CONTEXT"] )
@@ -30,23 +33,23 @@ except KeyError:
 if (github_ctx["event_name"] == "push" and head_commit_message_opt) or repo_dispatch_opt or deployment_opt:
   print("1", end="")
 else:
-  print("0", end="")
+  print("${OPT_DEFAULT}", end="")
 EOF
 }
 
 _load_opt() {
     OPT_NAME="${1}"
-    OPT_DEFAULT="${2}"
+    OPT_DEFAULT="${2:-0}"
     UPPER_OPT_NAME="$(echo "${OPT_NAME}" | tr '[:lower:]' '[:upper:]')"
     LOWER_OPT_NAME="$(echo "${OPT_NAME}" | tr '[:upper:]' '[:lower:]')"
     ENV_OPT_NAME="OPT_${UPPER_OPT_NAME}"
-    eval ${ENV_OPT_NAME}="$(_get_opt "${LOWER_OPT_NAME}")"
-    _set_env ${ENV_OPT_NAME}
-    _append_docker_exec_env ${ENV_OPT_NAME}
+    eval "${ENV_OPT_NAME}=$(_get_opt "${LOWER_OPT_NAME}" "${OPT_DEFAULT}")"
+    _set_env "${ENV_OPT_NAME}"
+    _append_docker_exec_env "${ENV_OPT_NAME}"
 }
 
 _append_docker_exec_env() {
-  for env_name in $@; do
+  for env_name in "$@"; do
     export DK_EXEC_ENVS="${DK_EXEC_ENVS} ${env_name}"
   done
   _set_env DK_EXEC_ENVS
@@ -96,14 +99,15 @@ fi
 
 # Load settings
 SETTING_VARS=( BUILDER_NAME BUILDER_TAG REPO_URL REPO_BRANCH )
+# shellcheck disable=SC1090
 source "${GITHUB_WORKSPACE}/user/current/settings.sh"
-setting_missing_vars="$(_check_missing_vars ${SETTING_VARS[@]})"
-if [ ! -z "${setting_missing_vars}" ]; then
+setting_missing_vars="$(_check_missing_vars "${SETTING_VARS[@]}")"
+if [ -n "${setting_missing_vars}" ]; then
     echo "::error::Variables missing in 'user/default/settings.sh' or 'user/${BUILD_TARGET}/settings.sh': ${setting_missing_vars}"
     exit 1
 fi
-_set_env ${SETTING_VARS[@]}
-_append_docker_exec_env ${SETTING_VARS[@]}
+_set_env "${SETTING_VARS[@]}"
+_append_docker_exec_env "${SETTING_VARS[@]}"
 
 # Prepare for test
 if [ "x$(echo "${MATRIX_CONTEXT}" | jq -crMe ".mode")" = "xtest" ]; then
@@ -131,12 +135,12 @@ _set_env RD_TASK RD_TARGET
 # Load building options
 (
   IFS=$'\x20'
-  for opt_name in ${BUILD_OPTS[@]}; do
+  for opt_name in "${BUILD_OPTS[@]}"; do
       _load_opt "${opt_name}"
   done
 )
 
-if [ "x${OPT_DEBUG}" = "x1" -a -z "${TMATE_ENCRYPT_PASSWORD}" -a -z "${SLACK_WEBHOOK_URL}" ]; then
+if [ "x${OPT_DEBUG}" = "x1" ] && [ -z "${TMATE_ENCRYPT_PASSWORD}" ] && [ -z "${SLACK_WEBHOOK_URL}" ]; then
     echo "::error::To use debug mode, you should set either TMATE_ENCRYPT_PASSWORD or SLACK_WEBHOOK_URL in the 'Secrets' page for safety of your sensitive information. For details, please refer to https://github.com/tete103%30/debugger-action/blob/master/README.md"
     echo "::error::In the reference URL you are instructed to use environment variables for them. However in this repo, you should set them in the 'Secrets' page"
     exit 1
