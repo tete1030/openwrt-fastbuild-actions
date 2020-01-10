@@ -1,9 +1,13 @@
 CONFIG_TARGET_ar71xx=y
 CONFIG_TARGET_ar71xx_generic=y
 CONFIG_TARGET_ar71xx_generic_DEVICE_tl-wdr4310-v1=y
+CONFIG_KERNEL_RELAY=y
+CONFIG_PACKAGE_ATH_DEBUG=y
+CONFIG_PACKAGE_ATH_SPECTRAL=y
 # CONFIG_PACKAGE_adbyby is not set
 CONFIG_PACKAGE_kmod-fs-ext4=y
 CONFIG_PACKAGE_kmod-lib-crc16=y
+CONFIG_PACKAGE_kmod-mtd-rw=m
 CONFIG_PACKAGE_kmod-scsi-core=y
 CONFIG_PACKAGE_kmod-usb-ohci=y
 CONFIG_PACKAGE_kmod-usb-storage=y
