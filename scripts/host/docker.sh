@@ -150,7 +150,7 @@ squash_image_when_necessary() {
   fi
 
   LAYER_NUMBER=$(docker image inspect -f '{{.RootFS.Layers}}' "${SQUASH_IMAGE}" | grep -o 'sha256:' | wc -l)
-  DK_LAYER_NUMBER_LIMIT=${DK_LAYER_NUMBER_LIMIT:-20}
+  DK_LAYER_NUMBER_LIMIT=${DK_LAYER_NUMBER_LIMIT:-50}
   echo "Number of docker layers: ${LAYER_NUMBER}"
   if (( LAYER_NUMBER > DK_LAYER_NUMBER_LIMIT )); then
     echo "The number of docker layers has exceeded the limitation ${DK_LAYER_NUMBER_LIMIT}, squashing... (This may take some time)"

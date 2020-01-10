@@ -104,7 +104,7 @@ jobs:
       if: env.SKIP_TARGET == '0'
       run: |
         . scripts/host/docker.sh
-        DK_LAYER_NUMBER_LIMIT=10 squash_image_when_necessary "${BUILDER_IMAGE_ID_INC}"
+        DK_LAYER_NUMBER_LIMIT=20 squash_image_when_necessary "${BUILDER_IMAGE_ID_INC}"
 
     - name: Upload squashed builder
       if: env.SKIP_TARGET == '0'
