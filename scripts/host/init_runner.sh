@@ -59,7 +59,7 @@ _source_vars() {
   SOURCE_FILE="${1}"; shift
   SOURCE_VARS=( "$@" )
   # shellcheck disable=SC1090
-  eval "$(source "${SOURCE_FILE}"; for var_name in "${SOURCE_VARS[@]}"; do echo "${var_name}='${var_name}'"; done )"
+  eval "$(source "${SOURCE_FILE}"; for var_name in "${SOURCE_VARS[@]}"; do echo "${var_name}='${!var_name}'"; done )"
 }
 
 # Fixed parameters, do not change the following values
