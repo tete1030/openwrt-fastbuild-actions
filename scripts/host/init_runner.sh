@@ -40,10 +40,10 @@ EOF
 _load_opt() {
     OPT_NAME="${1}"
     OPT_DEFAULT="${2:-0}"
-    UPPER_OPT_NAME="$(echo "${OPT_NAME}" | tr '[:lower:]' '[:upper:]')"
-    LOWER_OPT_NAME="$(echo "${OPT_NAME}" | tr '[:upper:]' '[:lower:]')"
+    UPPER_OPT_NAME="$(echo -n "${OPT_NAME}" | tr '[:lower:]' '[:upper:]')"
+    LOWER_OPT_NAME="$(echo -n "${OPT_NAME}" | tr '[:upper:]' '[:lower:]')"
     ENV_OPT_NAME="OPT_${UPPER_OPT_NAME}"
-    eval "${ENV_OPT_NAME}=$(_get_opt "${LOWER_OPT_NAME}" "${OPT_DEFAULT}")"
+    eval "${ENV_OPT_NAME}='$(_get_opt "${LOWER_OPT_NAME}" "${OPT_DEFAULT}")'"
     _set_env "${ENV_OPT_NAME}"
     _append_docker_exec_env "${ENV_OPT_NAME}"
 }
