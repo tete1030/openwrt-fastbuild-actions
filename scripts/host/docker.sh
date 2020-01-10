@@ -280,7 +280,7 @@ build_image() {
   fi
 
   if [ -n "${DK_BUILD_ARGS}" ]; then
-    for arg in "${DK_BUILD_ARGS[@]}";
+    for arg in ${DK_BUILD_ARGS};
     do
       if [ -z "${!arg}" ]; then
         echo "Error: for error free coding, please do not leave variable \`${arg}\` empty. You can assign it a meaningless value if not used." >&2
@@ -431,7 +431,7 @@ docker_exec() {
   (
     declare -a exec_envs=()
     IFS=$'\x20'
-    for env_name in "${DK_EXEC_ENVS[@]}"; do
+    for env_name in ${DK_EXEC_ENVS}; do
       exec_envs+=( -e "${env_name}=${!env_name}" )
     done
     docker exec -i "${exec_envs[@]}" "$@"

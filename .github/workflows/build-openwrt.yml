@@ -135,13 +135,12 @@ jobs:
       if: env.SKIP_TARGET == '0'
       run: |
         . scripts/host/docker.sh
-        eval declare -a MOUNT_OPTS=( ${BUILDER_MOUNTPOINT} )
         if [ "x${OPT_REBUILD}" != "x1" ]; then
           pull_image "${BUILDER_IMAGE_ID_INC}"
           squash_image_when_necessary "${BUILDER_IMAGE_ID_INC}"
-          docker run -d -t --name "${BUILDER_CONTAINER_ID}" "${MOUNT_OPTS[@]}" "${BUILDER_IMAGE_ID_INC}"
+          docker run -d -t --name "${BUILDER_CONTAINER_ID}" ${BUILDER_MOUNT_OPTS} "${BUILDER_IMAGE_ID_INC}"
         else
-          docker run -d -t --name "${BUILDER_CONTAINER_ID}" "${MOUNT_OPTS[@]}" "${BUILDER_IMAGE_ID_BUILDENV}"
+          docker run -d -t --name "${BUILDER_CONTAINER_ID}" ${BUILDER_MOUNT_OPTS} "${BUILDER_IMAGE_ID_BUILDENV}"
         fi
         docker_exec "${BUILDER_CONTAINER_ID}" "${BUILDER_HOME_DIR}/scripts/init_env.sh"
 

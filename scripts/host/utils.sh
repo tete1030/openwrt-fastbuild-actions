@@ -28,6 +28,6 @@ _set_env() {
 
 _set_env_prefix() {
     for var_name_prefix in "$@" ; do
-        eval '_set_env ${!'"${var_name_prefix}"'@}'
+        eval '_set_env "${!'"${var_name_prefix}"'@}"'
     done
 }
