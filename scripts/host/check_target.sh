@@ -24,7 +24,7 @@ if [ "x${GITHUB_EVENT_NAME}" = "xpush" ]; then
             changed_files="$(git --no-pager diff --name-only "${commit_before}" "${commit_after}")"
 
             # shellcheck disable=SC2001
-            BUILD_TARGET_ESC="$(echo "${BUILD_TARGET}" | sed 's/[^[:alnum:]_-]/\\&/g')"
+            BUILD_TARGET_ESC="$(echo -n "${BUILD_TARGET}" | sed 's/[^[:alnum:]_-]/\\&/g')"
             target_files_changed=0
             set +eo pipefail
                 echo "${changed_files}" | grep -q '^user/'"${BUILD_TARGET_ESC}"'/'
