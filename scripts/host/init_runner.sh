@@ -55,6 +55,13 @@ _append_docker_exec_env() {
   _set_env DK_EXEC_ENVS
 }
 
+_source_vars() {
+  SOURCE_FILE="${1}"; shift
+  SOURCE_VARS=( "$@" )
+  # shellcheck disable=SC1090
+  eval "$(source "${SOURCE_FILE}"; for var_name in "${SOURCE_VARS[@]}"; do echo "${var_name}='${var_name}'"; done )"
+}
+
 # Fixed parameters, do not change the following values
 DK_BUILDX_DRIVER=docker
 # DK_CONTEXT=.
@@ -99,11 +106,10 @@ fi
 
 # Load settings
 SETTING_VARS=( BUILDER_NAME BUILDER_TAG REPO_URL REPO_BRANCH )
-# shellcheck disable=SC1090
-source "${GITHUB_WORKSPACE}/user/current/settings.sh"
+_source_vars "${GITHUB_WORKSPACE}/user/current/settings.ini" "${SETTING_VARS[@]}"
 setting_missing_vars="$(_check_missing_vars "${SETTING_VARS[@]}")"
 if [ -n "${setting_missing_vars}" ]; then
-    echo "::error::Variables missing in 'user/default/settings.sh' or 'user/${BUILD_TARGET}/settings.sh': ${setting_missing_vars}"
+    echo "::error::Variables missing in 'user/default/settings.ini' or 'user/${BUILD_TARGET}/settings.ini': ${setting_missing_vars}"
     exit 1
 fi
 _set_env "${SETTING_VARS[@]}"

@@ -76,6 +76,10 @@ install_package() {
 }
 
 if [ -f "${BUILDER_PROFILE_DIR}/packages.txt" ]; then
-  # shellcheck disable=SC1090
-  source "${BUILDER_PROFILE_DIR}/packages.txt"
+  while IFS= read -r line; do
+    if [ -n "${line// }" ] && [[ ! "${line}" =~ ^[[:blank:]]*\# ]] ; then
+      # shellcheck disable=SC2086
+      install_package ${line}
+    fi
+  done <"${BUILDER_PROFILE_DIR}/packages.txt"
 fi
