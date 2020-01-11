@@ -241,7 +241,7 @@ I'll now explain here the detailed building process of each mode.
 
 Thanks to [tmate](https://tmate.io/), you can enter into both the docker containers and GitHub Actions runners through SSH to debug and manually change your configuration, e.g. `make menuconfig`. To enter the mode, you have to enable the building option: `debug`. See [Manually trigger building and its options](#manually-trigger-building-and-its-options) for methods of using options.
 
-For safety of your sensitive information, you **must** either set `SLACK_WEBHOOK_URL` or `TMATE_ENCRYPT_PASSWORD` in the **Secrets** page to protect the tmate connection info. Refer to [tete1030/debugger-action/README.md](https://github.com/tete1030/debugger-action/blob/master/README.md) for details.
+For safety of your sensitive information, you **must** either set `SLACK_WEBHOOK_URL` or `TMATE_ENCRYPT_PASSWORD` in the **Secrets** page to protect the tmate connection info. Refer to [tete1030/safe-debugger-action/README.md](https://github.com/tete1030/safe-debugger-action/blob/master/README.md) for details.
 
 Note that the configuration changes you made should only be for **temporary use**. Though your changes in the docker container will be saved to Docker Hub, there are situations where you manual configuration may lost:
 1. The `rebuild` option is set to completely rebuild your base builder and rebase the incremental builder

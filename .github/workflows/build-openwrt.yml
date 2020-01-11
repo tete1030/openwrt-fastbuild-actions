@@ -129,7 +129,7 @@ jobs:
       if: env.SKIP_TARGET == '0' && env.OPT_DEBUG == '1' && env.TEST != '1'
       env:
         TIMEOUT_MIN: 5
-      uses: tete1030/debugger-action@dev
+      uses: tete1030/safe-debugger-action@dev
 
     - name: Get builder
       if: env.SKIP_TARGET == '0'
@@ -164,7 +164,7 @@ jobs:
       if: env.SKIP_TARGET == '0' && env.OPT_DEBUG == '1' && env.TEST != '1'
       env:
         TMATE_DOCKER_CONTAINER: ${{env.BUILDER_CONTAINER_ID}}
-      uses: tete1030/debugger-action@dev
+      uses: tete1030/safe-debugger-action@dev
 
     - name: Download packages
       if: env.SKIP_TARGET == '0'
@@ -203,7 +203,7 @@ jobs:
         && (job.status == 'failure' || (env.OPT_DEBUG == '1' && env.TEST != '1'))
       env:
         TMATE_DOCKER_CONTAINER: ${{env.BUILDER_CONTAINER_ID}}
-      uses: tete1030/debugger-action@dev
+      uses: tete1030/safe-debugger-action@dev
 
     - name: Upload current builder
       if: |
@@ -266,4 +266,4 @@ jobs:
       if: |
         env.SKIP_TARGET == '0' && !cancelled()
         && (job.status == 'failure' || (env.OPT_DEBUG == '1' && env.TEST != '1'))
-      uses: tete1030/debugger-action@dev
+      uses: tete1030/safe-debugger-action@dev

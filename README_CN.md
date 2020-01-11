@@ -94,7 +94,7 @@ Github Actions和Actions-Openwrt让我们可以很方便地自动化编译OpenWr
 
 通过[tmate](https://tmate.io/)，你可以通过SSH进入docker容器或Github Actions虚拟机以便你调试或更改配置，例如执行`make menuconfig`。如要进入这个模式，你需要开启构建选项`debug`。请参考[Manually trigger building and its options](README.md#manually-trigger-building-and-its-options)以了解如何使用构建选项。
 
-为了你敏感信息的安全，你**必须**在**Secrets**页面设置`SLACK_WEBHOOK_URL`或`TMATE_ENCRYPT_PASSWORD`以保护你的tmate连接信息。参考[tete1030/debugger-action/README.md](https://github.com/tete1030/debugger-action/blob/master/README.md)以了解原因和它们的用法。
+为了你敏感信息的安全，你**必须**在**Secrets**页面设置`SLACK_WEBHOOK_URL`或`TMATE_ENCRYPT_PASSWORD`以保护你的tmate连接信息。参考[tete1030/safe-debugger-action/README.md](https://github.com/tete1030/safe-debugger-action/blob/master/README.md)以了解原因和它们的用法。
 
 请注意你在docker容器内做出的手动配置应当仅仅是为了**临时使用**的。尽管你在docker容器内的更改会被保存并上传Docker Hub，仍有许多情况会导致你的这些手动配置丢失：
 1. 使用了`rebuild`选项以完全重建你的base builder并rebase你的incremental builder（参考[Mechanism](README.md#mechanism)）
