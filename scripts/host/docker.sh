@@ -174,6 +174,7 @@ squash_image_when_necessary() {
   fi
 }
 
+# Deprecated
 build_image() {
   TARGET="${1}"
 
@@ -374,6 +375,7 @@ build_image() {
   IFS="$IFS_ORI"
 }
 
+# Deprecated
 copy_files_from_image() {
   SOURCE_IMAGE="$(_get_full_image_name_tag_for_build)"
   if [ "x${DK_BUILDX_DRIVER}" = "xdocker" ]; then
@@ -438,6 +440,7 @@ docker_exec() {
   )
 }
 
+# Deprecated
 push_git_tag() {
   [[ "$GITHUB_REF" =~ /tags/ ]] || return 0
   local git_tag=${GITHUB_REF##*/tags/}
@@ -452,6 +455,7 @@ create_remote_tag_alias() {
   docker buildx imagetools create -t "${2}" "${1}"
 }
 
+# Deprecated
 push_image() {
   if [ "x${DK_NO_BUILDTIME_PUSH}" = "x1" ]; then
     if [ "x${DK_BUILDX_DRIVER}" = "xdocker" ]; then
@@ -471,6 +475,7 @@ push_image() {
   # push_git_tag
 }
 
+# Deprecated
 push_cache() {
   if [ "x${DK_NO_REMOTE_CACHE}" = "x1" ]; then
     echo "DK_NO_REMOTE_CACHE is set, no cache to push" >&2
@@ -479,6 +484,7 @@ push_cache() {
   fi
 }
 
+# Deprecated
 push_image_and_cache() {
   push_image
   push_cache

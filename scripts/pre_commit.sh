@@ -16,6 +16,7 @@ fi
 
 [ "x${TEST}" != "x1" ] || exit 0
 
+# In case previous steps failed
 if [ -d "${OPENWRT_SOURCE_DIR}" ]; then
     rm -rf "${OPENWRT_SOURCE_DIR}"
 fi
