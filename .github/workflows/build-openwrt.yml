@@ -35,23 +35,21 @@ on:
 jobs:
   build:
     runs-on: ubuntu-18.04
-    # Always activate this job
-    # * You can change Line 3 to the following one to only build when push with '#build#'
-    #     && contains(github.event.head_commit.message, '#build#')
-    # * To build on schedule event, add OR condition:
-    #     github.event_name == 'schedule'
-    # * To build when YOU stars YOUR OWN project, add OR condition:
-    #     github.event_name == 'watch' && github.event.action == 'started' && github.event.repository.owner.id == github.event.sender.id
-    # For `github.event` structures, see: https://developer.github.com/v3/activity/events/types/
+    # For `github.event`'s structure, see: https://developer.github.com/v3/activity/events/types/
+    # Do not modify the trigger methods here, customize them in the `on` section
     if: |
       github.event_name == 'push'
       || github.event_name == 'repository_dispatch'
       || github.event_name == 'deployment'
+      || (github.event_name == 'watch' && github.event.action == 'started' && github.event.repository.owner.id == github.event.sender.id)
+      || github.event_name == 'schedule'
     name: ${{matrix.title}} ${{matrix.target}}
     strategy:
       fail-fast: false
       matrix:
         mode: [normal, test]
+        # ########### Add your target name below ###########
+        # E.g. target: [x86_64, wdr4310v1]
         target: [x86_64, wdr4310v1]
         include:
         - mode: normal
