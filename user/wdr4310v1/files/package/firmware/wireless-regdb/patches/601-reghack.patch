@@ -1,0 +1,96 @@
+--- a/db.txt
++++ b/db.txt
+@@ -1,21 +1,9 @@
+ # This is the world regulatory domain
+ country 00:
+-	(2402 - 2472 @ 40), (20)
+-	# Channel 12 - 13.
+-	(2457 - 2482 @ 20), (20), NO-IR, AUTO-BW
+-	# Channel 14. Only JP enables this and for 802.11b only
+-	(2474 - 2494 @ 20), (20), NO-IR, NO-OFDM
+-	# Channel 36 - 48
+-	(5170 - 5250 @ 80), (20), AUTO-BW
+-	# Channel 52 - 64
+-	(5250 - 5330 @ 80), (20), NO-IR, DFS, AUTO-BW
+-	# Channel 100 - 144
+-	(5490 - 5730 @ 160), (20), NO-IR, DFS
+-	# Channel 149 - 165
+-	(5735 - 5835 @ 80), (20), NO-IR
+-	# IEEE 802.11ad (60GHz), channels 1..3
+-	(57240 - 63720 @ 2160), (0)
+-
++	(2182 - 2742 @ 80), (30)
++	(4890 - 6110 @ 160), (30)
++	# IEEE 802.11ad (60GHz), channels 1..6
++	(57000 - 71000 @ 2160), (44)
+ 
+ country AD:
+ 	(2402 - 2482 @ 40), (20)
+@@ -276,16 +264,11 @@ country CL: DFS-JP
+ 	(5250 - 5330 @ 80), (20), DFS, AUTO-BW
+ 	(5735 - 5835 @ 80), (20)
+ 
+-country CN: DFS-FCC
+-	(2402 - 2482 @ 40), (30)
+-	(5170 - 5250 @ 80), (30), AUTO-BW
+-	(5250 - 5330 @ 80), (30), AUTO-BW
+-	(5735 - 5835 @ 80), (30)
+-	# 60 GHz band channels 1,4: 28dBm, channels 2,3: 44dBm
+-	# ref: http://www.miit.gov.cn/n11293472/n11505629/n11506593/n11960250/n11960606/n11960700/n12330791.files/n12330790.pdf
+-	(57240 - 59400 @ 2160), (28)
+-	(59400 - 63720 @ 2160), (44)
+-	(63720 - 65880 @ 2160), (28)
++country CN:
++	(2182 - 2742 @ 80), (30)
++	(4890 - 6110 @ 160), (30)
++	# IEEE 802.11ad (60GHz), channels 1..6
++	(57000 - 71000 @ 2160), (44)
+ 
+ country CO: DFS-FCC
+ 	(2402 - 2482 @ 40), (20)
+@@ -629,17 +612,11 @@ country JO: DFS-JP
+ 	(5170 - 5250 @ 80), (23)
+ 	(5735 - 5835 @ 80), (23)
+ 
+-country JP: DFS-JP
+-	(2402 - 2482 @ 40), (20)
+-	(2474 - 2494 @ 20), (20), NO-OFDM
+-	(4910 - 4990 @ 40), (23)
+-	(5030 - 5090 @ 40), (23)
+-	(5170 - 5250 @ 80), (20), AUTO-BW
+-	(5250 - 5330 @ 80), (20), DFS, AUTO-BW
+-	(5490 - 5710 @ 160), (23), DFS
+-	# 60 GHz band channels 2-4 at 10mW,
+-	# ref: http://www.arib.or.jp/english/html/overview/doc/1-STD-T74v1_1.pdf
+-	(59000 - 66000 @ 2160), (10 mW)
++country JP:
++	(2182 - 2742 @ 80), (30)
++	(4890 - 6110 @ 160), (30)
++	# IEEE 802.11ad (60GHz), channels 1..6
++	(57000 - 71000 @ 2160), (44)
+ 
+ country KE: DFS-JP
+ 	(2402 - 2482 @ 40), (20)
+@@ -1235,17 +1212,11 @@ country UG: DFS-FCC
+ 	(5490 - 5730 @ 160), (24), DFS
+ 	(5735 - 5835 @ 80), (30)
+ 
+-country US: DFS-FCC
+-	(2402 - 2472 @ 40), (30)
+-	# 5.15 ~ 5.25 GHz: 30 dBm for master mode, 23 dBm for clients
+-	(5170 - 5250 @ 80), (30), AUTO-BW
+-	(5250 - 5330 @ 80), (30), AUTO-BW
+-	(5490 - 5730 @ 160), (30)
+-	(5735 - 5835 @ 80), (30)
+-	# 60g band
+-	# reference: http://cfr.regstoday.com/47cfr15.aspx#47_CFR_15p255
+-	# channels 1,2,3, EIRP=40dBm(43dBm peak)
+-	(57240 - 63720 @ 2160), (40)
++country US:
++	(2182 - 2742 @ 80), (30)
++	(4890 - 6110 @ 160), (30)
++	# IEEE 802.11ad (60GHz), channels 1..6
++	(57000 - 71000 @ 2160), (44)
+ 
+ country UY: DFS-FCC
+ 	(2402 - 2482 @ 40), (20)

@@ -80,9 +80,9 @@ The building process generally takes **1.5~3 hours** depending on your config.
 4. Get your Docker Hub **personal access token**. Fill your username and the generated token into the forked repo's **Settings->Secrets** page. Use `docker_username` for your username, and `docker_password` for your token. See [Secrets page](#secrets-page) for correct settings.
 5. *(Optional, for debug)* Set `SLACK_WEBHOOK_URL` or `TMATE_ENCRYPT_PASSWORD` in the Secrets page. Refer to [Debug and manually configure](#debug-and-manually-configure).
 6. *(Optional)* Customize `.github/workflows/build-openwrt.yml` to **change builder's name and other options**.
-7. **Generate your `.config`** and rename it to `config.diff`. Put the file in the root dir of your forked repo.
+7. **Generate your `.config`** and rename it to `config.diff`. Put the file in the `user` dir of your forked repo.
 8. *(Optional)* Customize `scripts/update_feeds.sh` for **additional packages** you want to download.
-9. *(Optional)* Put any **patch** you want to `patches` dir. The patches are applied after `update_feeds.sh` and before `download.sh`.
+9. *(Optional)* Put any **patch** you want to `user/patches` dir. The patches are applied after `update_feeds.sh` and before `download.sh`.
 10. **Commit and push** your changes. This will automatically trigger an incremental building.
 11. Wait for `build-inc` job to finish.
 12. Collect your files in the `build-inc` job's `Artifacts` menu
@@ -95,9 +95,9 @@ The building process generally takes **1.5~3 hours** depending on your config.
 
 After the first-time building, you will only need the following steps to build your firmwares and packages when you change your config. The building process generally only takes **20 minutes ~ 1 hour** depending on how much your config has changed.
 
-1. *(Optional)* Modify your `config.diff` if you want.
+1. *(Optional)* Modify your `user/config.diff` if you want.
 2. *(Optional)* Customize `scripts/update_feeds.sh` for **additional packages** you want to download.
-3. *(Optional)* Put any **patch** you want to `patches` dir.
+3. *(Optional)* Put any **patch** you want to `user/patches` dir.
 4. Commit and push your changes. If you want to do `build-inc`, you don't need any special step. If you need `build-package`, you can include this string in your last commit message before push: `#build-package#`.
 5. Wait for `build-inc` or `build-package` to finish
 6. Collect your files in the `build-inc` or `build-package` job's "Artifacts" menu
@@ -216,7 +216,7 @@ I'll now explain here the detailed building process of each mode.
 2. `initenv.sh`, set up building environment only when `rebuild`.
 3. `update_repo.sh`. It will do `git clone` or `git pull` for main repo only when `update_repo` or `rebuild` option is set
 4. `update_feeds.sh`. It will download you manually added packages, and do `git pull` for existing packages only when `update_feeds` option is set.
-5. `customize.sh`. Apply patches only when a patch has not been already applied. Load `config.diff` to `.config`, execute `make defconfig`
+5. `customize.sh`. Apply patches only when a patch has not been already applied. Load `user/config.diff` to `.config`, execute `make defconfig`
 6. `download.sh`, download/update package source code that are not already downloaded
 7. `compile.sh`, Multi/single-thread compile
 8. Save this new builder to Docker Hub's `${BUILDER_NAME}:${BUILDER_TAG}-inc`. If `rebuild`, link it back to `${BUILDER_NAME}:${BUILDER_TAG}`
@@ -241,14 +241,14 @@ I'll now explain here the detailed building process of each mode.
 
 Thanks to [tmate](https://tmate.io/), you can enter into both the docker containers and GitHub Actions runners through SSH to debug and manually change your configuration, e.g. `make menuconfig`. To enter the mode, you have to enable the building option: `debug`. See [Manually trigger building and its options](#manually-trigger-building-and-its-options) for methods of using options.
 
-For safety of your sensitive information, you **must** either set `SLACK_WEBHOOK_URL` or `TMATE_ENCRYPT_PASSWORD` in the **Secrets** page to protect the tmate connection info. Refer to [tete1030/debugger-action/README.md](https://github.com/tete1030/debugger-action/blob/master/README.md) for details.
+For safety of your sensitive information, you **must** either set `SLACK_WEBHOOK_URL` or `TMATE_ENCRYPT_PASSWORD` in the **Secrets** page to protect the tmate connection info. Refer to [tete1030/safe-debugger-action/README.md](https://github.com/tete1030/safe-debugger-action/blob/master/README.md) for details.
 
 Note that the configuration changes you made should only be for **temporary use**. Though your changes in the docker container will be saved to Docker Hub, there are situations where you manual configuration may lost:
 1. The `rebuild` option is set to completely rebuild your base builder and rebase the incremental builder
 2. The `use_base` or `use_inc` option is set to rebase the incremental builder
-3. Some files will be overwriten during every building. For example, if you have executed `make menuconfig` in the container, the changes of the `.config` file will be saved. But during next building, the `config.diff` file in this repo will be copied to `.config`. This will overwrite your previous changes.
+3. Some files will be overwriten during every building. For example, if you have executed `make menuconfig` in the container, the changes of the `.config` file will be saved. But during next building, the `user/config.diff` file in this repo will be copied to `.config`. This will overwrite your previous changes.
 
-To make permanent changes, it is still recommended to use the `config.diff` file and other customization methods provided in this repo.
+To make permanent changes, it is still recommended to use the `user/config.diff` file and other customization methods provided in this repo.
 
 ## FAQs
 

@@ -1,5 +1,8 @@
-.github
+/.github
+.gitattributes
+.gitignore
 LICENSE
-README.md
-docker.sh
-imgs
+README*.md
+/scripts/host
+/imgs
+/user/current

@@ -1,0 +1,16 @@
+# For https://github.com/wei/pull
+# For automatic update by pull request
+# If you want automatic merge, set all "mergeMethod"s to "rebase"
+# WARNING: automatic merge may replace your existing settings or change their original behaviour
+#          USE AT YOUR OWN RISK!
+version: "1"
+rules:
+  - base: master
+    upstream: tete1030:master
+    mergeMethod: rebase
+  - base: sample
+    upstream: tete1030:sample
+    mergeMethod: rebase
+  - base: openwrt_official
+    upstream: tete1030:openwrt_official
+    mergeMethod: rebase
