@@ -1,5 +1,5 @@
---- package/z-last-build-packages/OpenClash/luci-app-openclash/files/usr/share/openclash/clash_version.sh
-+++ package/z-last-build-packages/OpenClash/luci-app-openclash/files/usr/share/openclash/clash_version.sh
+--- package/openwrt-packages/OpenClash/luci-app-openclash/files/usr/share/openclash/clash_version.sh
++++ package/openwrt-packages/OpenClash/luci-app-openclash/files/usr/share/openclash/clash_version.sh
 @@ -1,12 +1,11 @@
  #!/bin/sh
  CKTIME=$(date "+%Y-%m-%d-%H")
@@ -14,8 +14,8 @@
        rm -rf $LAST_OPVER
     fi
  fi
---- package/z-last-build-packages/OpenClash/luci-app-openclash/files/usr/share/openclash/openclash_core.sh
-+++ package/z-last-build-packages/OpenClash/luci-app-openclash/files/usr/share/openclash/openclash_core.sh
+--- package/openwrt-packages/OpenClash/luci-app-openclash/files/usr/share/openclash/openclash_core.sh
++++ package/openwrt-packages/OpenClash/luci-app-openclash/files/usr/share/openclash/openclash_core.sh
 @@ -11,10 +11,10 @@ CPU_MODEL=$(uci get openclash.config.core_version 2>/dev/null)
  if [ "$(/etc/openclash/clash -v 2>/dev/null |awk -F ' ' '{print $2}')" != "$(sed -n 1p /tmp/clash_last_version 2>/dev/null)" ] || [ -z "$(/etc/openclash/clash -v 2>/dev/null |awk -F ' ' '{print $2}')" ] || [ ! -f /etc/openclash/clash ]; then
     if [ "$CPU_MODEL" != 0 ]; then
