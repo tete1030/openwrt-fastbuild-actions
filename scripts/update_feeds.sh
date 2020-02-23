@@ -55,8 +55,8 @@ if [ -f "${BUILDER_TMP_DIR}/feeds.conf.bak" ]; then
   mv "${BUILDER_TMP_DIR}/feeds.conf.bak" "${OPENWRT_CUR_DIR}/feeds.conf" 
 fi
 
-PACKAGE_DIR="${OPENWRT_CUR_DIR}/package/openwrt-packages"
-mkdir -p "${PACKAGE_DIR}"
+PACKAGE_DIR="package/openwrt-packages"
+mkdir -p "${OPENWRT_CUR_DIR}/${PACKAGE_DIR}"
 
 # install_package PACKAGE_DIR GIT_URL REF
 install_package() {
@@ -64,20 +64,23 @@ install_package() {
     echo "Wrong arguments. Usage: install_package PACKAGE_DIR GIT_URL [REF]" >&2
     exit 1
   fi
-  PACKAGE_PATH="${PACKAGE_DIR}/${1}"
+  PACKAGE_NAME="${1}"
+  PACKAGE_URL="${2}"
+
+  PACKAGE_PATH="${PACKAGE_DIR}/${PACKAGE_NAME}"
   full_cur_package_path="${OPENWRT_CUR_DIR}/${PACKAGE_PATH}"
   full_compile_package_path="${OPENWRT_COMPILE_DIR}/${PACKAGE_PATH}"
   if [ -d "${full_cur_package_path}" ]; then
-    echo "Duplicated package: ${1}" >&2
+    echo "Duplicated package: ${PACKAGE_NAME}" >&2
     exit 1
   fi
   # Use previous git to preserve version
   if [ "x${full_cur_package_path}" != "x${full_compile_package_path}" ] && [ -d "${full_compile_package_path}/.git" ] && [ "x${OPT_UPDATE_FEEDS}" != "x1" ]; then
     git clone "${full_compile_package_path}" "${full_cur_package_path}"
-    git -C "${full_cur_package_path}" remote set-url origin "${2}"
+    git -C "${full_cur_package_path}" remote set-url origin "${PACKAGE_URL}"
     git -C "${full_cur_package_path}" fetch
   else
-    git clone "${2}" "${full_cur_package_path}"
+    git clone "${PACKAGE_URL}" "${full_cur_package_path}"
   fi
 
   if [ -n "${3}" ]; then
