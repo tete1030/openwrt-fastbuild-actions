@@ -36,6 +36,12 @@ compile() {
     )
 }
 
+echo "Executing pre_compile.sh"
+if [ -f "${BUILDER_PROFILE_DIR}/pre_compile.sh" ]; then
+    /bin/bash "${BUILDER_PROFILE_DIR}/pre_compile.sh"
+fi
+
+echo "Compiling..."
 if [ "x${OPT_PACKAGE_ONLY}" != "x1" ]; then
     compile
 else

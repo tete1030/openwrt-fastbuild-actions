@@ -60,7 +60,6 @@ fi
 echo "Executing custom.sh"
 if [ -f "${BUILDER_PROFILE_DIR}/custom.sh" ]; then
 (
-    set +eo pipefail
     cd "${OPENWRT_CUR_DIR}"
     /bin/bash "${BUILDER_PROFILE_DIR}/custom.sh"
 )
