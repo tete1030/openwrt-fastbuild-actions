@@ -164,6 +164,17 @@ jobs:
         TMATE_DOCKER_CONTAINER: ${{env.BUILDER_CONTAINER_ID}}
       uses: tete1030/safe-debugger-action@dev
 
+    - name: Prepare config file
+      if: env.SKIP_TARGET == '0'
+      run: |
+        . scripts/host/docker.sh
+        docker_exec "${BUILDER_CONTAINER_ID}" "${BUILDER_HOME_DIR}/scripts/config.sh"
+        if [ "x${OPT_UPLOAD_CONFIG}" = "x1" ]; then
+          set +eo pipefail
+          TERMBIN_URL="$( docker_exec -w "${OPENWRT_CUR_DIR}" "${BUILDER_CONTAINER_ID}" "${OPENWRT_CUR_DIR}/scripts/diffconfig.sh" | nc termbin.com 9999 )"
+          echo "Your config.diff can be downloaded at: ${TERMBIN_URL}"
+        fi
+
     - name: Download packages
       if: env.SKIP_TARGET == '0'
       run: |

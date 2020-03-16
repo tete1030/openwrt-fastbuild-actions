@@ -1,7 +1,11 @@
 #!/bin/bash
 
-# Copyright (c) 2019 P3TERX
-# From https://github.com/P3TERX/Actions-OpenWrt
+#=================================================
+# https://github.com/tete1030/openwrt-fastbuild-actions
+# Description: FAST building OpenWrt with Github Actions and Docker!
+# Lisence: MIT
+# Author: Texot
+#=================================================
 
 set -eo pipefail
 
@@ -13,6 +17,5 @@ fi
 [ "x${TEST}" != "x1" ] || exit 0
 
 cd "${OPENWRT_CUR_DIR}"
-make download -j8
-find dl -size -1024c -exec ls -l {} \;
-find dl -size -1024c -exec rm -f {} \;
+make defconfig
+make oldconfig

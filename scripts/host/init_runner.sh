@@ -50,8 +50,10 @@ _load_opt() {
 
 _append_docker_exec_env() {
   for env_name in "$@"; do
-    export DK_EXEC_ENVS="${DK_EXEC_ENVS} ${env_name}"
+    DK_EXEC_ENVS="${DK_EXEC_ENVS} ${env_name}"
   done
+  DK_EXEC_ENVS="$(tr ' ' '\n' <<< "${DK_EXEC_ENVS}" | sort -u | tr '\n' ' ')"
+  export DK_EXEC_ENVS
   _set_env DK_EXEC_ENVS
 }
 
@@ -59,7 +61,7 @@ _source_vars() {
   SOURCE_FILE="${1}"; shift
   SOURCE_VARS=( "$@" )
   # shellcheck disable=SC1090
-  eval "$(source "${SOURCE_FILE}"; for var_name in "${SOURCE_VARS[@]}"; do echo "${var_name}='${!var_name}'"; done )"
+  eval "$(source "${SOURCE_FILE}"; for var_name in "${SOURCE_VARS[@]}"; do echo "if [ -n '${!var_name}' ]; then ${var_name}='${!var_name}' ; fi"; done )"
 }
 
 # Fixed parameters, do not change the following values
@@ -105,11 +107,14 @@ if [ ! -f "${GITHUB_WORKSPACE}/user/current/config.diff" ]; then
 fi
 
 # Load settings
-SETTING_VARS=( BUILDER_NAME BUILDER_TAG REPO_URL REPO_BRANCH )
+NECESSARY_SETTING_VARS=( BUILDER_NAME BUILDER_TAG REPO_URL REPO_BRANCH )
+OPT_UPLOAD_CONFIG='1'
+SETTING_VARS=( "${NECESSARY_SETTING_VARS[@]}" OPT_UPLOAD_CONFIG )
+[ ! -f "${GITHUB_WORKSPACE}/user/default/settings.ini" ] || _source_vars "${GITHUB_WORKSPACE}/user/default/settings.ini" "${SETTING_VARS[@]}"
 _source_vars "${GITHUB_WORKSPACE}/user/current/settings.ini" "${SETTING_VARS[@]}"
-setting_missing_vars="$(_check_missing_vars "${SETTING_VARS[@]}")"
+setting_missing_vars="$(_check_missing_vars "${NECESSARY_SETTING_VARS[@]}")"
 if [ -n "${setting_missing_vars}" ]; then
-    echo "::error::Variables missing in 'user/default/settings.ini' or 'user/${BUILD_TARGET}/settings.ini': ${setting_missing_vars}"
+    echo "::error::Variables missing in 'user/default/settings.ini' and 'user/${BUILD_TARGET}/settings.ini': ${setting_missing_vars}"
     exit 1
 fi
 _set_env "${SETTING_VARS[@]}"
