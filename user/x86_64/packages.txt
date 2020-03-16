@@ -1,12 +1,16 @@
 # Customize here for any additional package you want to install
 # Packages will be put into 'package/openwrt-packages' dir
 # Note that to have it compiled, you also have to set its CONFIG_* options
-# The format is (PACKAGE_REF is optional, you can specify branch/tag/commit):
-# PACKAGE_NAME PACKAGE_GIT [PACKAGE_REF]
+# The format is:
+# PACKAGE_NAME PACKAGE_GIT [PACKAGE_REF] [PACKAGE_SUBDIR]
+# PACKAGE_REF is optional, you can specify branch/tag/commit
+# PACKAGE_SUBDIR is also optional, a subdir can be specified as the package
 # Examples:
 # mentohust https://github.com/KyleRicardo/MentoHUST-OpenWrt-ipk.git
 # luci-app-mentohust https://github.com/BoringCat/luci-app-mentohust.git 1db86057
+# syslog-ng-latest https://github.com/openwrt/packages.git master admin/syslog-ng
 
 mentohust https://github.com/KyleRicardo/MentoHUST-OpenWrt-ipk.git
 luci-app-mentohust https://github.com/BoringCat/luci-app-mentohust.git
 OpenClash https://github.com/vernesong/OpenClash.git
+syslog-ng-latest https://github.com/openwrt/packages.git master admin/syslog-ng
