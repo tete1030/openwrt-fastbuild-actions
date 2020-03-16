@@ -58,14 +58,17 @@ fi
 PACKAGE_DIR="package/openwrt-packages"
 mkdir -p "${OPENWRT_CUR_DIR}/${PACKAGE_DIR}"
 
-# install_package PACKAGE_DIR GIT_URL REF
+# install_package PACKAGE_DIR GIT_URL [REF] [SUBDIR]
 install_package() {
-  if (( $# < 2 || $# > 3 )); then
-    echo "Wrong arguments. Usage: install_package PACKAGE_DIR GIT_URL [REF]" >&2
+  if (( $# < 2 || $# > 4 )); then
+    echo "Wrong arguments. Usage: install_package PACKAGE_DIR GIT_URL [REF] [SUBDIR]" >&2
     exit 1
   fi
   PACKAGE_NAME="${1}"
   PACKAGE_URL="${2}"
+  PACKAGE_REF="${3}"
+  # Remove leading and trailing slashes
+  PACKAGE_SUBDIR="${4}" ; PACKAGE_SUBDIR="${PACKAGE_SUBDIR#/}" ; PACKAGE_SUBDIR="${PACKAGE_SUBDIR%/}"
 
   PACKAGE_PATH="${PACKAGE_DIR}/${PACKAGE_NAME}"
   full_cur_package_path="${OPENWRT_CUR_DIR}/${PACKAGE_PATH}"
@@ -74,17 +77,43 @@ install_package() {
     echo "Duplicated package: ${PACKAGE_NAME}" >&2
     exit 1
   fi
-  # Use previous git to preserve version
-  if [ "x${full_cur_package_path}" != "x${full_compile_package_path}" ] && [ -d "${full_compile_package_path}/.git" ] && [ "x${OPT_UPDATE_FEEDS}" != "x1" ]; then
-    git clone "${full_compile_package_path}" "${full_cur_package_path}"
-    git -C "${full_cur_package_path}" remote set-url origin "${PACKAGE_URL}"
-    git -C "${full_cur_package_path}" fetch
-  else
-    git clone "${PACKAGE_URL}" "${full_cur_package_path}"
-  fi
 
-  if [ -n "${3}" ]; then
-    git -C "${full_cur_package_path}" checkout "${3}"
+  echo "Installing custom package: $*"
+  if [ -z "${PACKAGE_SUBDIR}" ]; then
+    # Use previous git to preserve version
+    if [ "x${full_cur_package_path}" != "x${full_compile_package_path}" ] && [ -d "${full_compile_package_path}/.git" ] && [ "x${OPT_UPDATE_FEEDS}" != "x1" ]; then
+      git clone "${full_compile_package_path}" "${full_cur_package_path}"
+      git -C "${full_cur_package_path}" remote set-url origin "${PACKAGE_URL}"
+      git -C "${full_cur_package_path}" fetch
+    else
+      git clone "${PACKAGE_URL}" "${full_cur_package_path}"
+    fi
+
+    if [ -n "${PACKAGE_REF}" ]; then
+      git -C "${full_cur_package_path}" checkout "${PACKAGE_REF}"
+    fi
+  else
+    echo "Using subdir strategy"
+    # when using SUBDIR
+    # Use previous git to preserve version
+    if [ "x${full_cur_package_path}" != "x${full_compile_package_path}" ] && [ -d "${full_compile_package_path}/.git" ] && [ "x${OPT_UPDATE_FEEDS}" != "x1" ]; then
+      git clone "${full_compile_package_path}" "${full_cur_package_path}"
+    else
+      TMP_REPO="${BUILDER_TMP_DIR}/clonesubdir/${PACKAGE_NAME}"
+      rm -rf "${TMP_REPO}" || true
+      mkdir -p "$(dirname "${TMP_REPO}")" || true
+      git clone "${PACKAGE_URL}" "${TMP_REPO}"
+      if [ -n "${PACKAGE_REF}" ]; then
+        git -C "${TMP_REPO}" checkout "${PACKAGE_REF}"
+      fi
+      mkdir -p "${full_cur_package_path}"
+      rsync -aI --exclude=".git" "${TMP_REPO}/${PACKAGE_SUBDIR}/" "${full_cur_package_path}/"
+      rm -rf "${TMP_REPO}"
+      # Managing subdir by git to preserve version
+      git -C "${full_cur_package_path}" init
+      git -C "${full_cur_package_path}" add .
+      git -C "${full_cur_package_path}" commit -m "Initial commit for: install_package $*"
+    fi
   fi
 }
 
