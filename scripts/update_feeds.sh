@@ -112,7 +112,7 @@ install_package() {
       # Managing subdir by git to preserve version
       git -C "${full_cur_package_path}" init
       git -C "${full_cur_package_path}" add .
-      git -C "${full_cur_package_path}" commit -m "Initial commit for: install_package $*"
+      git -C "${full_cur_package_path}" -c user.name='OFA' -c user.email='builder@ofa' commit -m "Initial commit for ${PACKAGE_NAME}" -m "install_package $*"
     fi
   fi
 }

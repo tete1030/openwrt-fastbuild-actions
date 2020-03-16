@@ -14,7 +14,11 @@ if [ -z "${OPENWRT_COMPILE_DIR}" ] || [ -z "${OPENWRT_CUR_DIR}" ] || [ -z "${OPE
   exit 1
 fi
 
-[ "x${TEST}" != "x1" ] || exit 0
+if [ "x${TEST}" = "x1" ]; then
+    export OPENWRT_CUR_DIR="${OPENWRT_COMPILE_DIR}"
+    echo "::set-env name=OPENWRT_CUR_DIR::${OPENWRT_CUR_DIR}"
+    exit 0
+fi
 
 cp "${BUILDER_PROFILE_DIR}/config.diff" "${OPENWRT_CUR_DIR}/.config"
 
