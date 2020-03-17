@@ -55,49 +55,136 @@ if [ -f "${BUILDER_TMP_DIR}/feeds.conf.bak" ]; then
   mv "${BUILDER_TMP_DIR}/feeds.conf.bak" "${OPENWRT_CUR_DIR}/feeds.conf" 
 fi
 
-PACKAGE_DIR="package/openwrt-packages"
-mkdir -p "${OPENWRT_CUR_DIR}/${PACKAGE_DIR}"
+PACKAGE_DEFAULT_ROOT="package/openwrt-packages"
 
-# install_package PACKAGE_DIR GIT_URL [REF] [SUBDIR]
+# install_package PACKAGE_NAME GIT_URL [ref=REF] [root=ROOT] [subdir=SUBDIR] [rename=RENAME] [mkfile-dir=MKFILE_DIR] [use-latest-tag] [override]
+# REF is optional. You can specify branch/tag/commit
+# ROOT is optional. Specifying the parent path of your package. Defaults to 'package/openwrt-packages'.
+# SUBDIR is optional. The path of subdir within the repo can be specified
+# RENAME is optional. It allows renaming of PKG_NAME in Makefile of the package
+# MKFILE_DIR is optional. You can specify the dir of Makefile, only used when RENAME is specified.
+# 'use-latest-tag' will retrieve latest release as the REF. It shouldn't be specified together with REF. Currently only github repo is supported.
+# 'override' will delete packages that are already existed.
+#
+# Examples:
+# mentohust https://github.com/KyleRicardo/MentoHUST-OpenWrt-ipk.git
+# luci-app-mentohust https://github.com/BoringCat/luci-app-mentohust.git ref=1db86057
+# syslog-ng-latest https://github.com/openwrt/packages.git ref=master subdir=admin/syslog-ng rename=syslog-ng-latest
 install_package() {
-  if (( $# < 2 || $# > 4 )); then
-    echo "Wrong arguments. Usage: install_package PACKAGE_DIR GIT_URL [REF] [SUBDIR]" >&2
+  if (( $# < 2 )); then
+    echo "install_package: wrong arguments. Usage: install_package PACKAGE_NAME GIT_URL [ref=REF] [root=ROOT] [subdir=SUBDIR] [rename=RENAME] [mkfile-dir=MKFILE_DIR] [use-latest-tag] [override]" >&2
     exit 1
   fi
-  PACKAGE_NAME="${1}"
-  PACKAGE_URL="${2}"
-  PACKAGE_REF="${3}"
-  # Remove leading and trailing slashes
-  PACKAGE_SUBDIR="${4}" ; PACKAGE_SUBDIR="${PACKAGE_SUBDIR#/}" ; PACKAGE_SUBDIR="${PACKAGE_SUBDIR%/}"
+  ALL_PARAMS="$*"
+  PACKAGE_NAME="${1}"; shift;
+  PACKAGE_URL="${1}"; shift;
+  PACKAGE_REF=""
+  PACKAGE_ROOT="${PACKAGE_DEFAULT_ROOT}"
+  PACKAGE_SUBDIR=""
+  PACKAGE_RENAME=""
+  PACKAGE_MKFILE_DIR=""
+  USE_LATEST_TAG=0
+  OVERRIDE=0
 
-  PACKAGE_PATH="${PACKAGE_DIR}/${PACKAGE_NAME}"
+  if [ $# -eq 1 ] && [[ "${1}" != *"="* ]]; then
+    # fall back to original usage
+    PACKAGE_REF="${1}"
+  else
+    for para in "$@"; do
+      case "$para" in
+        ref=*) PACKAGE_REF="${para#ref=}" ;;
+        root=*)
+          PACKAGE_ROOT="${para#root=}"
+          PACKAGE_ROOT="${PACKAGE_ROOT##/}"
+          PACKAGE_ROOT="${PACKAGE_ROOT%%/}"
+          PACKAGE_ROOT="package/${PACKAGE_ROOT}"
+          ;;
+        subdir=*)
+          PACKAGE_SUBDIR="${para#subdir=}"
+          # Remove leading and trailing slashes
+          PACKAGE_SUBDIR="${PACKAGE_SUBDIR##/}"
+          PACKAGE_SUBDIR="${PACKAGE_SUBDIR%%/}"
+          ;;
+        rename=*) PACKAGE_RENAME="${para#rename=}" ;;
+        mkfile-dir=*) PACKAGE_MKFILE_DIR="${para#mkfile-dir=}" ;;
+        use-latest-tag) USE_LATEST_TAG=1 ;;
+        override) OVERRIDE=1 ;;
+        *)
+          echo "install_package: unknown parameter for install_package: $para" >&2
+          exit 1
+          ;;
+      esac
+    done
+  fi
+
+  if [ ${USE_LATEST_TAG} -eq 1 ]; then
+    if [ -n "${PACKAGE_REF}" ]; then
+      echo "install_package: 'use-latest-tag' should not be used together with 'ref'" >&2
+      exit 1
+    fi
+    repo_name=""
+    if [[ "${PACKAGE_URL}" =~ ^https?://github\.com/.*$ ]]; then
+      repo_name="$(perl -lne '/^https?:\/\/github\.com\/(.+?)\/(.+?)(?:\.git)?(?:\/.*)?$/ && print "$1/$2"' <<<"${PACKAGE_URL}")"
+    elif [[ "${PACKAGE_URL}" =~ ^git@github.com/.*$ ]]; then
+      repo_name="$(perl -lne '/^git\@github\.com:(.+?)\/(.+?)(?:\.git)?$/ && print "$1/$2"' <<<"${PACKAGE_URL}")"
+    fi
+    if [ -z "${repo_name}" ]; then
+      echo "install_package: unknown PACKAGE_URL for retrieving latest tag: ${PACKAGE_URL}" >&2
+      exit 1
+    fi
+    # We use /tags instead /releases because the /releases api is not consistent with its webpage, which lists all tags
+    set +eo pipefail
+    latest_tag="$( curl -sL --connect-timeout 10 --retry 5 "https://api.github.com/repos/${repo_name}/tags" 2>/dev/null | grep '"name":' | sed -E 's/.*"([^"]+)".*/\1/' | head -n 1 )"
+    set -eo pipefail
+    if [ -z "${latest_tag}" ]; then
+      echo "install_package: no latest tag found" >&2
+      exit 1
+    fi
+    echo "install_package: latest tag is ${latest_tag}"
+    PACKAGE_REF="${latest_tag}"
+  fi
+
+  [ -d "${OPENWRT_CUR_DIR}/${PACKAGE_ROOT}" ] || mkdir -p "${OPENWRT_CUR_DIR}/${PACKAGE_ROOT}"
+
+  PACKAGE_PATH="${PACKAGE_ROOT}/${PACKAGE_NAME}"
   full_cur_package_path="${OPENWRT_CUR_DIR}/${PACKAGE_PATH}"
   full_compile_package_path="${OPENWRT_COMPILE_DIR}/${PACKAGE_PATH}"
+
   if [ -d "${full_cur_package_path}" ]; then
-    echo "Duplicated package: ${PACKAGE_NAME}" >&2
-    exit 1
+    if [ $OVERRIDE -eq 1 ]; then
+      echo "install_package: removing existed package: ${PACKAGE_PATH}"
+      rm -rf "${full_cur_package_path}"
+    else
+      echo "install_package: package already exists: ${PACKAGE_PATH}" >&2
+      exit 1
+    fi
   fi
 
-  echo "Installing custom package: $*"
+  echo "install_package: installing custom package: ${ALL_PARAMS}"
   if [ -z "${PACKAGE_SUBDIR}" ]; then
     # Use previous git to preserve version
     if [ "x${full_cur_package_path}" != "x${full_compile_package_path}" ] && [ -d "${full_compile_package_path}/.git" ] && [ "x${OPT_UPDATE_FEEDS}" != "x1" ]; then
       git clone "${full_compile_package_path}" "${full_cur_package_path}"
       git -C "${full_cur_package_path}" remote set-url origin "${PACKAGE_URL}"
       git -C "${full_cur_package_path}" fetch
+      if [ -n "${PACKAGE_REF}" ]; then
+        echo "install_package: PACKAGE_REF is not respected as 'update_feeds' is not enabled"
+      fi
     else
       git clone "${PACKAGE_URL}" "${full_cur_package_path}"
-    fi
-
-    if [ -n "${PACKAGE_REF}" ]; then
-      git -C "${full_cur_package_path}" checkout "${PACKAGE_REF}"
+      if [ -n "${PACKAGE_REF}" ]; then
+        git -C "${full_cur_package_path}" checkout "${PACKAGE_REF}"
+      fi
     fi
   else
-    echo "Using subdir strategy"
+    echo "install_package: using subdir strategy"
     # when using SUBDIR
     # Use previous git to preserve version
     if [ "x${full_cur_package_path}" != "x${full_compile_package_path}" ] && [ -d "${full_compile_package_path}/.git" ] && [ "x${OPT_UPDATE_FEEDS}" != "x1" ]; then
       git clone "${full_compile_package_path}" "${full_cur_package_path}"
+      if [ -n "${PACKAGE_REF}" ]; then
+        echo "install_package: PACKAGE_REF is not respected as 'update_feeds' is not enabled"
+      fi
     else
       TMP_REPO="${BUILDER_TMP_DIR}/clonesubdir/${PACKAGE_NAME}"
       rm -rf "${TMP_REPO}" || true
@@ -112,16 +199,28 @@ install_package() {
       # Managing subdir by git to preserve version
       git -C "${full_cur_package_path}" init
       git -C "${full_cur_package_path}" add .
-      git -C "${full_cur_package_path}" -c user.name='OFA' -c user.email='builder@ofa' commit -m "Initial commit for ${PACKAGE_NAME}" -m "install_package $*"
+      git -C "${full_cur_package_path}" -c user.name='OFA' -c user.email='builder@ofa' commit -m "Initial commit for ${PACKAGE_NAME}" -m "install_package ${ALL_PARAMS}"
     fi
+  fi
+
+  # rename PKG_NAME in Makefile
+  if [ -n "${PACKAGE_RENAME}" ]; then
+    PACKAGE_MKFILE_DIR="${PACKAGE_MKFILE_DIR##/}" ; PACKAGE_MKFILE_DIR="${PACKAGE_MKFILE_DIR%%/}"
+    package_mkfile="Makefile"
+    if [ -n "${PACKAGE_MKFILE_DIR}" ]; then
+      package_mkfile="${PACKAGE_MKFILE_DIR}/${package_mkfile}"
+    fi
+    package_mkfile="${full_cur_package_path}/${package_mkfile}"
+    PACKAGE_RENAME_ESCAPED="$(sed 's/[\/&]/\\&/g' <<<"${PACKAGE_NAME}")"
+    sed -i 's/^PKG_NAME:\?=.*$/PKG_NAME:='"${PACKAGE_RENAME_ESCAPED}"'/' "${package_mkfile}"
   fi
 }
 
 if [ -f "${BUILDER_PROFILE_DIR}/packages.txt" ]; then
   while IFS= read -r line; do
     if [ -n "${line// }" ] && [[ ! "${line}" =~ ^[[:blank:]]*\# ]] ; then
-      # shellcheck disable=SC2086
-      install_package ${line}
+      # 'eval' can help evaluate parameter quotes
+      eval "install_package ${line}"
     fi
   done <"${BUILDER_PROFILE_DIR}/packages.txt"
 fi
