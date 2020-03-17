@@ -86,36 +86,31 @@ install_package() {
   USE_LATEST_TAG=0
   OVERRIDE=0
 
-  if [ $# -eq 1 ] && [[ "${1}" != *"="* ]]; then
-    # fall back to original usage
-    PACKAGE_REF="${1}"
-  else
-    for para in "$@"; do
-      case "$para" in
-        ref=*) PACKAGE_REF="${para#ref=}" ;;
-        root=*)
-          PACKAGE_ROOT="${para#root=}"
-          PACKAGE_ROOT="${PACKAGE_ROOT##/}"
-          PACKAGE_ROOT="${PACKAGE_ROOT%%/}"
-          PACKAGE_ROOT="package/${PACKAGE_ROOT}"
-          ;;
-        subdir=*)
-          PACKAGE_SUBDIR="${para#subdir=}"
-          # Remove leading and trailing slashes
-          PACKAGE_SUBDIR="${PACKAGE_SUBDIR##/}"
-          PACKAGE_SUBDIR="${PACKAGE_SUBDIR%%/}"
-          ;;
-        rename=*) PACKAGE_RENAME="${para#rename=}" ;;
-        mkfile-dir=*) PACKAGE_MKFILE_DIR="${para#mkfile-dir=}" ;;
-        use-latest-tag) USE_LATEST_TAG=1 ;;
-        override) OVERRIDE=1 ;;
-        *)
-          echo "install_package: unknown parameter for install_package: $para" >&2
-          exit 1
-          ;;
-      esac
-    done
-  fi
+  for para in "$@"; do
+    case "$para" in
+      ref=*) PACKAGE_REF="${para#ref=}" ;;
+      root=*)
+        PACKAGE_ROOT="${para#root=}"
+        PACKAGE_ROOT="${PACKAGE_ROOT##/}"
+        PACKAGE_ROOT="${PACKAGE_ROOT%%/}"
+        PACKAGE_ROOT="package/${PACKAGE_ROOT}"
+        ;;
+      subdir=*)
+        PACKAGE_SUBDIR="${para#subdir=}"
+        # Remove leading and trailing slashes
+        PACKAGE_SUBDIR="${PACKAGE_SUBDIR##/}"
+        PACKAGE_SUBDIR="${PACKAGE_SUBDIR%%/}"
+        ;;
+      rename=*) PACKAGE_RENAME="${para#rename=}" ;;
+      mkfile-dir=*) PACKAGE_MKFILE_DIR="${para#mkfile-dir=}" ;;
+      use-latest-tag) USE_LATEST_TAG=1 ;;
+      override) OVERRIDE=1 ;;
+      *)
+        echo "install_package: unknown parameter for install_package: $para" >&2
+        exit 1
+        ;;
+    esac
+  done
 
   if [ ${USE_LATEST_TAG} -eq 1 ]; then
     if [ -n "${PACKAGE_REF}" ]; then
