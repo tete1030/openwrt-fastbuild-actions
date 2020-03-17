@@ -8,12 +8,14 @@
  START=80
  
  start_instance() {
-@@ -12,22 +13,26 @@ start_instance() {
+@@ -12,24 +13,27 @@ start_instance() {
  	config_get poll "$section" 'poll'
  	config_get_bool enabled "$section" 'enabled' '1'
  
 -	[ "$enabled" = 1 ] || exit 0
 -
+-	export HOME=/root
+-	export AUTOSSH_PATH=ssh
 -	export AUTOSSH_GATETIME="${gatetime:-30}"
 -	export AUTOSSH_POLL="${poll:-600}"
 -	service_start /usr/sbin/autossh -M ${monitorport:-20000} -f ${ssh}
@@ -27,6 +29,7 @@
 +		procd_set_param command /usr/sbin/autossh -M ${monitorport:-20000} ${ssh}
 +		procd_set_param env AUTOSSH_GATETIME="${gatetime:-30}"
 +		procd_set_param env AUTOSSH_POLL="${poll:-600}"
++		procd_set_param env AUTOSSH_PATH="ssh"
 +		procd_set_param env HOME="/root"
 +		procd_set_param file /etc/config/autossh
 +		procd_set_param stdout 1 # forward stdout of the command to logd
