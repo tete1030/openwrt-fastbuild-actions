@@ -102,7 +102,11 @@ install_package() {
         PACKAGE_SUBDIR="${PACKAGE_SUBDIR%%/}"
         ;;
       rename=*) PACKAGE_RENAME="${para#rename=}" ;;
-      mkfile-dir=*) PACKAGE_MKFILE_DIR="${para#mkfile-dir=}" ;;
+      mkfile-dir=*)
+        PACKAGE_MKFILE_DIR="${para#mkfile-dir=}"
+        PACKAGE_MKFILE_DIR="${PACKAGE_MKFILE_DIR##/}"
+        PACKAGE_MKFILE_DIR="${PACKAGE_MKFILE_DIR%%/}"
+        ;;
       use-latest-tag) USE_LATEST_TAG=1 ;;
       override) OVERRIDE=1 ;;
       *)
@@ -200,13 +204,17 @@ install_package() {
 
   # rename PKG_NAME in Makefile
   if [ -n "${PACKAGE_RENAME}" ]; then
-    PACKAGE_MKFILE_DIR="${PACKAGE_MKFILE_DIR##/}" ; PACKAGE_MKFILE_DIR="${PACKAGE_MKFILE_DIR%%/}"
     package_mkfile="Makefile"
     if [ -n "${PACKAGE_MKFILE_DIR}" ]; then
       package_mkfile="${PACKAGE_MKFILE_DIR}/${package_mkfile}"
     fi
     package_mkfile="${full_cur_package_path}/${package_mkfile}"
-    PACKAGE_RENAME_ESCAPED="$(sed 's/[\/&]/\\&/g' <<<"${PACKAGE_NAME}")"
+    echo "install_package: renaming PKG_NAME to ${PACKAGE_RENAME} in ${package_mkfile}"
+    if [ ! -f "${package_mkfile}" ]; then
+      echo "install_package: ${package_mkfile} not found" >&2
+      exit 1
+    fi
+    PACKAGE_RENAME_ESCAPED="$(sed 's/[\/&]/\\&/g' <<<"${PACKAGE_RENAME}")"
     sed -i 's/^PKG_NAME:\?=.*$/PKG_NAME:='"${PACKAGE_RENAME_ESCAPED}"'/' "${package_mkfile}"
   fi
 }
