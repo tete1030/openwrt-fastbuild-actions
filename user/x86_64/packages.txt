@@ -19,4 +19,4 @@
 mentohust https://github.com/KyleRicardo/MentoHUST-OpenWrt-ipk.git
 luci-app-mentohust https://github.com/BoringCat/luci-app-mentohust.git
 OpenClash https://github.com/vernesong/OpenClash.git use-latest-tag
-syslog-ng https://github.com/openwrt/packages.git ref=master root=feeds/packages/admin subdir=admin/syslog-ng rename=syslog-ng-latest override
+syslog-ng https://github.com/openwrt/packages.git ref=master root=feeds/packages subdir=admin/syslog-ng rename=syslog-ng-latest override
