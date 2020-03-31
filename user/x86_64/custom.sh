@@ -16,4 +16,8 @@ CONFIG_NETPOLL=y
 CONFIG_NET_POLL_CONTROLLER=y
 " >> "${KERNEL_CONFIG_FILE}"
 
+rm target/linux/generic/pending-4.9/616-net_optimize_xfrm_calls.patch
+rm target/linux/generic/pending-4.14/616-net_optimize_xfrm_calls.patch
+rm target/linux/generic/pending-4.19/616-net_optimize_xfrm_calls.patch
+
 echo "Kernel config for NetConsole added"
