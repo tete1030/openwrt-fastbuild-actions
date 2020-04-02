@@ -1,0 +1,19 @@
+# Customize here for any additional package you want to install
+# Packages will be put into 'package/openwrt-packages' dir
+# Note that to have it compiled, you also have to set its CONFIG_* options
+# The format is:
+# PACKAGE_NAME PACKAGE_GIT [ref=REF] [root=ROOT] [subdir=SUBDIR] [rename=RENAME] [mkfile-dir=MKFILE_DIR] [use-latest-tag] [override]
+# REF is optional. You can specify branch/tag/commit
+# ROOT is optional. Specifying the parent path under 'package/' of this package. Defaults to 'openwrt-packages'.
+# SUBDIR is optional. The path of subdir within the repo can be specified
+# RENAME is optional. It allows renaming of PKG_NAME in Makefile of the package
+# MKFILE_DIR is optional. You can specify the dir of Makefile, only used when RENAME is specified.
+# 'use-latest-tag' will retrieve latest release as the REF. It shouldn't be specified together with REF. Currently only github repo is supported.
+# 'override' will delete packages that are already existed.
+#
+# Examples:
+# mentohust https://github.com/KyleRicardo/MentoHUST-OpenWrt-ipk.git
+# luci-app-mentohust https://github.com/BoringCat/luci-app-mentohust.git ref=1db86057
+# syslog-ng https://github.com/openwrt/packages.git ref=master root=feeds/packages/admin subdir=admin/syslog-ng override
+
+syslog-ng https://github.com/openwrt/packages.git ref=master root=feeds/packages subdir=admin/syslog-ng override

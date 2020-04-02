@@ -22,14 +22,18 @@ define Package/libJudy
 	URL:=http://judy.sourceforge.net/
 endef
 
+LBITS = $(shell $(TARGET_CC) -dM -E - </dev/null | grep -q "__LP64__" && echo 64 || echo 32)
+
+ifeq ($(LBITS),64)
+	CFLAGS_64= -DJU_64BIT
+else
+	CFLAGS_64= -UJU_64BIT
+endif
+TARGET_CFLAGS+= $(CFLAGS_64)
 
 MAKE_FLAGS += \
         HOSTCC="$(HOSTCC)" \
-        HOST_CFLAGS="-DJU_64BIT -m64 $(HOST_CFLAGS)"
-
-define Build/Configure
-	$(call Build/Configure/Default,--prefix=/usr --enable-64-bit)
-endef
+        HOST_CFLAGS="$(HOST_CFLAGS) $(CFLAGS_64)"
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include

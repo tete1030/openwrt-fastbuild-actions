@@ -1,0 +1,112 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+
+CONFIGFS_PATH="/sys/kernel/config"
+NETCONSOLE_CONFIGFS_PATH="${CONFIGFS_PATH}/netconsole"
+all_targets=" "
+
+start_instance() {
+	# enabled		Is this target currently enabled?
+	# extended		Extended mode enabled
+	# dev_name		Local network interface name
+	# local_port	Source UDP port to use
+	# remote_port	Remote agent's UDP port
+	# local_ip		Source IP address to use
+	# remote_ip		Remote agent's IP address
+	# remote_mac	Remote agent's MAC address
+	local target_name="$1"
+	local target_dir="${NETCONSOLE_CONFIGFS_PATH}/${target_name}"
+	local all_params="local_ip local_port dev_name remote_ip remote_port remote_mac extended"
+	local enabled
+	config_get_bool	enabled		"$1"	'enabled'	'1'
+	all_targets="${all_targets}${target_name} "
+
+	local local_ip
+	local local_port
+	local dev_name
+	local remote_ip
+	local remote_port
+	local remote_mac
+	local extended
+	config_get	local_ip	"$1"	'local_ip'		'0.0.0.0'
+	config_get	local_port	"$1"	'local_port'	'6665'
+	config_get	dev_name	"$1"	'dev_name'		'eth0'
+	config_get	remote_ip	"$1"	'remote_ip'		'0.0.0.0'
+	config_get	remote_port	"$1"	'remote_port'	'6666'
+	config_get	remote_mac	"$1"	'remote_mac'	'ff:ff:ff:ff:ff:ff'
+	config_get_bool	extended	"$1"	'extended'	'0'
+
+	test -d "${target_dir}" || (
+		echo "Creating target: ${target_name}"
+		mkdir "${target_dir}"
+	)
+	(
+		cd "${target_dir}"
+		local enabled_state="$(test -f enabled && cat enabled)"
+		local pv
+		local pev
+		for pn in $all_params ; do
+			pv="$(eval "echo -n \"\${$pn}\"")"
+			pev="$(test ! -f "${pn}" || cat "${pn}")"
+			if [ "x${pv}" != "x${pev}" ]; then
+				if [ "x${enabled_state}" != "x0" ]; then
+					echo 0 > enabled
+					enabled_state=0
+					echo "Updating target: ${target_name}"
+				fi
+				echo -e "\tUpdating ${pn} from ${pev} to ${pv}"
+				echo "${pv}" > "${pn}"
+			fi
+		done
+		[ "x${enabled_state}" = "x${enabled}" ] || (
+			test "x${enabled}" = "x1" && echo -e "\tEnabling" || echo -e "\tDisabling"
+			echo "${enabled}" > enabled
+		)
+	)
+}
+
+reload() {
+	echo "Reloading"
+	start
+}
+
+start() {
+	modprobe configfs 2>/dev/null
+	modprobe netconsole 2>/dev/null
+	mountpoint -q "${CONFIGFS_PATH}" || mount none -t configfs "${CONFIGFS_PATH}"
+	test -d "${NETCONSOLE_CONFIGFS_PATH}" || mkdir "${NETCONSOLE_CONFIGFS_PATH}"
+	all_targets=" "
+
+	config_load 'netconsole'
+	config_foreach start_instance 'netconsole'
+
+	local target
+	for target_path in "${NETCONSOLE_CONFIGFS_PATH}"/* ; do
+		target="$(basename "${target_path}")"
+		if echo -n "${all_targets}" | grep -Fqe " ${target} " ; then
+			true
+		else
+			echo "Removing old target: ${target}"
+			stop_instance "${target}"
+		fi
+	done
+}
+
+stop_instance() {
+	local target="${1}"
+	local target_path="${NETCONSOLE_CONFIGFS_PATH}/${target}"
+	if [ -n "${target_path}" ] && [ -d "${target_path}" ]; then
+		[ "x$(cat "${target_path}/enabled")" = "x0" ] || echo 0 > "${target_path}/enabled"
+		rmdir "${target_path}"
+	fi
+}
+
+stop() {
+	local target
+	for target_path in "${NETCONSOLE_CONFIGFS_PATH}"/* ; do
+		target="$(basename "${target_path}")"
+		echo "Removing target: ${target}"
+		stop_instance "${target}"
+	done
+}

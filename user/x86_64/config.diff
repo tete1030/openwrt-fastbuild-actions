@@ -31,29 +31,17 @@ CONFIG_KERNEL_PERF_EVENTS=y
 CONFIG_KERNEL_PID_NS=y
 CONFIG_KERNEL_USER_NS=y
 CONFIG_KERNEL_UTS_NS=y
-CONFIG_LIBCURL_COOKIES=y
-CONFIG_LIBCURL_FILE=y
-CONFIG_LIBCURL_FTP=y
-CONFIG_LIBCURL_HTTP=y
-CONFIG_LIBCURL_NO_SMB="!"
-CONFIG_LIBCURL_OPENSSL=y
-CONFIG_LIBCURL_PROXY=y
 CONFIG_MAKE_TOOLCHAIN=y
 CONFIG_NODEJS_ICU_NONE=y
 CONFIG_PACKAGE_TAR_BZIP2=y
 CONFIG_PACKAGE_TAR_GZIP=y
 CONFIG_PACKAGE_TAR_XZ=y
 CONFIG_PACKAGE_acl=y
-# CONFIG_PACKAGE_adbyby is not set
-CONFIG_PACKAGE_aria2=y
 CONFIG_PACKAGE_ariang=y
 CONFIG_PACKAGE_atftp=m
 CONFIG_PACKAGE_atftpd=m
 CONFIG_PACKAGE_attr=y
-# CONFIG_PACKAGE_autosamba is not set
-CONFIG_PACKAGE_autossh=m
 CONFIG_PACKAGE_avahi-dbus-daemon=y
-CONFIG_PACKAGE_bash=y
 CONFIG_PACKAGE_boost-chrono=y
 CONFIG_PACKAGE_boost-date_time=m
 CONFIG_PACKAGE_boost-program_options=m
@@ -61,22 +49,12 @@ CONFIG_PACKAGE_boost-random=y
 CONFIG_PACKAGE_btrfs-progs=y
 CONFIG_PACKAGE_bzip2=y
 CONFIG_PACKAGE_ca-bundle=y
-CONFIG_PACKAGE_cfdisk=m
 CONFIG_PACKAGE_cgroupfs-mount=y
 CONFIG_PACKAGE_containerd=y
-CONFIG_PACKAGE_curl=y
 CONFIG_PACKAGE_dbus=y
 CONFIG_PACKAGE_diffutils=m
-CONFIG_PACKAGE_dmesg=y
-CONFIG_PACKAGE_docker-ce=y
-CONFIG_PACKAGE_fping=y
-CONFIG_PACKAGE_git=m
 CONFIG_PACKAGE_glib2=m
-CONFIG_PACKAGE_hdparm=m
 CONFIG_PACKAGE_icu=y
-CONFIG_PACKAGE_iperf=m
-CONFIG_PACKAGE_iperf3=m
-CONFIG_PACKAGE_iperf3-ssl=m
 CONFIG_PACKAGE_ipt2socks=m
 CONFIG_PACKAGE_iptables-mod-extra=y
 CONFIG_PACKAGE_kmod-br-netfilter=y
@@ -98,7 +76,6 @@ CONFIG_PACKAGE_kmod-sched-connmark=m
 CONFIG_PACKAGE_kmod-usb-printer=y
 CONFIG_PACKAGE_kmod-veth=y
 CONFIG_PACKAGE_krb5-libs=y
-CONFIG_PACKAGE_libJudy=m
 CONFIG_PACKAGE_libacl=y
 CONFIG_PACKAGE_libaio=y
 CONFIG_PACKAGE_libatomic=y
@@ -108,7 +85,6 @@ CONFIG_PACKAGE_libavahi-dbus-support=y
 CONFIG_PACKAGE_libbz2=y
 CONFIG_PACKAGE_libcap=y
 CONFIG_PACKAGE_libcares=y
-CONFIG_PACKAGE_libcurl=y
 CONFIG_PACKAGE_libdaemon=y
 CONFIG_PACKAGE_libdb47=y
 CONFIG_PACKAGE_libdbus=y
@@ -147,47 +123,19 @@ CONFIG_PACKAGE_libunwind=m
 CONFIG_PACKAGE_libuv=y
 CONFIG_PACKAGE_libxml2=y
 CONFIG_PACKAGE_libzstd=y
-CONFIG_PACKAGE_logrotate=y
-# CONFIG_PACKAGE_luci-app-adbyby-plus is not set
-CONFIG_PACKAGE_luci-app-aria2=y
-CONFIG_PACKAGE_luci-app-mentohust=m
-CONFIG_PACKAGE_luci-app-netdata=m
-CONFIG_PACKAGE_luci-app-nft-qos=m
-CONFIG_PACKAGE_luci-app-openclash=m
-CONFIG_PACKAGE_luci-app-qbittorrent=m
-CONFIG_PACKAGE_luci-app-qos=m
-# CONFIG_PACKAGE_luci-app-samba is not set
-CONFIG_PACKAGE_luci-app-samba4=y
 CONFIG_PACKAGE_luci-app-shadowsocks-libev=m
 CONFIG_PACKAGE_luci-app-ssr-plus=m
-# CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_V2ray is not set
-CONFIG_PACKAGE_luci-app-transmission=y
-# CONFIG_PACKAGE_luci-app-unblockneteasemusic-mini is not set
-CONFIG_PACKAGE_luci-app-usb-printer=y
-# CONFIG_PACKAGE_luci-app-v2ray-server is not set
-# CONFIG_PACKAGE_luci-app-vlmcsd is not set
-# CONFIG_PACKAGE_luci-app-xlnetacc is not set
-CONFIG_PACKAGE_luci-app-zerotier=m
 CONFIG_PACKAGE_luci-i18n-aria2-zh-cn=y
 CONFIG_PACKAGE_luci-i18n-netdata-zh-cn=m
 CONFIG_PACKAGE_luci-i18n-nft-qos-zh-cn=m
-CONFIG_PACKAGE_luci-i18n-qbittorrent-zh-cn=m
 CONFIG_PACKAGE_luci-i18n-qos-zh-cn=m
 CONFIG_PACKAGE_luci-i18n-samba4-zh-cn=y
 CONFIG_PACKAGE_luci-i18n-transmission-zh-cn=y
 CONFIG_PACKAGE_luci-i18n-usb-printer-zh-cn=y
 CONFIG_PACKAGE_luci-i18n-zerotier-zh-cn=m
 CONFIG_PACKAGE_luci-theme-argon=m
-CONFIG_PACKAGE_mentohust=m
 CONFIG_PACKAGE_mount-utils=y
-CONFIG_PACKAGE_netcat=y
-CONFIG_PACKAGE_netdata=m
-CONFIG_PACKAGE_nft-qos=m
-CONFIG_PACKAGE_nftables=m
 CONFIG_PACKAGE_nmap-ssl=m
-CONFIG_PACKAGE_node=y
-CONFIG_PACKAGE_node-npm=m
-CONFIG_PACKAGE_nping=m
 CONFIG_PACKAGE_openwrt-keyring=y
 CONFIG_PACKAGE_p910nd=y
 CONFIG_PACKAGE_pixman=m
@@ -233,62 +181,27 @@ CONFIG_PACKAGE_python3-sqlite3=m
 CONFIG_PACKAGE_python3-unittest=m
 CONFIG_PACKAGE_python3-urllib=m
 CONFIG_PACKAGE_python3-xml=m
-CONFIG_PACKAGE_qBittorrent=m
-CONFIG_PACKAGE_qemu-bridge-helper=m
-CONFIG_PACKAGE_qemu-firmware-efi=m
-CONFIG_PACKAGE_qemu-firmware-pxe=m
-CONFIG_PACKAGE_qemu-firmware-seabios=m
-CONFIG_PACKAGE_qemu-firmware-seavgabios=m
-CONFIG_PACKAGE_qemu-keymaps=m
-CONFIG_PACKAGE_qemu-x86_64-softmmu=m
 CONFIG_PACKAGE_qos-scripts=m
 CONFIG_PACKAGE_qt5-core=y
 CONFIG_PACKAGE_qt5-network=y
 CONFIG_PACKAGE_qt5-xml=y
 CONFIG_PACKAGE_rblibtorrent=y
 CONFIG_PACKAGE_rrdtool1=m
-CONFIG_PACKAGE_rsync=y
-CONFIG_PACKAGE_rsyncd=y
-CONFIG_PACKAGE_rsyslog=y
 CONFIG_PACKAGE_runc=y
-# CONFIG_PACKAGE_samba36-server is not set
-CONFIG_PACKAGE_samba4-libs=y
-CONFIG_PACKAGE_samba4-server=y
 CONFIG_PACKAGE_shadowsocksr-libev-alt=m
 CONFIG_PACKAGE_shadowsocksr-libev-server=m
 CONFIG_PACKAGE_shadowsocksr-libev-ssr-local=m
 CONFIG_PACKAGE_simple-obfs=m
-CONFIG_PACKAGE_strace=m
-CONFIG_PACKAGE_syslog-ng=m
-CONFIG_PACKAGE_tar=y
-CONFIG_PACKAGE_tcpdump=y
 CONFIG_PACKAGE_tini=y
-CONFIG_PACKAGE_tmux=y
-CONFIG_PACKAGE_transmission-daemon-openssl=y
-CONFIG_PACKAGE_transmission-web-control=y
 CONFIG_PACKAGE_trojan=m
 CONFIG_PACKAGE_uclibcxx=m
 CONFIG_PACKAGE_usign=y
 # CONFIG_PACKAGE_v2ray is not set
 CONFIG_PACKAGE_v2ray-plugin=m
-CONFIG_PACKAGE_vim-full=y
 # CONFIG_PACKAGE_vlmcsd is not set
 CONFIG_PACKAGE_xz=y
 CONFIG_PACKAGE_xz-utils=y
-CONFIG_PACKAGE_zerotier=m
-CONFIG_PACKAGE_zsh=y
-CONFIG_QEMU_UI_VNC=y
-CONFIG_QEMU_UI_VNC_JPEG=y
-CONFIG_QEMU_UI_VNC_PNG=y
-CONFIG_RSYNC_acl=y
-CONFIG_RSYNC_xattr=y
-CONFIG_RSYNC_zlib=y
-CONFIG_SAMBA4_SERVER_AVAHI=y
-CONFIG_SAMBA4_SERVER_NETBIOS=y
-CONFIG_SAMBA4_SERVER_VFS=y
-CONFIG_SAMBA4_SERVER_VFSX=y
 CONFIG_SDK=y
-CONFIG_SIGNED_PACKAGES=y
 CONFIG_SQLITE_FTS3=y
 CONFIG_SQLITE_RTREE=y
 CONFIG_PACKAGE_coreutils=y
@@ -307,4 +220,85 @@ CONFIG_PACKAGE_libmbedtls=y
 CONFIG_PACKAGE_libmnl=y
 CONFIG_PACKAGE_libsodium=y
 CONFIG_PACKAGE_shadowsocks-libev-ss-redir=y
-# CONFIG_SIGNATURE_CHECK is not set
+CONFIG_SIGNED_PACKAGES=y
+CONFIG_SIGNATURE_CHECK=y
+# CONFIG_PACKAGE_luci-app-samba is not set
+# CONFIG_PACKAGE_luci-app-unblockneteasemusic is not set
+# CONFIG_PACKAGE_adbyby is not set
+# CONFIG_PACKAGE_luci-app-adbyby-plus is not set
+# CONFIG_PACKAGE_autosamba is not set
+# CONFIG_PACKAGE_samba36-server is not set
+# CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_V2ray is not set
+# CONFIG_PACKAGE_luci-app-unblockneteasemusic-mini is not set
+# CONFIG_PACKAGE_luci-app-v2ray-server is not set
+# CONFIG_PACKAGE_luci-app-vlmcsd is not set
+# CONFIG_PACKAGE_luci-app-xlnetacc is not set
+# CONFIG_PACKAGE_qBittorrent is not set
+# CONFIG_PACKAGE_luci-app-qbittorrent is not set
+# CONFIG_PACKAGE_luci-app-mentohust is not set
+# CONFIG_PACKAGE_mentohust is not set
+CONFIG_PACKAGE_luci-app-netdata=m
+CONFIG_PACKAGE_luci-app-nft-qos=m
+CONFIG_PACKAGE_logrotate=y
+CONFIG_PACKAGE_netconsole=y
+CONFIG_PACKAGE_luci-app-openclash=y
+CONFIG_PACKAGE_luci-app-zerotier=y
+CONFIG_PACKAGE_zerotier=y
+CONFIG_PACKAGE_iperf3-ssl=y
+CONFIG_PACKAGE_hdparm=y
+CONFIG_PACKAGE_fping=y
+CONFIG_PACKAGE_luci-app-aria2=y
+CONFIG_PACKAGE_luci-app-samba4=y
+CONFIG_PACKAGE_luci-app-transmission=y
+CONFIG_PACKAGE_transmission-daemon-openssl=y
+CONFIG_PACKAGE_transmission-web-control=y
+CONFIG_PACKAGE_luci-app-usb-printer=y
+CONFIG_PACKAGE_netcat=y
+CONFIG_PACKAGE_netdata=m
+CONFIG_PACKAGE_nft-qos=m
+CONFIG_PACKAGE_rsync=y
+CONFIG_PACKAGE_rsyncd=y
+CONFIG_RSYNC_acl=y
+CONFIG_RSYNC_xattr=y
+CONFIG_RSYNC_zlib=y
+CONFIG_PACKAGE_autossh=y
+CONFIG_PACKAGE_cfdisk=m
+CONFIG_PACKAGE_dmesg=y
+CONFIG_PACKAGE_curl=y
+CONFIG_PACKAGE_libcurl=y
+CONFIG_LIBCURL_COOKIES=y
+CONFIG_LIBCURL_FILE=y
+CONFIG_LIBCURL_FTP=y
+CONFIG_LIBCURL_HTTP=y
+CONFIG_LIBCURL_NO_SMB="!"
+CONFIG_LIBCURL_OPENSSL=y
+CONFIG_LIBCURL_PROXY=y
+CONFIG_PACKAGE_samba4-libs=y
+CONFIG_PACKAGE_samba4-server=y
+CONFIG_SAMBA4_SERVER_AVAHI=y
+CONFIG_SAMBA4_SERVER_NETBIOS=y
+CONFIG_SAMBA4_SERVER_VFS=y
+CONFIG_SAMBA4_SERVER_VFSX=y
+CONFIG_PACKAGE_vim-full=y
+CONFIG_PACKAGE_zsh=y
+CONFIG_PACKAGE_strace=m
+CONFIG_PACKAGE_syslog-ng=y
+CONFIG_PACKAGE_tar=y
+CONFIG_PACKAGE_tcpdump=y
+CONFIG_PACKAGE_tmux=y
+CONFIG_PACKAGE_docker-ce=y
+CONFIG_PACKAGE_node=y
+CONFIG_PACKAGE_node-npm=m
+CONFIG_PACKAGE_nping=m
+CONFIG_PACKAGE_bash=y
+CONFIG_PACKAGE_git=m
+CONFIG_PACKAGE_qemu-bridge-helper=m
+CONFIG_PACKAGE_qemu-firmware-efi=m
+CONFIG_PACKAGE_qemu-firmware-pxe=m
+CONFIG_PACKAGE_qemu-firmware-seabios=m
+CONFIG_PACKAGE_qemu-firmware-seavgabios=m
+CONFIG_PACKAGE_qemu-keymaps=m
+CONFIG_PACKAGE_qemu-x86_64-softmmu=m
+CONFIG_QEMU_UI_VNC=y
+CONFIG_QEMU_UI_VNC_JPEG=y
+CONFIG_QEMU_UI_VNC_PNG=y
