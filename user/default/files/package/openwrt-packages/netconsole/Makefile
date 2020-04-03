@@ -7,17 +7,17 @@ PKG_RELEASE:=1
 include $(INCLUDE_DIR)/package.mk
 
 define Package/netconsole
-  SECTION:=base
-  CATEGORY:=Network
-  TITLE:=NetConsole
-  DEPENDS:=+kmod-netconsole +kmod-fs-configfs
+	SECTION:=base
+	CATEGORY:=Network
+	TITLE:=NetConsole
+	DEPENDS:=+kmod-netconsole +kmod-fs-configfs
 endef
 
 define Package/netconsole/description
-  Sending kernel messages over network
+	Sending kernel messages over network
 endef
 
-define Package/nft-qos/conffiles
+define Package/netconsole/conffiles
 /etc/config/netconsole
 endef
 
@@ -33,8 +33,8 @@ endef
 define Package/netconsole/install
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_CONF) ./files/netconsole.config $(1)/etc/config/netconsole
-  $(INSTALL_DIR) $(1)/etc/init.d
-  $(INSTALL_BIN) ./files/netconsole.init $(1)/etc/init.d/netconsole
+	$(INSTALL_DIR) $(1)/etc/init.d
+	$(INSTALL_BIN) ./files/netconsole.init $(1)/etc/init.d/netconsole
 endef
 
 $(eval $(call BuildPackage,netconsole))
