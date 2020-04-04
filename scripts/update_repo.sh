@@ -10,8 +10,8 @@
 set -eo pipefail
 
 link_bin() {
-  BIN_DIR="${OPENWRT_COMPILE_DIR}/bin"
-  BIN_MOUNT_POINT="${BUILDER_HOME_DIR}/openwrt_bin"
+  local BIN_DIR="${OPENWRT_COMPILE_DIR}/bin"
+  local BIN_MOUNT_POINT="${BUILDER_HOME_DIR}/openwrt_bin"
 
   if mountpoint "${BIN_MOUNT_POINT}" ; then
     if [[ ! -L "${BIN_DIR}" || ! -d "${BIN_DIR}" || "$(readlink "${BIN_DIR}")" != "${BIN_MOUNT_POINT}" ]]; then

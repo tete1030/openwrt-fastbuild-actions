@@ -75,16 +75,16 @@ install_package() {
     echo "install_package: wrong arguments. Usage: install_package PACKAGE_NAME GIT_URL [ref=REF] [root=ROOT] [subdir=SUBDIR] [rename=RENAME] [mkfile-dir=MKFILE_DIR] [use-latest-tag] [override]" >&2
     exit 1
   fi
-  ALL_PARAMS="$*"
-  PACKAGE_NAME="${1}"; shift;
-  PACKAGE_URL="${1}"; shift;
-  PACKAGE_REF=""
-  PACKAGE_ROOT="${PACKAGE_DEFAULT_ROOT}"
-  PACKAGE_SUBDIR=""
-  PACKAGE_RENAME=""
-  PACKAGE_MKFILE_DIR=""
-  USE_LATEST_TAG=0
-  OVERRIDE=0
+  local ALL_PARAMS="$*"
+  local PACKAGE_NAME="${1}"; shift;
+  local PACKAGE_URL="${1}"; shift;
+  local PACKAGE_REF=""
+  local PACKAGE_ROOT="${PACKAGE_DEFAULT_ROOT}"
+  local PACKAGE_SUBDIR=""
+  local PACKAGE_RENAME=""
+  local PACKAGE_MKFILE_DIR=""
+  local USE_LATEST_TAG=0
+  local OVERRIDE=0
 
   for para in "$@"; do
     case "$para" in
@@ -121,7 +121,7 @@ install_package() {
       echo "install_package: 'use-latest-tag' should not be used together with 'ref'" >&2
       exit 1
     fi
-    repo_name=""
+    local repo_name=""
     if [[ "${PACKAGE_URL}" =~ ^https?://github\.com/.*$ ]]; then
       repo_name="$(perl -lne '/^https?:\/\/github\.com\/(.+?)\/(.+?)(?:\.git)?(?:\/.*)?$/ && print "$1/$2"' <<<"${PACKAGE_URL}")"
     elif [[ "${PACKAGE_URL}" =~ ^git@github.com/.*$ ]]; then
@@ -132,9 +132,8 @@ install_package() {
       exit 1
     fi
     # We use /tags instead /releases because the /releases api is not consistent with its webpage, which lists all tags
-    set +eo pipefail
-    latest_tag="$( curl -sL --connect-timeout 10 --retry 5 "https://api.github.com/repos/${repo_name}/tags" 2>/dev/null | grep '"name":' | sed -E 's/.*"([^"]+)".*/\1/' | head -n 1 )"
-    set -eo pipefail
+    local latest_tag
+    latest_tag="$(set +eo pipefail; curl -sL --connect-timeout 10 --retry 5 "https://api.github.com/repos/${repo_name}/tags" 2>/dev/null | grep '"name":' | sed -E 's/.*"([^"]+)".*/\1/' | head -n 1; true)"
     if [ -z "${latest_tag}" ]; then
       echo "install_package: no latest tag found" >&2
       exit 1
@@ -145,16 +144,16 @@ install_package() {
 
   [ -d "${OPENWRT_CUR_DIR}/${PACKAGE_ROOT}" ] || mkdir -p "${OPENWRT_CUR_DIR}/${PACKAGE_ROOT}"
 
-  PACKAGE_PATH="${PACKAGE_ROOT}/${PACKAGE_NAME}"
-  full_cur_package_path="${OPENWRT_CUR_DIR}/${PACKAGE_PATH}"
-  full_compile_package_path="${OPENWRT_COMPILE_DIR}/${PACKAGE_PATH}"
+  local package_path="${PACKAGE_ROOT}/${PACKAGE_NAME}"
+  local full_cur_package_path="${OPENWRT_CUR_DIR}/${package_path}"
+  local full_compile_package_path="${OPENWRT_COMPILE_DIR}/${package_path}"
 
   if [ -d "${full_cur_package_path}" ]; then
     if [ $OVERRIDE -eq 1 ]; then
-      echo "install_package: removing existed package: ${PACKAGE_PATH}"
+      echo "install_package: removing existed package: ${package_path}"
       rm -rf "${full_cur_package_path}"
     else
-      echo "install_package: package already exists: ${PACKAGE_PATH}" >&2
+      echo "install_package: package already exists: ${package_path}" >&2
       exit 1
     fi
   fi
@@ -185,7 +184,7 @@ install_package() {
         echo "install_package: PACKAGE_REF is not respected as 'update_feeds' is not enabled"
       fi
     else
-      TMP_REPO="${BUILDER_TMP_DIR}/clonesubdir/${PACKAGE_NAME}"
+      local TMP_REPO="${BUILDER_TMP_DIR}/clonesubdir/${PACKAGE_NAME}"
       rm -rf "${TMP_REPO}" || true
       mkdir -p "$(dirname "${TMP_REPO}")" || true
       git clone "${PACKAGE_URL}" "${TMP_REPO}"
@@ -204,7 +203,7 @@ install_package() {
 
   # rename PKG_NAME in Makefile
   if [ -n "${PACKAGE_RENAME}" ]; then
-    package_mkfile="Makefile"
+    local package_mkfile="Makefile"
     if [ -n "${PACKAGE_MKFILE_DIR}" ]; then
       package_mkfile="${PACKAGE_MKFILE_DIR}/${package_mkfile}"
     fi
@@ -214,8 +213,9 @@ install_package() {
       echo "install_package: ${package_mkfile} not found" >&2
       exit 1
     fi
-    PACKAGE_RENAME_ESCAPED="$(sed 's/[\/&]/\\&/g' <<<"${PACKAGE_RENAME}")"
-    sed -i 's/^PKG_NAME:\?=.*$/PKG_NAME:='"${PACKAGE_RENAME_ESCAPED}"'/' "${package_mkfile}"
+    local package_rename_escaped
+    package_rename_escaped="$(sed 's/[\/&]/\\&/g' <<<"${PACKAGE_RENAME}")"
+    sed -i 's/^PKG_NAME:\?=.*$/PKG_NAME:='"${package_rename_escaped}"'/' "${package_mkfile}"
   fi
 }
 

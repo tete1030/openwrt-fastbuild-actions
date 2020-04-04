@@ -4,65 +4,10 @@
 set -eo pipefail
 
 echo "Installing necessary commands..."
-sudo -E apt-get -qq update && sudo -E apt-get -qq install jq tree
+sudo -E apt-get -qq update && sudo -E apt-get -qq install jq yq tree
 
 # shellcheck source=scripts/host/utils.sh disable=SC1091
 source "${GITHUB_WORKSPACE}/scripts/host/utils.sh"
-
-_get_opt() {
-OPT_NAME="${1}"
-OPT_DEFAULT="${2:-0}"
-GITHUB_CONTEXT="${GITHUB_CONTEXT}" python3 <<EOF
-import json, os
-github_ctx = json.loads( os.environ["GITHUB_CONTEXT"] )
-try:
-  head_commit_message_opt = (github_ctx["event"]["head_commit"]["message"].find("#${OPT_NAME}#".lower()) != -1)
-except KeyError:
-  head_commit_message_opt = False
-
-try:
-  repo_dispatch_opt = github_ctx["event"]["client_payload"]["${OPT_NAME}".lower()]
-except KeyError:
-  repo_dispatch_opt = False
-
-try:
-  deployment_opt = github_ctx["event"]["deployment"]["payload"]["${OPT_NAME}".lower()]
-except KeyError:
-  deployment_opt = False
-
-if (github_ctx["event_name"] == "push" and head_commit_message_opt) or repo_dispatch_opt or deployment_opt:
-  print("1", end="")
-else:
-  print("${OPT_DEFAULT}", end="")
-EOF
-}
-
-_load_opt() {
-    OPT_NAME="${1}"
-    OPT_DEFAULT="${2:-0}"
-    UPPER_OPT_NAME="$(echo -n "${OPT_NAME}" | tr '[:lower:]' '[:upper:]')"
-    LOWER_OPT_NAME="$(echo -n "${OPT_NAME}" | tr '[:upper:]' '[:lower:]')"
-    ENV_OPT_NAME="OPT_${UPPER_OPT_NAME}"
-    eval "${ENV_OPT_NAME}='$(_get_opt "${LOWER_OPT_NAME}" "${OPT_DEFAULT}")'"
-    _set_env "${ENV_OPT_NAME}"
-    _append_docker_exec_env "${ENV_OPT_NAME}"
-}
-
-_append_docker_exec_env() {
-  for env_name in "$@"; do
-    DK_EXEC_ENVS="${DK_EXEC_ENVS} ${env_name}"
-  done
-  DK_EXEC_ENVS="$(tr ' ' '\n' <<< "${DK_EXEC_ENVS}" | sort -u | tr '\n' ' ')"
-  export DK_EXEC_ENVS
-  _set_env DK_EXEC_ENVS
-}
-
-_source_vars() {
-  SOURCE_FILE="${1}"; shift
-  SOURCE_VARS=( "$@" )
-  # shellcheck disable=SC1090
-  eval "$(source "${SOURCE_FILE}"; for var_name in "${SOURCE_VARS[@]}"; do echo "if [ -n '${!var_name}' ]; then ${var_name}='${!var_name}' ; fi"; done )"
-}
 
 # Fixed parameters, do not change the following values
 DK_BUILDX_DRIVER=docker
@@ -90,20 +35,24 @@ _append_docker_exec_env TEST OPENWRT_CUR_DIR OPENWRT_COMPILE_DIR OPENWRT_SOURCE_
 # Set for target
 BUILD_TARGET="$(echo "${MATRIX_CONTEXT}" | jq -crMe ".target")"
 if [ ! -d "${GITHUB_WORKSPACE}/user/${BUILD_TARGET}" ]; then
-    echo "::error::Failed to find the target ${BUILD_TARGET}" >&2
-    exit 1
+  echo "::error::Failed to find target ${BUILD_TARGET}" >&2
+  exit 1
 fi
 _set_env BUILD_TARGET
 
 # Load default and target configs
-cp -r "${GITHUB_WORKSPACE}/user/default" "${GITHUB_WORKSPACE}/user/current"
+if [ -d "${GITHUB_WORKSPACE}/user/default" ]; then
+  cp -r "${GITHUB_WORKSPACE}/user/default" "${GITHUB_WORKSPACE}/user/current"
+else
+  mkdir "${GITHUB_WORKSPACE}/user/current"
+fi
 rsync -aI "${GITHUB_WORKSPACE}/user/${BUILD_TARGET}/" "${GITHUB_WORKSPACE}/user/current/"
 echo "Merged target profile structure:"
 tree "${GITHUB_WORKSPACE}/user/current"
 
 if [ ! -f "${GITHUB_WORKSPACE}/user/current/config.diff" ]; then
-    echo "::error::Config file 'config.diff' does not exist" >&2
-    exit 1
+  echo "::error::Config file 'config.diff' does not exist" >&2
+  exit 1
 fi
 
 # Load settings
@@ -114,17 +63,17 @@ SETTING_VARS=( "${NECESSARY_SETTING_VARS[@]}" OPT_UPLOAD_CONFIG )
 _source_vars "${GITHUB_WORKSPACE}/user/current/settings.ini" "${SETTING_VARS[@]}"
 setting_missing_vars="$(_check_missing_vars "${NECESSARY_SETTING_VARS[@]}")"
 if [ -n "${setting_missing_vars}" ]; then
-    echo "::error::Variables missing in 'user/default/settings.ini' and 'user/${BUILD_TARGET}/settings.ini': ${setting_missing_vars}"
-    exit 1
+  echo "::error::Variables missing in 'user/default/settings.ini' and 'user/${BUILD_TARGET}/settings.ini': ${setting_missing_vars}"
+  exit 1
 fi
 _set_env "${SETTING_VARS[@]}"
 _append_docker_exec_env "${SETTING_VARS[@]}"
 
 # Prepare for test
 if [ "x$(echo "${MATRIX_CONTEXT}" | jq -crMe ".mode")" = "xtest" ]; then
-    BUILDER_TAG="test-${BUILDER_TAG}"
-    TEST=1
-    _set_env BUILDER_TAG TEST
+  BUILDER_TAG="test-${BUILDER_TAG}"
+  TEST=1
+  _set_env BUILDER_TAG TEST
 fi
 
 BUILDER_NAME="${DK_USERNAME}/${BUILDER_NAME}"
@@ -134,12 +83,16 @@ BUILDER_IMAGE_ID_INC="${DK_REGISTRY:+$DK_REGISTRY/}${BUILDER_NAME}:${BUILDER_TAG
 _set_env BUILDER_IMAGE_ID_BASE BUILDER_IMAGE_ID_INC
 
 # Load building action
-if [ "x${GITHUB_EVENT_NAME}" = "xrepository_dispatch" ]; then
-    RD_TASK="$(echo "${GITHUB_CONTEXT}" | jq -crM '.event.action // ""')"
-    RD_TARGET="$(echo "${GITHUB_CONTEXT}" | jq -crM '.event.client_payload.target // ""')"
+if [ "x${GITHUB_EVENT_NAME}" = "xpush" ]; then
+  RD_TASK=""
+  _COMMIT_MESSAGE="$(jq -crMe ".event.head_commit.message" <<<"${GITHUB_CONTEXT}")"
+  RD_TARGET="$(_extract_opt_from_string "target" "${_COMMIT_MESSAGE}" "")"
+elif [ "x${GITHUB_EVENT_NAME}" = "xrepository_dispatch" ]; then
+  RD_TASK="$(jq -crM '.event.action // ""' <<<"${GITHUB_CONTEXT}")"
+  RD_TARGET="$(jq -crM '.event.client_payload.target // ""' <<<"${GITHUB_CONTEXT}")"
 elif [ "x${GITHUB_EVENT_NAME}" = "xdeployment" ]; then
-    RD_TASK="$(echo "${GITHUB_CONTEXT}" | jq -crM '.event.deployment.task // ""')"
-    RD_TARGET="$(echo "${GITHUB_CONTEXT}" | jq -crM '.event.deployment.payload.target // ""')"
+  RD_TASK="$(jq -crM '.event.deployment.task // ""' <<<"${GITHUB_CONTEXT}")"
+  RD_TARGET="$(jq -crM '.event.deployment.payload.target // ""' <<<"${GITHUB_CONTEXT}")"
 fi
 _set_env RD_TASK RD_TARGET
 
@@ -147,14 +100,14 @@ _set_env RD_TASK RD_TARGET
 (
   IFS=$'\x20'
   for opt_name in ${BUILD_OPTS}; do
-      _load_opt "${opt_name}"
+    _load_opt "${opt_name}"
   done
 )
 
 if [ "x${OPT_DEBUG}" = "x1" ] && [ -z "${TMATE_ENCRYPT_PASSWORD}" ] && [ -z "${SLACK_WEBHOOK_URL}" ]; then
-    echo "::error::To use debug mode, you should set either TMATE_ENCRYPT_PASSWORD or SLACK_WEBHOOK_URL in the 'Secrets' page for safety of your sensitive information. For details, please refer to https://git.io/JvfLS"
-    echo "::error::In the reference URL you are instructed to use environment variables for them. However in this repo, you should set them in the 'Secrets' page"
-    exit 1
+  echo "::error::To use debug mode, you should set either TMATE_ENCRYPT_PASSWORD or SLACK_WEBHOOK_URL in the 'Secrets' page for safety of your sensitive information. For details, please refer to https://git.io/JvfLS"
+  echo "::error::In the reference URL you are instructed to use environment variables for them. However in this repo, you should set them in the 'Secrets' page"
+  exit 1
 fi
 
 mkdir -p "${GITHUB_WORKSPACE}/openwrt_bin"
