@@ -39,7 +39,8 @@ _escape_search_regex() {
 _extract_opt_from_string() {
   local opt_name="${1}"
   local opt_source_string="${2}"
-  local opt_default="${3}"
+  local opt_default="${3:-0}"
+  local opt_default_present="${4:-1}"
   local opt_name_escaped
   opt_name_escaped="$(_escape_search_regex "${opt_name}")"
   local opt_parameter
@@ -48,9 +49,9 @@ _extract_opt_from_string() {
   if [ -n "${opt_parameter}" ]; then
     opt_value="$(sed -En 's/#'"${opt_name_escaped}"'(=.*)?#/\1/p' <<<"${opt_parameter}")"
     if [ -n "${opt_value}" ]; then
-    opt_value="${opt_value#=}"
+      opt_value="${opt_value#=}"
     else
-    opt_value="${opt_default}"
+      opt_value="${opt_default_present}"
     fi
   else
     opt_value="${opt_default}"
@@ -65,12 +66,12 @@ _get_opt() {
   local opt_value
   if [ "x${GITHUB_EVENT_NAME}" = "xpush" ]; then
     local commit_message
-    commit_message="$(jq -crMe ".event.head_commit.message" <<<"${GITHUB_CONTEXT}")"
-    opt_value="$(_extract_opt_from_string "${opt_name}" "${commit_message}" "${opt_default}")"
+    commit_message="$(jq -crMe ".head_commit.message" "${GITHUB_EVENT_PATH}")"
+    opt_value="$(_extract_opt_from_string "${opt_name}" "${commit_message}" "${opt_default}" 1)"
   elif [ "x${GITHUB_EVENT_NAME}" = "xrepository_dispatch" ]; then
-    opt_value="$(jq -crM ".event.client_payload.${opt_name} // "'"'"${opt_default}"'"' <<<"${GITHUB_CONTEXT}")"
+    opt_value="$(jq -crM '(.client_payload.'"${opt_name}"' // "'"${opt_default}"'") as $v | if ($v|type=="boolean") then (if $v then 1 else 0 end) else $v end' "${GITHUB_EVENT_PATH}")"
   elif [ "x${GITHUB_EVENT_NAME}" = "xdeployment" ]; then
-    opt_value="$(jq -crM ".event.deployment.payload.${opt_name} // "'"'"${opt_default}"'"' <<<"${GITHUB_CONTEXT}")"
+    opt_value="$(jq -crM '(.deployment.payload.'"${opt_name}"' // "'"${opt_default}"'") as $v | if ($v|type=="boolean") then (if $v then 1 else 0 end) else $v end' "${GITHUB_EVENT_PATH}")"
   else
     opt_value="${opt_default}"
   fi
