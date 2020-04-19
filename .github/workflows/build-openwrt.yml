@@ -47,7 +47,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mode: [normal, test]
+        mode:
+          - normal
+          - test
         # ########### Add your target name below ###########
         # E.g. target: [x86_64, wdr4310v1]
         target: [x86_64, wdr4310v1]
@@ -58,6 +60,7 @@ jobs:
           title: Fast check
     env:
       MATRIX_CONTEXT: ${{toJSON(matrix)}}
+      BUILD_OPTS: 'update_feeds update_repo rebase rebuild debug push_when_fail package_only'
 
     steps:
     - name: Checkout
@@ -66,16 +69,14 @@ jobs:
         fetch-depth: 0
 
     - name: Init build env
-      env:
-        BUILD_OPTS: 'update_feeds update_repo rebase rebuild debug push_when_fail package_only'
-      run: scripts/host/init_runner.sh
+      run: scripts/cisteps/build-openwrt/01-init_env.sh
 
     - name: Check if skip this job
-      run: scripts/host/check_target.sh
+      run: scripts/cisteps/build-openwrt/02-check_target.sh
 
     - name: Clean up for extra space
       if: env.SKIP_TARGET == '0' && env.TEST != '1'
-      run: scripts/host/cleanup.sh
+      run: scripts/cisteps/build-openwrt/03-clean_up.sh
 
     - name: Set up Docker Buildx
       id: buildx
@@ -86,41 +87,11 @@ jobs:
 
     - name: Configure docker
       if: env.SKIP_TARGET == '0'
-      run: |
-        . scripts/host/docker.sh
-        configure_docker
-        login_to_registry
+      run: scripts/cisteps/build-openwrt/04-configure_docker.sh
 
     - name: Check status of builders
       if: env.SKIP_TARGET == '0'
-      run: |
-        . scripts/host/docker.sh
-        if [ "x${OPT_REBUILD}" != "x1" ]; then
-          # temporarily disable failure guarder
-          set +eo pipefail
-            docker buildx imagetools inspect "${BUILDER_IMAGE_ID_INC}" 2>&1 >/dev/null
-            builder_inc_ret_val=$?
-          set -eo pipefail
-
-          if [ "x${OPT_REBASE}" = "x1" -o "x${builder_inc_ret_val}" != "x0" ]; then
-            set +eo pipefail
-              docker buildx imagetools inspect "${BUILDER_IMAGE_ID_BASE}" 2>&1 >/dev/null
-              builder_base_ret_val=$?
-            set -eo pipefail
-            if [ "x${builder_base_ret_val}" != "x0" ]; then
-              echo "Base builder '${BUILDER_IMAGE_ID_BASE}' does not exist, creating one"
-              OPT_REBUILD=1
-            else
-              echo "Creating incremental builder '${BUILDER_IMAGE_ID_INC}' from base builder '${BUILDER_IMAGE_ID_BASE}'"
-              create_remote_tag_alias "${BUILDER_IMAGE_ID_BASE}" "${BUILDER_IMAGE_ID_INC}"
-            fi
-          fi
-        fi
-
-        if [ "x${OPT_REBUILD}" = "x1" ]; then
-          echo "Re-creating base builder '${BUILDER_IMAGE_ID_BASE}'"
-        fi
-        echo "::set-env name=OPT_REBUILD::${OPT_REBUILD}"
+      run: scripts/cisteps/build-openwrt/05-check_builders.sh
 
     - name: '[Debug] Wait for SSH connection (timeout 5min)'
       if: env.SKIP_TARGET == '0' && env.OPT_DEBUG == '1' && env.TEST != '1'
@@ -130,31 +101,15 @@ jobs:
 
     - name: Get builder
       if: env.SKIP_TARGET == '0'
-      run: |
-        . scripts/host/docker.sh
-        # 'eval' is to correctly parse quotes
-        eval declare -a MOUNT_OPTS=( ${BUILDER_MOUNT_OPTS} )
-        if [ "x${OPT_REBUILD}" != "x1" ]; then
-          pull_image "${BUILDER_IMAGE_ID_INC}"
-          squash_image_when_necessary "${BUILDER_IMAGE_ID_INC}"
-          docker run -d -t --name "${BUILDER_CONTAINER_ID}" "${MOUNT_OPTS[@]}" "${BUILDER_IMAGE_ID_INC}"
-        else
-          docker run -d -t --name "${BUILDER_CONTAINER_ID}" "${MOUNT_OPTS[@]}" "${BUILDER_IMAGE_ID_BUILDENV}"
-        fi
-        docker_exec "${BUILDER_CONTAINER_ID}" "${BUILDER_HOME_DIR}/scripts/init_env.sh"
+      run: scripts/cisteps/build-openwrt/06-get_builder.sh
 
-    - name: Clone/update source codes
+    - name: Clone/update OpenWrt
       if: env.SKIP_TARGET == '0'
-      run: |
-        . scripts/host/docker.sh
-        docker_exec "${BUILDER_CONTAINER_ID}" "${BUILDER_HOME_DIR}/scripts/update_repo.sh"
-        docker_exec "${BUILDER_CONTAINER_ID}" "${BUILDER_HOME_DIR}/scripts/update_feeds.sh"
+      run: scripts/cisteps/build-openwrt/07-download_openwrt.sh
 
     - name: Apply customizations
       if: env.SKIP_TARGET == '0'
-      run: |
-        . scripts/host/docker.sh
-        docker_exec "${BUILDER_CONTAINER_ID}" "${BUILDER_HOME_DIR}/scripts/customize.sh"
+      run: scripts/cisteps/build-openwrt/08-customize.sh
 
     # Allow intermediate customization
     - name: '[Debug/Menuconfig] Wait for SSH connection (timeout 30min)'
@@ -165,20 +120,11 @@ jobs:
 
     - name: Prepare config file
       if: env.SKIP_TARGET == '0'
-      run: |
-        . scripts/host/docker.sh
-        docker_exec "${BUILDER_CONTAINER_ID}" "${BUILDER_HOME_DIR}/scripts/config.sh"
-        if [ "x${OPT_UPLOAD_CONFIG}" = "x1" ] && [ "x${TEST}" != "x1" ]; then
-          set +eo pipefail
-          TERMBIN_URL="$( docker_exec -w "${OPENWRT_CUR_DIR}" "${BUILDER_CONTAINER_ID}" "${OPENWRT_CUR_DIR}/scripts/diffconfig.sh" | nc termbin.com 9999 )"
-          echo "Your config.diff can be downloaded at: ${TERMBIN_URL}"
-        fi
+      run: scripts/cisteps/build-openwrt/09-prepare_config.sh
 
     - name: Download packages
       if: env.SKIP_TARGET == '0'
-      run: |
-        . scripts/host/docker.sh
-        docker_exec "${BUILDER_CONTAINER_ID}" "${BUILDER_HOME_DIR}/scripts/download.sh"
+      run: scripts/cisteps/build-openwrt/10-download_packages.sh
 
     - name: Print disk space
       if: env.SKIP_TARGET == '0'
@@ -188,17 +134,11 @@ jobs:
       id: mtcompile
       if: env.SKIP_TARGET == '0'
       continue-on-error: true
-      run: |
-        echo "::set-output name=started::1"
-        . scripts/host/docker.sh
-        docker_exec -e MODE=m "${BUILDER_CONTAINER_ID}" "${BUILDER_HOME_DIR}/scripts/compile.sh"
-        echo "::set-output name=status::success"
+      run: scripts/cisteps/build-openwrt/11-compile_multi.sh
 
     - name: Compile firmware and packages with single threads when failed
       if: env.SKIP_TARGET == '0' && steps.mtcompile.outputs.started == '1' && steps.mtcompile.outputs.status != 'success'
-      run: |
-        . scripts/host/docker.sh
-        docker_exec -e MODE=s "${BUILDER_CONTAINER_ID}" "${BUILDER_HOME_DIR}/scripts/compile.sh"
+      run: scripts/cisteps/build-openwrt/12-compile_single.sh
 
     - name: Print disk space
       if: env.SKIP_TARGET == '0'
@@ -213,47 +153,25 @@ jobs:
         TMATE_DOCKER_CONTAINER: ${{env.BUILDER_CONTAINER_ID}}
       uses: tete1030/safe-debugger-action@dev
 
-    - name: Upload current builder
+    - name: Upload builder
       if: |
         env.SKIP_TARGET == '0' && !cancelled() && (
           job.status == 'success'
           || env.OPT_PUSH_WHEN_FAIL == '1'
         )
-      run: |
-        . scripts/host/docker.sh
-        docker_exec "${BUILDER_CONTAINER_ID}" "${BUILDER_HOME_DIR}/scripts/pre_commit.sh"
-        docker commit -a "tete1030/openwrt-fastbuild-actions" -m "Building at $(date)" "${BUILDER_CONTAINER_ID}" "${BUILDER_IMAGE_ID_INC}"
-        docker container rm -fv "${BUILDER_CONTAINER_ID}"
-        docker container prune -f
-        docker system prune -f --volumes
-        if [ "x${OPT_REBUILD}" != '1' ]; then
-          squash_image_when_necessary "${BUILDER_IMAGE_ID_INC}"
-        fi
-        docker push "${BUILDER_IMAGE_ID_INC}"
-        if [ "x${OPT_REBUILD}" = "x1" ]; then
-          create_remote_tag_alias "${BUILDER_IMAGE_ID_INC}" "${BUILDER_IMAGE_ID_BASE}"
-        fi
+      run: scripts/cisteps/build-openwrt/13-upload_builder.sh
 
     # - name: Upload bin directory
     #   uses: actions/upload-artifact@master
     #   if: env.SKIP_TARGET == '0' && !cancelled()
     #   with:
     #     name: OpenWrt_bin_${{env.BUILD_TARGET}}
-    #     path: openwrt_bin
+    #     path: ${{env.HOST_BIN_DIR}}
 
     - name: Organize files
       id: organize
       if: env.SKIP_TARGET == '0' && !cancelled()
-      run: |
-        shopt -s extglob
-        sudo chown -R $(id -u):$(id -g) openwrt_bin
-        if [ "x${OPT_PACKAGE_ONLY}" != "x1" ]; then
-          mkdir "${GITHUB_WORKSPACE}/openwrt_firmware"
-          cd "${GITHUB_WORKSPACE}"/openwrt_bin/targets/*/*
-          all_firmware_files=( !(packages) )
-          [ ${#all_firmware_files[@]} -gt 0 ] && mv "${all_firmware_files[@]}" "${GITHUB_WORKSPACE}/openwrt_firmware/" || true
-        fi
-        echo "::set-output name=status::success"
+      run: scripts/cisteps/build-openwrt/14-organize_files.sh
 
     - name: Upload firmware
       uses: actions/upload-artifact@master
@@ -267,7 +185,7 @@ jobs:
       if: env.SKIP_TARGET == '0' && env.TEST != '1' && steps.organize.outputs.status == 'success' && !cancelled()
       with:
         name: OpenWrt_packages_${{env.BUILD_TARGET}}
-        path: openwrt_bin
+        path: ${{env.HOST_BIN_DIR}}
 
     # failure checking
     - name: '[Failure/Debug] wait for SSH connection (timeout 30min. You are safe to cancel the job now.)'

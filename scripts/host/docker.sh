@@ -7,23 +7,21 @@
 # Author: Texot
 #=================================================
 
-set -eo pipefail
+# # helper functions
+# _exit_if_empty() {
+#   local var_name=${1}
+#   local var_value=${2}
+#   if [ -z "$var_value" ]; then
+#     echo "Missing input $var_name" >&2
+#     exit 1
+#   fi
+# }
 
-# helper functions
-_exit_if_empty() {
-  local var_name=${1}
-  local var_value=${2}
-  if [ -z "$var_value" ]; then
-    echo "Missing input $var_name" >&2
-    exit 1
-  fi
-}
-
-# action steps
-check_required_input() {
-  _exit_if_empty DK_USERNAME "${DK_USERNAME}"
-  _exit_if_empty DK_PASSWORD "${DK_PASSWORD}"
-}
+# # action steps
+# check_required_input() {
+#   _exit_if_empty DK_USERNAME "${DK_USERNAME}"
+#   _exit_if_empty DK_PASSWORD "${DK_PASSWORD}"
+# }
 
 configure_docker() {
   echo '{
@@ -100,6 +98,13 @@ docker_exec() {
   )
 }
 
+append_docker_exec_env() {
+  for env_name in "$@"; do
+    DK_EXEC_ENVS="${DK_EXEC_ENVS} ${env_name}"
+  done
+  DK_EXEC_ENVS="$(tr ' ' '\n' <<< "${DK_EXEC_ENVS}" | sort -u | tr '\n' ' ')"
+}
+
 create_remote_tag_alias() {
   docker buildx imagetools create -t "${2}" "${1}"
 }
@@ -107,5 +112,3 @@ create_remote_tag_alias() {
 logout_from_registry() {
   docker logout "${DK_REGISTRY}"
 }
-
-check_required_input

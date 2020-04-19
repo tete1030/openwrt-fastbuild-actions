@@ -31,7 +31,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mode: [normal, test]
+        mode:
+          - normal
+          - test
         target: [x86_64, wdr4310v1]
         include:
         - mode: normal
@@ -45,21 +47,14 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Init build env
-      run: scripts/host/init_runner.sh
+      run: scripts/cisteps/squash/01-init_env.sh
 
     - name: Check if skip this job
-      run: |
-        SKIP_TARGET=1
-        if [[ ( "${GITHUB_EVENT_NAME}" == "repository_dispatch" || "${GITHUB_EVENT_NAME}" == "deployment" ) && ${RD_TASK} == "squash" && ( ${RD_TARGET} == "all" || ${RD_TARGET} == ${BUILD_TARGET} ) ]]; then
-          SKIP_TARGET=0
-        elif [[ "${GITHUB_EVENT_NAME}" == "schedule" ]]; then
-          SKIP_TARGET=0
-        fi
-        echo "::set-env name=SKIP_TARGET::${SKIP_TARGET}"
+      run: scripts/cisteps/squash/02-check_target.sh
 
     - name: Clean up for extra space
       if: env.SKIP_TARGET == '0'
-      run: scripts/host/cleanup.sh
+      run: scripts/cisteps/squash/03-clean_up.sh
 
     - name: Set up Docker Buildx
       id: buildx
@@ -70,61 +65,20 @@ jobs:
 
     - name: Configure docker
       if: env.SKIP_TARGET == '0'
-      run: |
-        . scripts/host/docker.sh
-        configure_docker
-        login_to_registry
+      run: scripts/cisteps/squash/04-configure_docker.sh
 
     - name: Check status of builder
       if: env.SKIP_TARGET == '0'
-      run: |
-        . scripts/host/docker.sh
-        # temporarily disable failure guarder
-        set +eo pipefail
-          IMAGE_DIGEST="$(docker buildx imagetools inspect --raw "${BUILDER_IMAGE_ID_INC}" | perl -pe 'chomp if eof' | openssl dgst -sha256 2>/dev/null ;  exit ${PIPESTATUS[0]})"
-          image_check_ret_val=$?
-        set -eo pipefail
+      run: scripts/cisteps/squash/05-check_builders.sh
 
-        if [ "x${image_check_ret_val}" != "x0" ]; then
-          echo "No builder found, skipping"
-          echo "::set-env name=SKIP_TARGET::1"
-        else
-          echo "::set-env name=SKIP_TARGET::0"
-          echo "::set-env name=IMAGE_DIGEST::${IMAGE_DIGEST}"
-        fi
-
-    - name: Download last incremental builder
+    - name: Download lastest builder
       if: env.SKIP_TARGET == '0'
-      run: |
-        . scripts/host/docker.sh
-        STRICT_PULL=1 pull_image "${BUILDER_IMAGE_ID_INC}"
+      run: scripts/cisteps/squash/06-get_builder.sh
 
     - name: Squash builder when necessary
       if: env.SKIP_TARGET == '0'
-      run: |
-        . scripts/host/docker.sh
-        DK_LAYER_NUMBER_LIMIT=20 squash_image_when_necessary "${BUILDER_IMAGE_ID_INC}"
+      run: scripts/cisteps/squash/07-squash_builder.sh
 
     - name: Upload squashed builder
       if: env.SKIP_TARGET == '0'
-      run: |
-        . scripts/host/docker.sh
-        TMP_BUILDER_IMAGE_ID="${BUILDER_IMAGE_ID_INC}-squashtmp"
-        docker tag "${BUILDER_IMAGE_ID_INC}" "${TMP_BUILDER_IMAGE_ID}"
-        docker push "${TMP_BUILDER_IMAGE_ID}"
-
-        set +eo pipefail
-          CUR_IMAGE_DIGEST="$(docker buildx imagetools inspect --raw "${BUILDER_IMAGE_ID_INC}" | perl -pe 'chomp if eof' | openssl dgst -sha256 2>/dev/null ;  exit ${PIPESTATUS[0]})"
-          image_check_ret_val=$?
-        set -eo pipefail
-
-        if [ "x${image_check_ret_val}" != "x0" ]; then
-          echo "::error::Image disappeared!?" >&2
-          exit 1
-        fi
-
-        if [ "x${CUR_IMAGE_DIGEST}" != "x${IMAGE_DIGEST}" ]; then
-          echo "::error::Image '${BUILDER_IMAGE_ID_INC}' has changed during squashing, aborting" >&2
-        else
-          create_remote_tag_alias "${TMP_BUILDER_IMAGE_ID}" "${BUILDER_IMAGE_ID_INC}"
-        fi
+      run: scripts/cisteps/squash/08-upload_builder.sh
