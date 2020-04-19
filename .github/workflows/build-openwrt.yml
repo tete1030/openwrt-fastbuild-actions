@@ -57,7 +57,6 @@ jobs:
         - mode: test
           title: Fast check
     env:
-      GITHUB_CONTEXT: ${{toJSON(github)}}
       MATRIX_CONTEXT: ${{toJSON(matrix)}}
 
     steps:

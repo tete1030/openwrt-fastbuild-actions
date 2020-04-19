@@ -39,7 +39,6 @@ jobs:
         - mode: test
           title: Squashing test builder
     env:
-      GITHUB_CONTEXT: ${{toJSON(github)}}
       MATRIX_CONTEXT: ${{toJSON(matrix)}}
     steps:
     - name: Checkout
