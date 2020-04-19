@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# shellcheck source=scripts/host/utils.sh disable=SC1091
+# shellcheck disable=SC1090
 source "${GITHUB_WORKSPACE}/scripts/host/utils.sh"
 
 SKIP_TARGET=1
@@ -11,8 +11,8 @@ if [ "x${GITHUB_EVENT_NAME}" = "xpush" ]; then
       SKIP_TARGET=0
     fi
   else
-    commit_before=$(echo "${GITHUB_CONTEXT}" | jq -crM '.event.before // ""')
-    commit_after=$(echo "${GITHUB_CONTEXT}" | jq -crM '.event.after // ""')
+    commit_before=$(jq -crM '.before // ""' "${GITHUB_EVENT_PATH}")
+    commit_after=$(jq -crM '.after // ""' "${GITHUB_EVENT_PATH}")
     if [ -z "${commit_before}" ] || [ -z "${commit_after}" ]; then
       echo "::error::Oops! Something went wrong! Github push event does not exist!" >&2
       exit 1
