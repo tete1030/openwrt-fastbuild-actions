@@ -32,27 +32,6 @@ configure_docker() {
     "experimental": true
   }' | sudo tee /etc/docker/daemon.json
   sudo service docker restart
-  docker buildx rm builder || true
-  # shellcheck disable=SC2086
-  docker buildx create --use --name builder --node builder0 --driver docker-container ${DK_BUILDX_EXTRA_CREATE_OPTS}
-  reconfigure_docker_buildx
-}
-
-reconfigure_docker_buildx() {
-  if [ -z "${DK_BUILDX_DRIVER}" ]; then
-    echo "DK_BUILDX_DRIVER not specified" >&2
-    exit 1
-  fi
-  if [ "x${DK_BUILDX_DRIVER}" = "xdocker-container" ]; then
-    echo "Use buildx driver: docker-container"
-    docker buildx use builder
-  elif [ "x${DK_BUILDX_DRIVER}" = "xdocker" ]; then
-    echo "Use buildx driver: docker"
-    docker buildx use default
-  else
-    echo "Unknown buildx driver" >&2
-    exit 1
-  fi
 }
 
 login_to_registry() {
@@ -60,10 +39,6 @@ login_to_registry() {
 }
 
 pull_image() {
-  if [ "x${DK_BUILDX_DRIVER}" != "xdocker" ]; then
-    echo "Buildx driver '${DK_BUILDX_DRIVER}' does not support pulling and image management" >&2
-    exit 1
-  fi
   local IMAGE_TO_PULL="${1}"
   if [ -n "${IMAGE_TO_PULL}" ]; then
     (
@@ -88,10 +63,6 @@ squash_image_when_necessary() {
     exit 1
   fi
   local SQUASH_IMAGE="${1}"
-  if [ "x${DK_BUILDX_DRIVER}" != "xdocker" ]; then
-    echo "Buildx driver '${DK_BUILDX_DRIVER}' does not support image squashing" >&2
-    exit 1
-  fi
 
   local layer_number
   layer_number="$(docker image inspect -f '{{.RootFS.Layers}}' "${SQUASH_IMAGE}" | grep -o 'sha256:' | wc -l)"
