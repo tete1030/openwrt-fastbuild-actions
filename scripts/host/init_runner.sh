@@ -4,6 +4,10 @@
 set -eo pipefail
 
 echo "Installing necessary commands..."
+export DEBIAN_FRONTEND=noninteractive
+
+sudo -E apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CC86BB64
+sudo -E add-apt-repository -y ppa:rmescandon/yq
 sudo -E apt-get -qq update && sudo -E apt-get -qq install jq yq tree
 
 # shellcheck source=scripts/host/utils.sh disable=SC1091
