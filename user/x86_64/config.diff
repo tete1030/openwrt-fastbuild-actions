@@ -129,7 +129,6 @@ CONFIG_PACKAGE_luci-i18n-aria2-zh-cn=y
 CONFIG_PACKAGE_luci-i18n-netdata-zh-cn=m
 CONFIG_PACKAGE_luci-i18n-nft-qos-zh-cn=m
 CONFIG_PACKAGE_luci-i18n-qos-zh-cn=m
-CONFIG_PACKAGE_luci-i18n-samba4-zh-cn=y
 CONFIG_PACKAGE_luci-i18n-transmission-zh-cn=y
 CONFIG_PACKAGE_luci-i18n-usb-printer-zh-cn=y
 CONFIG_PACKAGE_luci-i18n-zerotier-zh-cn=m
@@ -222,12 +221,9 @@ CONFIG_PACKAGE_libsodium=y
 CONFIG_PACKAGE_shadowsocks-libev-ss-redir=y
 CONFIG_SIGNED_PACKAGES=y
 CONFIG_SIGNATURE_CHECK=y
-# CONFIG_PACKAGE_luci-app-samba is not set
 # CONFIG_PACKAGE_luci-app-unblockneteasemusic is not set
 # CONFIG_PACKAGE_adbyby is not set
 # CONFIG_PACKAGE_luci-app-adbyby-plus is not set
-# CONFIG_PACKAGE_autosamba is not set
-# CONFIG_PACKAGE_samba36-server is not set
 # CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_V2ray is not set
 # CONFIG_PACKAGE_luci-app-unblockneteasemusic-mini is not set
 # CONFIG_PACKAGE_luci-app-v2ray-server is not set
@@ -248,7 +244,6 @@ CONFIG_PACKAGE_iperf3-ssl=y
 CONFIG_PACKAGE_hdparm=y
 CONFIG_PACKAGE_fping=y
 CONFIG_PACKAGE_luci-app-aria2=y
-CONFIG_PACKAGE_luci-app-samba4=y
 CONFIG_PACKAGE_luci-app-transmission=y
 CONFIG_PACKAGE_transmission-daemon-openssl=y
 CONFIG_PACKAGE_transmission-web-control=y
@@ -273,12 +268,6 @@ CONFIG_LIBCURL_HTTP=y
 CONFIG_LIBCURL_NO_SMB="!"
 CONFIG_LIBCURL_OPENSSL=y
 CONFIG_LIBCURL_PROXY=y
-CONFIG_PACKAGE_samba4-libs=y
-CONFIG_PACKAGE_samba4-server=y
-CONFIG_SAMBA4_SERVER_AVAHI=y
-CONFIG_SAMBA4_SERVER_NETBIOS=y
-CONFIG_SAMBA4_SERVER_VFS=y
-CONFIG_SAMBA4_SERVER_VFSX=y
 CONFIG_PACKAGE_vim-full=y
 CONFIG_PACKAGE_zsh=y
 CONFIG_PACKAGE_strace=m
@@ -291,7 +280,7 @@ CONFIG_PACKAGE_node=y
 CONFIG_PACKAGE_node-npm=m
 CONFIG_PACKAGE_nping=m
 CONFIG_PACKAGE_bash=y
-CONFIG_PACKAGE_git=m
+# Qemu
 CONFIG_PACKAGE_qemu-bridge-helper=m
 CONFIG_PACKAGE_qemu-firmware-efi=m
 CONFIG_PACKAGE_qemu-firmware-pxe=m
@@ -302,3 +291,34 @@ CONFIG_PACKAGE_qemu-x86_64-softmmu=m
 CONFIG_QEMU_UI_VNC=y
 CONFIG_QEMU_UI_VNC_JPEG=y
 CONFIG_QEMU_UI_VNC_PNG=y
+# dotfiles sync
+CONFIG_PACKAGE_git-http=m
+CONFIG_PACKAGE_gawk=m
+# For Samba4
+# CONFIG_PACKAGE_luci-app-samba is not set
+# CONFIG_PACKAGE_autosamba is not set
+# CONFIG_PACKAGE_samba36-server is not set
+CONFIG_PACKAGE_samba4-libs=y
+CONFIG_PACKAGE_samba4-server=y
+CONFIG_SAMBA4_SERVER_AVAHI=y
+CONFIG_SAMBA4_SERVER_NETBIOS=y
+CONFIG_SAMBA4_SERVER_VFS=y
+CONFIG_SAMBA4_SERVER_VFSX=y
+CONFIG_PACKAGE_luci-app-samba4=y
+CONFIG_PACKAGE_luci-i18n-samba4-zh-cn=y
+# For AFP
+CONFIG_PACKAGE_netatalk=m
+CONFIG_PACKAGE_avahi-utils=m
+CONFIG_PACKAGE_shadow-groupadd=m
+CONFIG_PACKAGE_shadow-groupmod=m
+CONFIG_PACKAGE_shadow-useradd=m
+CONFIG_PACKAGE_shadow-usermod=m
+# For NFS
+CONFIG_PACKAGE_nfs-kernel-server=m
+CONFIG_PACKAGE_nfs-kernel-server-utils=m
+# For WebDAV
+CONFIG_PACKAGE_lighttpd=m
+CONFIG_PACKAGE_lighttpd-mod-webdav=m
+# DNS
+CONFIG_PACKAGE_bind-dig=m
+CONFIG_PACKAGE_knot-dig=m
