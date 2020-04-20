@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # shellcheck disable=SC1090
-source "${HOST_WORK_DIR}/scripts/host/gaction.sh"
+source "${HOST_WORK_DIR}/scripts/lib/gaction.sh"
 
 SKIP_TARGET=1
 if [ "x${GITHUB_EVENT_NAME}" = "xpush" ]; then

@@ -33,7 +33,7 @@ setup_envs() {
   # shellcheck disable=SC1090
   source "${HOST_WORK_DIR}/scripts/host/docker.sh"
   # shellcheck disable=SC1090
-  source "${HOST_WORK_DIR}/scripts/host/gaction.sh"
+  source "${HOST_WORK_DIR}/scripts/lib/gaction.sh"
   # shellcheck disable=SC1090
   source "${HOST_WORK_DIR}/scripts/lib/utils.sh"
 
