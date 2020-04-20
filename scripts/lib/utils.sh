@@ -17,8 +17,8 @@ _escape_search_regex() {
 _extract_opt_from_string() {
   local opt_name="${1}"
   local opt_source_string="${2}"
-  local opt_default="${3:-0}"
-  local opt_default_present="${4:-1}"
+  local opt_default="${3}"
+  local opt_default_present="${4}"
   local opt_name_escaped
   opt_name_escaped="$(_escape_search_regex "${opt_name}")"
   local opt_parameter

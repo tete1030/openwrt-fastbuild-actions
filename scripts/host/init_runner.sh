@@ -112,13 +112,14 @@ prepare_target() {
   _set_env DK_EXEC_ENVS
 }
 
+# Load building options
 load_options() {
-  # Load building options
-  local env_opt_name
+  __set_env_and_docker_exec() {
+    _set_env "${1}"
+    append_docker_exec_env "${1}"
+  }
   for opt_name in ${BUILD_OPTS}; do
-    env_opt_name=$(_load_opt "${opt_name}")
-    _set_env "${env_opt_name}"
-    append_docker_exec_env "${env_opt_name}"
+    _load_opt "${opt_name}" "" __set_env_and_docker_exec
   done
   _set_env DK_EXEC_ENVS
 }
@@ -160,7 +161,6 @@ main() {
   prepare_target
   load_options
   update_builder_info
-  load_task
   check_validity
   prepare_dirs
 }

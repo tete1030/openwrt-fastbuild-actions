@@ -23,7 +23,7 @@ _set_env_prefix() {
 _get_opt() {
   local opt_name="${1}"
   opt_name="$(tr '[:upper:]' '[:lower:]' <<<"${opt_name}")"
-  local opt_default="${2:-0}"
+  local opt_default="${2}"
   local opt_value
   if [ "x${GITHUB_EVENT_NAME}" = "xpush" ]; then
     local commit_message
@@ -41,12 +41,13 @@ _get_opt() {
 
 _load_opt() {
   local opt_name="${1}"
-  local opt_default="${2:-0}"
+  local opt_default="${2}"
+  local cb="${3}"
   local opt_name_upper
   local opt_name_lower
   opt_name_upper="$(echo -n "${opt_name}" | tr '[:lower:]' '[:upper:]')"
   opt_name_lower="$(echo -n "${opt_name}" | tr '[:upper:]' '[:lower:]')"
   local ENV_OPT_NAME="OPT_${opt_name_upper}"
   eval "${ENV_OPT_NAME}='$(_get_opt "${opt_name_lower}" "${opt_default}")'"
-  echo "${ENV_OPT_NAME}"
+  [ -z "${cb}" ] || ${cb} "${ENV_OPT_NAME}"
 }
