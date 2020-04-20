@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eo pipefail
+
 # shellcheck disable=SC1090
 source "${BUILDER_WORK_DIR}/scripts/lib/gaction.sh"
 
@@ -17,7 +19,29 @@ _set_env OPENWRT_CUR_DIR
 
 [ "x${TEST}" != "x1" ] || exit 0
 
-if [ ! -x "$(command -v rsync)" ]; then
-    echo "rsync not found, installing for backward compatibility"
-    sudo -E apt-get -qq update && sudo -E apt-get -qq install rsync
+# Install missing packages in current env from a remote list
+sudo -E apt-get -qq update
+if [ ! -x "$(command -v curl)" ]; then
+    echo "curl not found, installing..."
+    sudo -E apt-get -qq install curl
+fi
+packages_file="${BUILDER_TMP_DIR}/packages.txt"
+packages_url="https://github.com/tete1030/openwrt-buildenv/raw/master/packages.txt"
+(
+  set +eo pipefail
+  
+  rm -f "${packages_file}" || true
+  echo "Downloading package list from ${packages_url}"
+  curl -o "${packages_file}" "${packages_url}"
+  ret_val=$?
+  if [ $ret_val -ne 0 ]; then
+    rm -f "${packages_file}" || true
+    echo "Downloading package list failed"
+  fi
+  true
+)
+if [ -f "${packages_file}" ]; then
+  echo "Installing missing packages"
+  # shellcheck disable=SC2046
+  sudo -E apt-get -qq install --no-upgrade $(grep -vE "^\s*#" "${packages_file}" | tr "\n" " ")
 fi
