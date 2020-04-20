@@ -42,6 +42,8 @@ packages_url="https://github.com/tete1030/openwrt-buildenv/raw/master/packages.t
 )
 if [ -f "${packages_file}" ]; then
   echo "Installing missing packages"
-  # shellcheck disable=SC2046
-  sudo -E apt-get -qq install --no-upgrade $(grep -vE "^\s*#" "${packages_file}" | tr "\n" " ")
+  mapfile -t all_packages < <(grep -vE -e "^\s*#" -e "^\s*\$" "${packages_file}")
+  sudo -E apt-get -qq install --no-upgrade "${all_packages[@]}"
+  echo "Installed packages: ${all_packages[*]}"
+  rm -f "${packages_file}"
 fi
