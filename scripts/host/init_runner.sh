@@ -49,7 +49,7 @@ setup_envs() {
 
 check_test() {
   # Prepare for test
-  if [ "x$(jq -crMe ".mode" <<<"${MATRIX_CONTEXT}")" = "xtest" ]; then
+  if [ "x${BUILD_MODE}" = "xtest" ]; then
     TEST=1
     _set_env TEST
     append_docker_exec_env TEST
@@ -76,8 +76,6 @@ load_task() {
 
 prepare_target() {
   # Set for target
-  BUILD_TARGET="$(jq -crMe ".target" <<<"${MATRIX_CONTEXT}")"
-  _set_env BUILD_TARGET
   if [ ! -d "${HOST_WORK_DIR}/user/${BUILD_TARGET}" ]; then
     echo "::error::Failed to find target ${BUILD_TARGET}" >&2
     exit 1
