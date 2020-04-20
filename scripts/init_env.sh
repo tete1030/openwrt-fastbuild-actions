@@ -32,7 +32,7 @@ packages_url="https://github.com/tete1030/openwrt-buildenv/raw/master/packages.t
   
   rm -f "${packages_file}" || true
   echo "Downloading package list from ${packages_url}"
-  curl -o "${packages_file}" "${packages_url}"
+  curl -sLo "${packages_file}" "${packages_url}"
   ret_val=$?
   if [ $ret_val -ne 0 ]; then
     rm -f "${packages_file}" || true
