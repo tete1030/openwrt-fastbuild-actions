@@ -12,7 +12,6 @@ install_commands() {
 
 setup_envs() {
   # Do not change
-  HOST_WORK_DIR="${GITHUB_WORKSPACE}"
   BUILDER_IMAGE_ID_BUILDENV="tete1030/openwrt-buildenv:latest"
   BUILDER_CONTAINER_ID="builder"
   BUILDER_WORK_DIR="/home/builder"
@@ -38,7 +37,7 @@ setup_envs() {
   # shellcheck disable=SC1090
   source "${HOST_WORK_DIR}/scripts/lib/utils.sh"
 
-  _set_env HOST_WORK_DIR HOST_TMP_DIR HOST_BIN_DIR
+  _set_env HOST_TMP_DIR HOST_BIN_DIR
   _set_env BUILDER_IMAGE_ID_BUILDENV BUILDER_CONTAINER_ID BUILDER_WORK_DIR BUILDER_TMP_DIR BUILDER_BIN_DIR BUILDER_PROFILE_DIR BUILDER_MOUNT_OPTS
   append_docker_exec_env BUILDER_WORK_DIR BUILDER_TMP_DIR BUILDER_BIN_DIR BUILDER_PROFILE_DIR
   _set_env DK_EXEC_ENVS

@@ -59,6 +59,7 @@ jobs:
         - mode: test
           title: Fast check
     env:
+      HOST_WORK_DIR: ${{env.GITHUB_WORKSPACE}}
       MATRIX_CONTEXT: ${{toJSON(matrix)}}
       BUILD_OPTS: 'update_feeds update_repo rebase rebuild debug push_when_fail package_only'
 
