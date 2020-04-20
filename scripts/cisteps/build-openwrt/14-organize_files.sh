@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eo pipefail
+
 shopt -s extglob
 
 sudo chown -R "$(id -u):$(id -g)" "${HOST_BIN_DIR}"

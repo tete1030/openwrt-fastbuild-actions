@@ -1,6 +1,8 @@
 #!/bin/bash
 # shellcheck disable=SC2034
 
+set -eo pipefail
+
 # shellcheck disable=SC1090
 source "${HOST_WORK_DIR}/scripts/lib/gaction.sh"
 

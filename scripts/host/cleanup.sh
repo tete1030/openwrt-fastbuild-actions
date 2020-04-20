@@ -12,3 +12,4 @@ sudo swapoff /swapfile
 sudo rm -f /swapfile
 docker rmi "$(docker images -q)"
 sudo -E apt-get -q purge azure-cli zulu* hhvm llvm* firefox google* dotnet* powershell openjdk* mysql*
+exit 0
