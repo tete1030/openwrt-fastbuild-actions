@@ -1,6 +1,6 @@
 --- package/feeds/packages/transmission/files/transmission.init
 +++ package/feeds/packages/transmission/files/transmission.init
-@@ -52,6 +52,9 @@ transmission() {
+@@ -52,6 +52,9 @@
  	local mem_percentage
  	local nice
  	local web_home
@@ -10,7 +10,7 @@
  
  	section_enabled "$section" || return 1
  
-@@ -63,6 +66,9 @@ transmission() {
+@@ -63,6 +66,9 @@
  	config_get config_overwrite "$cfg" config_overwrite 1
  	config_get nice "$cfg" nice 0
  	config_get web_home "$cfg" 'web_home'
@@ -20,7 +20,7 @@
  
  	local MEM
  
-@@ -79,7 +85,7 @@ transmission() {
+@@ -79,7 +85,7 @@
  		[ -z "$user" ] || chown -R "$user:$group" "$config_dir"
  	}
  
@@ -29,7 +29,7 @@
  
  		echo "{" > "$config_file"
  
-@@ -115,12 +121,19 @@ transmission() {
+@@ -115,12 +121,19 @@
  	procd_open_instance
  	procd_set_param command "/usr/bin/transmission-daemon"
  	procd_append_param command -f --log-error -g "$config_dir"
@@ -40,12 +40,30 @@
  	procd_set_param stderr 1
  	procd_set_param respawn
  
++	local ALL_ENVS
++
 +	[ "$proxy_enabled" = 0 ] || {
-+		procd_set_param env HTTP_PROXY="$proxy_url"
-+		procd_set_param env HTTPS_PROXY="$proxy_url"
-+		procd_set_param env ALL_PROXY="$proxy_url"
++		ALL_ENVS="${ALL_ENVS} HTTP_PROXY=\"$proxy_url\" HTTPS_PROXY=\"$proxy_url\" ALL_PROXY=\"$proxy_url\""
 +	}
 +
  	if [ -z "$USE" ]; then
  		procd_set_param limits core="0 0"
  	else
+@@ -129,11 +142,15 @@
+ 	fi
+ 
+ 	if test -d "$web_home"; then
+-		procd_set_param env TRANSMISSION_WEB_HOME="$web_home"
++		ALL_ENVS="${ALL_ENVS} TRANSMISSION_WEB_HOME=\"$web_home\""
++	fi
++
++	if [ -n "$ALL_ENVS" ]; then
++		eval "procd_set_param env $ALL_ENVS"
+ 	fi
+ 
+ 	procd_add_jail transmission log
+-	procd_add_jail_mount "$config_file"
++	procd_add_jail_mount_rw "$config_file"
+ 	procd_add_jail_mount_rw "$download_dir"
+ 	procd_close_instance
+ }
