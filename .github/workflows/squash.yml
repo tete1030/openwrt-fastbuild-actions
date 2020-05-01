@@ -20,7 +20,7 @@ name: Squash builders
 
 # Start every 72 hours
 on:
-  # deployment:
+  deployment:
   # schedule:
   # - cron: '0 */72 * * *'
 
