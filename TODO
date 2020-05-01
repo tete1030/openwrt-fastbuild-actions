@@ -23,7 +23,7 @@ V2:
     ☐ Consider make 'default' more logical
     ✔ Finish draft README @done(20-05-01 22:38)
     ☐ Mark as template project?
-    ☐ Make Chinsese version README into Wiki
+    ✔ Make Chinsese version README into Wiki @done(20-05-01 23:45)
     ☐ Store compiling log files
     ☐ Showing difference before/after 'make oldconfig'
     ☐ Dependency tree

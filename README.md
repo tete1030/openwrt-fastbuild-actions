@@ -3,7 +3,7 @@ BuildWrt
 
 > Original OpenWrt-FastBuild-Actions
 
-[中文说明](README_CN_OUTDATED.md)（过时的旧版本说明，不建议阅读，欢迎PR）
+[中文说明](README_CN_OUTDATED.md)（过时的旧版本说明，不建议阅读，欢迎在Wiki页面[中文说明（WIP）](https://github.com/tete1030/openwrt-fastbuild-actions/wiki/%E4%B8%AD%E6%96%87%E8%AF%B4%E6%98%8E%EF%BC%88WIP%EF%BC%89)帮助完善）
 
 This project accelerates OpenWrt building process in GitHub Actions. 
 
