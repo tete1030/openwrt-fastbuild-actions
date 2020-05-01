@@ -153,6 +153,9 @@ prepare_dirs() {
 
 main() {
   set -eo pipefail
+  if [ "$1" = "build" ]; then
+    BUILD_OPTS="update_feeds update_repo rebase rebuild debug push_when_fail package_only"
+  fi
 
   install_commands
   setup_envs
@@ -166,5 +169,6 @@ main() {
 }
 
 if [ "x$1" = "xmain" ]; then
-  main
+  shift
+  main "$@"
 fi
