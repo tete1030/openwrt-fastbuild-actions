@@ -15,6 +15,7 @@ By storing cache in docker images, BuildWrt significantly decreases compiling du
 - [Usage](#usage)
   - [Setup](#setup)
     - [Secrets page](#secrets-page)
+  - [Examples](#examples)
   - [Building](#building)
   - [Advanced usage](#advanced-usage)
     - [Re-create builder](#re-create-builder)
@@ -87,6 +88,12 @@ By storing cache in docker images, BuildWrt significantly decreases compiling du
 #### Secrets page
 
 ![Secrets page](docs/imgs/secrets.png)
+
+### Examples
+
+See my own setup:
+
+https://github.com/tete1030/openwrt-fastbuild-actions/tree/sample
 
 ### Building
 
