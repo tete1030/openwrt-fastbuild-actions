@@ -1,0 +1,45 @@
+--- package/openwrt-packages/OpenClash/luci-app-openclash/files/usr/share/openclash/clash_version.sh
++++ package/openwrt-packages/OpenClash/luci-app-openclash/files/usr/share/openclash/clash_version.sh
+@@ -14,9 +14,8 @@
+-VERSION_URL="https://raw.githubusercontent.com/vernesong/OpenClash/master/core_version"
+ if [ "$CKTIME" != "$(grep "CheckTime" $LAST_OPVER 2>/dev/null |awk -F ':' '{print $2}')" ]; then
+ 	 if pidof clash >/dev/null; then
+-      curl -sL --connect-timeout 10 --retry 2 -x http://$PROXY_ADDR:$HTTP_PORT -U "$PROXY_AUTH" "$VERSION_URL" -o $LAST_OPVER >/dev/null 2>&1
++      curl -sL --connect-timeout 10 --retry 2 -x http://$PROXY_ADDR:$HTTP_PORT -U "$PROXY_AUTH" "https://api.github.com/repos/WhoJave/clash/releases" 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' | head -n 1 >$LAST_OPVER
+    else
+-      curl -sL --connect-timeout 10 --retry 2 "$VERSION_URL" -o $LAST_OPVER >/dev/null 2>&1
++      curl -sL --connect-timeout 10 --retry 2 "https://api.github.com/repos/WhoJave/clash/releases" 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' | head -n 1 >$LAST_OPVER
+    fi
+    if [ "$?" -eq "0" ] && [ -s "$LAST_OPVER" ]; then
+       echo "CheckTime:$CKTIME" >>$LAST_OPVER
+--- package/openwrt-packages/OpenClash/luci-app-openclash/files/usr/share/openclash/openclash_core.sh
++++ package/openwrt-packages/OpenClash/luci-app-openclash/files/usr/share/openclash/openclash_core.sh
+@@ -16,14 +16,14 @@
+ if [ "$(/etc/openclash/clash -v 2>/dev/null |awk -F ' ' '{print $2}')" != "$(sed -n 1p /tmp/clash_last_version 2>/dev/null)" ] || [ -z "$(/etc/openclash/clash -v 2>/dev/null |awk -F ' ' '{print $2}')" ] || [ ! -f /etc/openclash/clash ]; then
+    if [ "$CPU_MODEL" != 0 ]; then
+    echo "开始下载 OpenClash 内核..." >$START_LOG
++   LAST_VERSION="$(sed -n 1p /tmp/clash_last_version 2>/dev/null)"
+    if pidof clash >/dev/null; then
+-      curl -sL --connect-timeout 10 --retry 2 -x http://$PROXY_ADDR:$HTTP_PORT -U "$PROXY_AUTH" https://github.com/vernesong/OpenClash/releases/download/Clash/clash-"$CPU_MODEL".tar.gz -o /tmp/clash.tar.gz >/dev/null 2>&1
++      curl -sL --connect-timeout 10 --retry 2 -x http://$PROXY_ADDR:$HTTP_PORT -U "$PROXY_AUTH" "https://github.com/WhoJave/clash/releases/download/${LAST_VERSION}/clash-${CPU_MODEL}-${LAST_VERSION}.gz" -o /tmp/clash.gz >/dev/null 2>&1
+    else
+-      curl -sL --connect-timeout 10 --retry 2 https://github.com/vernesong/OpenClash/releases/download/Clash/clash-"$CPU_MODEL".tar.gz -o /tmp/clash.tar.gz >/dev/null 2>&1
++      curl -sL --connect-timeout 10 --retry 2 "https://github.com/WhoJave/clash/releases/download/${LAST_VERSION}/clash-${CPU_MODEL}-${LAST_VERSION}.gz" -o /tmp/clash.gz >/dev/null 2>&1
+    fi
+-   if [ "$?" -eq "0" ] && [ -s "/tmp/clash.tar.gz" ]; then
+-      tar zxvf /tmp/clash.tar.gz -C /tmp >/dev/null 2>&1\
+-      && rm -rf /tmp/clash.tar.gz >/dev/null 2>&1\
++   if [ "$?" -eq "0" ] && [ -s "/tmp/clash.gz" ]; then
++      ( cd /tmp && gunzip clash.gz ) \
+       && chmod 4755 /tmp/clash\
+       && chown root:root /tmp/clash
+       /etc/init.d/openclash stop
+@@ -44,7 +44,7 @@
+       fi
+    else
+       echo "核心程序下载失败，请检查网络或稍后再试！" >$START_LOG
+-      rm -rf /tmp/clash.tar.gz >/dev/null 2>&1
++      rm -rf /tmp/clash.gz >/dev/null 2>&1
+       echo "${LOGTIME} OpenClash Core Update Error" >>$LOG_FILE
+       sleep 10
+       echo "" >$START_LOG

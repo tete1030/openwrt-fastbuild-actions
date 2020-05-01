@@ -1,8 +1,0 @@
-/.github
-.gitattributes
-.gitignore
-LICENSE
-README*.md
-/scripts/host
-/imgs
-/user/current

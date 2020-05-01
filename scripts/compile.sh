@@ -20,31 +20,31 @@ if [ "x${TEST}" = "x1" ]; then
 fi
 
 compile() {
-    (
-        cd "${OPENWRT_CUR_DIR}"
-        if [ "x${MODE}" = "xm" ]; then
-            nthread=$(($(nproc) + 1)) 
-            echo "${nthread} thread compile: $*"
-            make -j${nthread} "$@"
-        elif [ "x${MODE}" = "xs" ]; then
-            echo "Fallback to single thread compile: $*"
-            make -j1 V=s "$@"
-        else
-            echo "No MODE specified" >&2
-            exit 1
-        fi
-    )
+  (
+    cd "${OPENWRT_CUR_DIR}"
+    if [ "x${MODE}" = "xm" ]; then
+      local nthread=$(($(nproc) + 1)) 
+      echo "${nthread} thread compile: $*"
+      make -j${nthread} "$@"
+    elif [ "x${MODE}" = "xs" ]; then
+      echo "Fallback to single thread compile: $*"
+      make -j1 V=s "$@"
+    else
+      echo "No MODE specified" >&2
+      exit 1
+    fi
+  )
 }
 
 echo "Executing pre_compile.sh"
 if [ -f "${BUILDER_PROFILE_DIR}/pre_compile.sh" ]; then
-    /bin/bash "${BUILDER_PROFILE_DIR}/pre_compile.sh"
+  /bin/bash "${BUILDER_PROFILE_DIR}/pre_compile.sh"
 fi
 
 echo "Compiling..."
 if [ "x${OPT_PACKAGE_ONLY}" != "x1" ]; then
-    compile
+  compile
 else
-    compile "package/compile"
-    compile "package/index"
+  compile "package/compile"
+  compile "package/index"
 fi

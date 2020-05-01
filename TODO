@@ -1,0 +1,49 @@
+V1:
+    ✔ Merge building modes to simplify the process
+    ✔ SSH into docker container instead of just the runner (for make menuconfig)
+    ✔ Allow customizing trigger event
+    ✔ Allow specify building job in commit message
+    ✔ Automatically linking from base builder to builders for build-inc and build-package when not existing
+    ✔ Optimize README
+        ✔ Simplfy documentation
+        ✔ Add Chinese version of "Usage"
+        ✘ Add a figure to "Mechanism"
+        ✔ Describe mechanism
+        ✔ Describe building process
+        ✔ Describe using tete1030/github-repo-dispatcher to trigger building with extra options
+    ✔ Optimize comments in build-openwrt.yml and docker.sh
+    ✔ Optimize build-openwrt.yml, making options cleaner
+    ✔ Allow deterministic building (by fixing commit of main repo and feeds)
+
+V2:
+    ✔ Allow deletion of default @done(20-04-03 03:17)
+    ☐ !Use on-the-fly container extracter and commiter to save space
+    ☐ Make all option available in settings.ini
+    ☐ Replace test executing branch with functional tests
+    ☐ Consider make 'default' more logical
+    ✔ Finish draft README @done(20-05-01 22:38)
+    ☐ Mark as template project?
+    ☐ Make Chinsese version README into Wiki
+    ☐ Store compiling log files
+    ☐ Showing difference before/after 'make oldconfig'
+    ☐ Dependency tree
+        ☐ Drawing
+        ☐ Simplified dependency
+    ☐ Show conflict/dropped configs
+    ☐ Use GA API
+        ☐ For squashing
+        ☐ For separating targets?
+    ☐ Separate Squash ?
+    ☐ Improve organization of scripts
+        ☐ Separate scripts of different functions
+        ☐ Separate docker
+        ☐ Separate Github Actions
+        ☐ Integrate workflows into scripts
+    ☐ Independent running
+    ☐ Re-support direct building
+    ☐ Docker: use previous layer as base, decompressing latest layer on-the-fly (merge two recent layers) (performance?)
+    ☐ Support other CIs
+    ☐ Support running in docker? (the host itself)
+    ☐ Use CCACHE?
+    ☐ Using Stargz-snapshotter/CRFS?
+    ☐ Auto bump patches?

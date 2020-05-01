@@ -321,8 +321,8 @@
  		ctl = ath9k_regd_get_ctl(reg, chan);
  
  	channel = chan->chan;
--	chan_pwr = min_t(int, channel->max_power * 2, MAX_RATE_POWER);
-+	chan_pwr = MAX_RATE_POWER;
+-	chan_pwr = min_t(int, channel->max_power * 2, MAX_COMBINED_POWER);
++	chan_pwr = MAX_COMBINED_POWER;
  	new_pwr = min_t(int, chan_pwr, reg->power_limit);
  	max_gain = chan_pwr - new_pwr + channel->max_antenna_gain * 2;
  

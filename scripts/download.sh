@@ -13,8 +13,6 @@ fi
 [ "x${TEST}" != "x1" ] || exit 0
 
 cd "${OPENWRT_CUR_DIR}"
-make defconfig
-make oldconfig
 make download -j8
 find dl -size -1024c -exec ls -l {} \;
 find dl -size -1024c -exec rm -f {} \;
