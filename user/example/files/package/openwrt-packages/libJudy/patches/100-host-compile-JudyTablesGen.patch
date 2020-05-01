@@ -1,0 +1,44 @@
+--- a/src/Judy1/Makefile.am
++++ b/src/Judy1/Makefile.am
+@@ -18,7 +18,7 @@ libinline_la_SOURCES = j__udy1Test.c
+ libinline_la_CFLAGS = $(AM_CFLAGS) -DJUDYGETINLINE
+ 
+ Judy1Tables.c: Judy1TablesGen.c
+-	$(CC) $(INCLUDES) $(AM_CFLAGS) @CFLAGS@ -o Judy1TablesGen Judy1TablesGen.c; ./Judy1TablesGen
++	$(HOSTCC) $(INCLUDES) $(AM_CFLAGS) $(HOST_CFLAGS) -o Judy1TablesGen Judy1TablesGen.c; ./Judy1TablesGen
+ 
+ Judy1ByCount.c:../JudyCommon/JudyByCount.c
+ 	cp -f ../JudyCommon/JudyByCount.c      		Judy1ByCount.c   
+--- a/src/Judy1/Makefile.in
++++ b/src/Judy1/Makefile.in
+@@ -560,7 +560,7 @@ uninstall-am: uninstall-info-am
+ 
+ 
+ Judy1Tables.c: Judy1TablesGen.c
+-	$(CC) $(INCLUDES) $(AM_CFLAGS) @CFLAGS@ -o Judy1TablesGen Judy1TablesGen.c; ./Judy1TablesGen
++	$(HOSTCC) $(INCLUDES) $(AM_CFLAGS) $(HOST_CFLAGS) -o Judy1TablesGen Judy1TablesGen.c; ./Judy1TablesGen
+ 
+ Judy1ByCount.c:../JudyCommon/JudyByCount.c
+ 	cp -f ../JudyCommon/JudyByCount.c      		Judy1ByCount.c   
+--- a/src/JudyL/Makefile.am
++++ b/src/JudyL/Makefile.am
+@@ -18,7 +18,7 @@ libinline_la_SOURCES = j__udyLGet.c
+ libinline_la_CFLAGS = $(AM_CFLAGS) -DJUDYGETINLINE
+ 
+ JudyLTables.c: JudyLTablesGen.c
+-	$(CC) $(INCLUDES) $(AM_CFLAGS) @CFLAGS@ -o JudyLTablesGen JudyLTablesGen.c; ./JudyLTablesGen 
++	$(HOSTCC) $(INCLUDES) $(AM_CFLAGS) $(HOST_CFLAGS) -o JudyLTablesGen JudyLTablesGen.c; ./JudyLTablesGen 
+ 
+ JudyLByCount.c:   ../JudyCommon/JudyByCount.c
+ 	cp -f ../JudyCommon/JudyByCount.c      		JudyLByCount.c   
+--- a/src/JudyL/Makefile.in
++++ b/src/JudyL/Makefile.in
+@@ -560,7 +560,7 @@ uninstall-am: uninstall-info-am
+ 
+ 
+ JudyLTables.c: JudyLTablesGen.c
+-	$(CC) $(INCLUDES) $(AM_CFLAGS) @CFLAGS@ -o JudyLTablesGen JudyLTablesGen.c; ./JudyLTablesGen 
++	$(HOSTCC) $(INCLUDES) $(AM_CFLAGS) $(HOST_CFLAGS) -o JudyLTablesGen JudyLTablesGen.c; ./JudyLTablesGen 
+ 
+ JudyLByCount.c:   ../JudyCommon/JudyByCount.c
+ 	cp -f ../JudyCommon/JudyByCount.c      		JudyLByCount.c   

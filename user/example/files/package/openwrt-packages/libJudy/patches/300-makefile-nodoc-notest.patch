@@ -1,0 +1,11 @@
+--- a/Makefile.in	2007-05-22 07:39:11.000000000 -0700
++++ b/Makefile.in	2017-02-03 09:47:58.000000000 -0800
+@@ -193,7 +193,7 @@
+ # test (for libJudy).
+ #SUBDIRS = src tool doc test make_includes
+ #SUBDIRS = src/JudyCommon src/JudyL src/Judy1 src/JudySL src/JudyHS src/obj
+-SUBDIRS = src tool doc test
++SUBDIRS = src
+ 
+ # These files will be included in our tarballs, even though automake knows
+ # nothing else about them.

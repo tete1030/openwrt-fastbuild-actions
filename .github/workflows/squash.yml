@@ -1,0 +1,86 @@
+#=================================================
+# https://github.com/tete1030/openwrt-fastbuild-actions
+# Description: FAST building OpenWrt with Github Actions and Docker!
+# Lisence: MIT
+# Author: Texot
+#=================================================
+
+env:
+  # DO NOT CHANGE the following here, set them only in forked repo's Settings->Secrets page
+  # You don't need to set docker_registry if you are using the default Docker Hub
+  # 安全起见以下参数请不要在此更改，在你Fork的repo中，Settings->Secrets页面更改
+  # 如果你想使用默认的Docker Hub，你不需要在secrets页面设置docker_registry
+  DK_REGISTRY: ${{secrets.docker_registry}}
+  DK_USERNAME: ${{secrets.docker_username}}
+  DK_PASSWORD: ${{secrets.docker_password}}
+  SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
+  TMATE_ENCRYPT_PASSWORD: ${{secrets.TMATE_ENCRYPT_PASSWORD}}
+
+name: Squash builders
+
+# Start every 72 hours
+on:
+  deployment:
+  # schedule:
+  # - cron: '0 */72 * * *'
+
+jobs:
+  squash:
+    name: ${{matrix.title}} ${{matrix.target}}
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        mode:
+          - normal
+          - test
+        target: []
+        include:
+        - mode: normal
+          title: Squashing builder
+        - mode: test
+          title: Squashing test builder
+    env:
+      HOST_WORK_DIR: ${{github.workspace}}
+      BUILD_MODE: ${{matrix.mode}}
+      BUILD_TARGET: ${{matrix.target}}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Init build env
+      run: scripts/cisteps/squash/01-init_env.sh
+
+    - name: Check if skip this job
+      run: scripts/cisteps/squash/02-check_target.sh
+
+    - name: Clean up for extra space
+      if: env.SKIP_TARGET == '0'
+      run: scripts/cisteps/squash/03-clean_up.sh
+
+    - name: Set up Docker Buildx
+      id: buildx
+      if: env.SKIP_TARGET == '0'
+      uses: crazy-max/ghaction-docker-buildx@v1
+      with:
+        version: latest
+
+    - name: Configure docker
+      if: env.SKIP_TARGET == '0'
+      run: scripts/cisteps/squash/04-configure_docker.sh
+
+    - name: Check status of builder
+      if: env.SKIP_TARGET == '0'
+      run: scripts/cisteps/squash/05-check_builders.sh
+
+    - name: Download lastest builder
+      if: env.SKIP_TARGET == '0'
+      run: scripts/cisteps/squash/06-get_builder.sh
+
+    - name: Squash builder when necessary
+      if: env.SKIP_TARGET == '0'
+      run: scripts/cisteps/squash/07-squash_builder.sh
+
+    - name: Upload squashed builder
+      if: env.SKIP_TARGET == '0'
+      run: scripts/cisteps/squash/08-upload_builder.sh
