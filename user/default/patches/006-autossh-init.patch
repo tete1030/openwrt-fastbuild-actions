@@ -8,7 +8,7 @@
  START=80
  
  start_instance() {
-@@ -12,24 +13,26 @@
+@@ -12,22 +13,24 @@
  	config_get poll "$section" 'poll'
  	config_get_bool enabled "$section" 'enabled' '1'
  

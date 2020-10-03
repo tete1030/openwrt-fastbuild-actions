@@ -22,7 +22,7 @@
  
  	local MEM
  
-@@ -79,7 +85,10 @@
+@@ -79,7 +85,7 @@
  		[ -z "$user" ] || chown -R "$user:$group" "$config_dir"
  	}
  
@@ -31,7 +31,7 @@
  
  		echo "{" > "$config_file"
  
-@@ -115,12 +121,19 @@
+@@ -115,12 +121,22 @@
  	procd_open_instance
  	procd_set_param command "/usr/bin/transmission-daemon"
  	procd_append_param command -f --log-error -g "$config_dir"
