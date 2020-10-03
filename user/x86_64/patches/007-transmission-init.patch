@@ -1,26 +1,28 @@
 --- package/feeds/packages/transmission/files/transmission.init
 +++ package/feeds/packages/transmission/files/transmission.init
-@@ -52,6 +52,9 @@
+@@ -52,6 +52,10 @@
  	local mem_percentage
  	local nice
  	local web_home
 +	local log_file
 +	local proxy_enabled
 +	local proxy_url
++	local no_ssl_verify
  
  	section_enabled "$section" || return 1
  
-@@ -63,6 +66,9 @@
+@@ -63,6 +66,10 @@
  	config_get config_overwrite "$cfg" config_overwrite 1
  	config_get nice "$cfg" nice 0
  	config_get web_home "$cfg" 'web_home'
 +	config_get log_file "$cfg" 'log_file' '/var/log/transmission.log'
 +	config_get proxy_enabled "$cfg" 'proxy_enabled' 0
 +	config_get proxy_url "$cfg" 'proxy_url'
++	config_get no_ssl_verify "$cfg" 'no_ssl_verify' 0
  
  	local MEM
  
-@@ -79,7 +85,7 @@
+@@ -79,7 +85,10 @@
  		[ -z "$user" ] || chown -R "$user:$group" "$config_dir"
  	}
  
@@ -46,6 +48,9 @@
 +		ALL_ENVS="${ALL_ENVS} HTTP_PROXY=\"$proxy_url\" HTTPS_PROXY=\"$proxy_url\" ALL_PROXY=\"$proxy_url\""
 +	}
 +
++	[ "$no_ssl_verify" = 0 ] || {
++		ALL_ENVS="${ALL_ENVS} TR_CURL_SSL_NO_VERIFY=1"
++	}
  	if [ -z "$USE" ]; then
  		procd_set_param limits core="0 0"
  	else
