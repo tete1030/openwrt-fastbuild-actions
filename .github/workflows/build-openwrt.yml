@@ -51,7 +51,7 @@ jobs:
           - test
         # ########### Add your target name below ###########
         # E.g. target: [x86_64, wdr4310v1]
-        target: [x86_64, wdr4310v1]
+        target: [x86_64, wdr4310v1, k2p]
         include:
         - mode: normal
           title: Build
