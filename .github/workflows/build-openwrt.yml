@@ -74,16 +74,16 @@ jobs:
     - name: Check if skip this job
       run: scripts/cisteps/build-openwrt/02-check_target.sh
 
-    - name: Clean up for extra space
-      if: env.SKIP_TARGET == '0' && env.TEST != '1'
-      run: scripts/cisteps/build-openwrt/03-clean_up.sh
-
     - name: Set up Docker Buildx
       id: buildx
       if: env.SKIP_TARGET == '0'
-      uses: crazy-max/ghaction-docker-buildx@v1
+      uses: docker/setup-buildx-action@v1
       with:
         version: latest
+
+    - name: Clean up for extra space
+      if: env.SKIP_TARGET == '0' && env.TEST != '1'
+      run: scripts/cisteps/build-openwrt/03-clean_up.sh
 
     - name: Configure docker
       if: env.SKIP_TARGET == '0'
@@ -112,10 +112,11 @@ jobs:
       run: scripts/cisteps/build-openwrt/08-customize.sh
 
     # Allow intermediate customization
-    - name: '[Debug/Menuconfig] Wait for SSH connection (timeout 30min)'
+    - name: '[Debug/Menuconfig] Wait for SSH connection (timeout 10min)'
       if: env.SKIP_TARGET == '0' && env.OPT_DEBUG == '1' && env.TEST != '1'
       env:
         TMATE_DOCKER_CONTAINER: ${{env.BUILDER_CONTAINER_ID}}
+        TIMEOUT_MIN: 10
       uses: tete1030/safe-debugger-action@dev
 
     - name: Prepare config file
@@ -145,12 +146,13 @@ jobs:
       run: df -h
 
     # failure checking
-    - name: '[Failure/Debug] Wait for SSH connection (timeout 30min)'
+    - name: '[Failure/Debug] Wait for SSH connection (timeout 10min)'
       if: |
         env.SKIP_TARGET == '0' && !cancelled()
         && (job.status == 'failure' || (env.OPT_DEBUG == '1' && env.TEST != '1'))
       env:
         TMATE_DOCKER_CONTAINER: ${{env.BUILDER_CONTAINER_ID}}
+        TIMEOUT_MIN: 10
       uses: tete1030/safe-debugger-action@dev
 
     - name: Upload builder
@@ -188,7 +190,9 @@ jobs:
         path: ${{env.HOST_BIN_DIR}}
 
     # failure checking
-    - name: '[Failure/Debug] wait for SSH connection (timeout 30min. You are safe to cancel the job now.)'
+    - name: '[Failure/Debug] wait for SSH connection (timeout 10min. You are safe to cancel the job now.)'
+      env:
+        TIMEOUT_MIN: 10
       if: |
         env.SKIP_TARGET == '0' && !cancelled()
         && (job.status == 'failure' || (env.OPT_DEBUG == '1' && env.TEST != '1'))
