@@ -56,12 +56,14 @@ if [ "x${GITHUB_EVENT_NAME}" = "xpush" ]; then
 
 elif [ "x${GITHUB_EVENT_NAME}" = "xrepository_dispatch" ] || [ "x${GITHUB_EVENT_NAME}" = "xdeployment" ]; then
   echo "Repo dispatch or deployment event task: ${RD_TASK} target: ${RD_TARGET}"
-  if [[ "${RD_TASK}" == "build" && ( "${RD_TARGET}" == "all" || "${RD_TARGET}" == "${BUILD_TARGET}" ) ]]; then
+  if [[ "${RD_TASK}" == "build" && ( "${RD_TARGET}" == "all" || "${RD_TARGET}" == "${BUILD_TARGET}" || "${RD_TARGET}" == *"#${BUILD_TARGET}#"* ) ]]; then
     SKIP_TARGET=0
   fi
 elif [ "x${GITHUB_EVENT_NAME}" = "xworkflow_dispatch" ]; then
   echo "Workflow dispatch event target: ${RD_TARGET}"
-  SKIP_TARGET=0
+  if [[ "${RD_TARGET}" == "all" || "${RD_TARGET}" == "${BUILD_TARGET}" || "${RD_TARGET}" == *"#${BUILD_TARGET}#"* ]]; then
+    SKIP_TARGET=0
+  fi
 else
   echo "::warning::Unknown default target for triggering event: ${GITHUB_EVENT_NAME}" >&2
   SKIP_TARGET=0

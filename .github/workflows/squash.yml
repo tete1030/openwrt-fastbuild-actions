@@ -38,13 +38,7 @@ jobs:
     name: ${{matrix.title}} ${{matrix.target}}
     runs-on: ubuntu-18.04
     if: |
-      (
-        github.event_name == 'workflow_dispatch'
-        && (
-          github.event.inputs.target == 'all'
-          || github.event.inputs.target == matrix.target
-          || contains(github.event.inputs.target, '#' + matrix.target + '#')
-        ))
+      github.event_name == 'workflow_dispatch'
       || github.event_name == 'deployment'
       || github.event_name == 'schedule'
     strategy:
