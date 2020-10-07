@@ -33,6 +33,8 @@ _get_opt() {
     opt_value="$(jq -crM '(.client_payload.'"${opt_name}"' // "'"${opt_default}"'") as $v | if ($v|type=="boolean") then (if $v then 1 else 0 end) else $v end' "${GITHUB_EVENT_PATH}")"
   elif [ "x${GITHUB_EVENT_NAME}" = "xdeployment" ]; then
     opt_value="$(jq -crM '(.deployment.payload.'"${opt_name}"' // "'"${opt_default}"'") as $v | if ($v|type=="boolean") then (if $v then 1 else 0 end) else $v end' "${GITHUB_EVENT_PATH}")"
+  elif [ "x${GITHUB_EVENT_NAME}" = "xworkflow_dispatch" ]; then
+    opt_value="$(jq -crM '.inputs.options // ""' "${GITHUB_EVENT_PATH}" | jq -crM '(.'"${opt_name}"' // "'"${opt_default}"'") as $v | if ($v|type=="boolean") then (if $v then 1 else 0 end) else $v end')"
   else
     opt_value="${opt_default}"
   fi

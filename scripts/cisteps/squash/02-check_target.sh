@@ -11,5 +11,7 @@ if [[ ( "${GITHUB_EVENT_NAME}" == "repository_dispatch" || "${GITHUB_EVENT_NAME}
     SKIP_TARGET=0
 elif [[ "${GITHUB_EVENT_NAME}" == "schedule" ]]; then
     SKIP_TARGET=0
+elif [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+    SKIP_TARGET=0
 fi
 _set_env SKIP_TARGET

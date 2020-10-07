@@ -70,6 +70,9 @@ load_task() {
   elif [ "x${GITHUB_EVENT_NAME}" = "xdeployment" ]; then
     RD_TASK="$(jq -crM '.deployment.task // ""' "${GITHUB_EVENT_PATH}")"
     RD_TARGET="$(jq -crM '.deployment.payload.target // ""' "${GITHUB_EVENT_PATH}")"
+  elif [ "x${GITHUB_EVENT_NAME}" = "xworkflow_dispatch" ]; then
+    RD_TASK=""
+    RD_TARGET="$(jq -crM '.inputs.target // ""' "${GITHUB_EVENT_PATH}")"
   fi
   _set_env RD_TASK RD_TARGET
 }
