@@ -25,6 +25,7 @@ setup_envs() {
     -v '${HOST_WORK_DIR}/user:${BUILDER_WORK_DIR}/user'
     -v '${HOST_BIN_DIR}:${BUILDER_BIN_DIR}'
     -v '${HOST_TMP_DIR}:${BUILDER_TMP_DIR}'
+    -v '${GITHUB_ENV}:${GITHUB_ENV}'
   "
   OPENWRT_COMPILE_DIR="${BUILDER_WORK_DIR}/openwrt"
   OPENWRT_SOURCE_DIR="${BUILDER_TMP_DIR}/openwrt"
