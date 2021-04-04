@@ -94,7 +94,7 @@ docker_exec() {
     for env_name in ${DK_EXEC_ENVS}; do
       exec_envs+=( -e "${env_name}=${!env_name}" )
     done
-    docker exec -i "${exec_envs[@]}" "$@"
+    docker exec -u 0 -i "${exec_envs[@]}" "$@"
   )
 }
 
