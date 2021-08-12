@@ -7,7 +7,7 @@ OpenWrt在线增量编译
 > 
 > 如果你并不喜欢这样，或者不在乎长时间的编译过程，或者认为以下说明比较复杂，你也可以使用[P3TERX's Actions-Openwrt](https://github.com/P3TERX/Actions-OpenWrt)或[KFERMercer's OpenWrt-CI](https://github.com/KFERMercer/OpenWrt-CI)。它们用起来非常简单，除了编译比较花费时间。
 
-本项目灵感来自于[P3TERX's Actions-Openwrt](https://github.com/P3TERX/Actions-OpenWrt)。
+项目灵感来自于[P3TERX's Actions-Openwrt](https://github.com/P3TERX/Actions-OpenWrt)。
 
 Github Actions和Actions-Openwrt让我们可以很方便地自动化编译OpenWrt固件，而不必在本地编译。然而Github Actions不存储缓存，已编译过的文件也不会在下次编译重新被使用。这就意味着，即便只是很小的改动，每次编译我们要等上很久来重新编译整个固件。
 
