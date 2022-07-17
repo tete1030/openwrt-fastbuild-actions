@@ -10,11 +10,12 @@ _set_env() {
     var_value="${var_value//$'\r'/}"
     if [[ $var_value == *$'\n'* ]]; then
       if [ ${LOCAL_RUN} == "1" ]; then
-        echo -n "read -r -d '' " >> $GITHUB_ENV
+        echo "read -r -d '' ${var_name}<<_ThisMessageEnds_ || :" >> $GITHUB_ENV
+      else
+        echo "${var_name}<<_ThisMessageEnds_" >> $GITHUB_ENV
       fi
-      echo "${var_name}<<EOF" >> $GITHUB_ENV
       echo "${var_value}" >> $GITHUB_ENV
-      echo "EOF" >> $GITHUB_ENV
+      echo "_ThisMessageEnds_" >> $GITHUB_ENV
     else
       if [ ${LOCAL_RUN} == "1" ]; then
         var_value="${var_value//'"'/'\"'}"
