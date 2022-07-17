@@ -6,6 +6,9 @@ SCRIPT_DIR="${HOST_WORK_DIR}/scripts"
 set -eo pipefail
 
 export GITHUB_ENV="${HOST_WORK_DIR}/.my-github-env"
+if [ -f ${GITHUB_ENV} ]; then
+    rm -f ${GITHUB_ENV}
+fi
 touch ${GITHUB_ENV}
 
 export LOCAL_RUN=1
