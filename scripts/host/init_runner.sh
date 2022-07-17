@@ -3,7 +3,7 @@
 
 install_commands() {
   echo "Installing necessary commands..."
-  if [ "${LOCAL_RUN}" == "1" ]; then
+  if [ "x${LOCAL_RUN}" == "x1" ]; then
     echo "Skipping installing"
     return
   fi

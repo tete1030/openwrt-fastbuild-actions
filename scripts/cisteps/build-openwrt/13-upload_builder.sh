@@ -14,7 +14,7 @@ docker_exec "${BUILDER_CONTAINER_ID}" "${BUILDER_WORK_DIR}/scripts/pre_commit.sh
 docker commit -a "tete1030/openwrt-fastbuild-actions" -m "Building at $(date)" "${BUILDER_CONTAINER_ID}" "${BUILDER_IMAGE_ID_INC}"
 docker container rm -fv "${BUILDER_CONTAINER_ID}"
 
-if [ "${LOCAL_RUN}" == "1" ]; then
+if [ "x${LOCAL_RUN}" == "x1" ]; then
   echo "Skipping cleaning up and squashing"
 else
   clean_up_docker

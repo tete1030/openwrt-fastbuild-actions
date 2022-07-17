@@ -5,7 +5,7 @@
 
 set +eo pipefail
 
-if [ "${LOCAL_RUN}" == "1" ]; then
+if [ "x${LOCAL_RUN}" == "x1" ]; then
     echo "Skipping cleaning up"
     exit 0
 fi
