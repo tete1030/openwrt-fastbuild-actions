@@ -3,6 +3,11 @@
 HOST_WORK_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")"
 SCRIPT_DIR="${HOST_WORK_DIR}/scripts"
 
+set -eo pipefail
+
+export GITHUB_ENV="${HOST_WORK_DIR}/.my-github-env"
+touch ${GITHUB_ENV}
+
 export LOCAL_RUN=1
 export HOST_WORK_DIR
 export BUILD_MODE=normal

@@ -2,4 +2,6 @@
 /openwrt_bin
 /openwrt_firmware
 
+.my-github-env
+
 .DS_Store
