@@ -21,6 +21,7 @@ _set_env OPENWRT_CUR_DIR
 
 # Install missing packages in current env from a remote list
 sudo -E apt-get -qq update
+sudo update-ca-certificates
 if [ ! -x "$(command -v curl)" ]; then
     echo "curl not found, installing..."
     sudo -E apt-get -qq install curl
