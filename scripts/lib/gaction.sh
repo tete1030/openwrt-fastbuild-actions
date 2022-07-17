@@ -7,10 +7,14 @@ _set_env() {
   for var_name in "$@" ; do
     eval "export ${var_name}"
     local var_value="${!var_name}"
-    var_value="${var_value//%/%25}"
-    var_value="${var_value//$'\n'/%0A}"
-    var_value="${var_value//$'\r'/%0D}"
-    echo "${var_name}=${var_value}" >> $GITHUB_ENV
+    var_value="${var_value//$'\r'/}"
+    if [[ $var_value == *$'\n'* ]]; then
+      echo "${var_name}<<EOF" >> $GITHUB_ENV
+      echo "${var_value}" >> $GITHUB_ENV
+      echo "EOF" >> $GITHUB_ENV
+    else
+      echo "${var_name}=${var_value}" >> $GITHUB_ENV
+    fi
   done
 }
 

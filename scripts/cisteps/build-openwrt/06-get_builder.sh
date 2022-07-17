@@ -6,7 +6,7 @@ set -eo pipefail
 source "${HOST_WORK_DIR}/scripts/host/docker.sh"
 
 # 'eval' is to correctly parse quotes
-eval "declare -a MOUNT_OPTS=( $(printf '%b' "${BUILDER_MOUNT_OPTS//%/\\x}") )"
+eval "declare -a MOUNT_OPTS=( ${BUILDER_MOUNT_OPTS} )"
 if [ "x${OPT_REBUILD}" != "x1" ]; then
   pull_image "${BUILDER_IMAGE_ID_INC}"
   squash_image_when_necessary "${BUILDER_IMAGE_ID_INC}"
