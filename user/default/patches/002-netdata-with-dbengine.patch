@@ -1,6 +1,6 @@
 --- package/feeds/packages/netdata/Makefile
 +++ package/feeds/packages/netdata/Makefile 
-@@ -30,7 +30,7 @@ include $(INCLUDE_DIR)/package.mk
+@@ -31,7 +31,7 @@ include $(INCLUDE_DIR)/package.mk
  define Package/netdata
    SECTION:=admin
    CATEGORY:=Administration
@@ -9,12 +9,12 @@
    TITLE:=Real-time performance monitoring tool
    URL:=https://www.netdata.cloud/
  endef
-@@ -52,8 +52,6 @@ CONFIGURE_ARGS += \
- 	--with-math \
+@@ -54,8 +54,6 @@ 	--disable-x86-sse \
  	--enable-lto \
+ 	--disable-ebpf \
  	--without-libcap \
 -	--disable-https \
 -	--disable-dbengine \
+ 	--disable-compression \
  	--disable-plugin-nfacct \
  	--disable-plugin-freeipmi \
- 	--disable-plugin-cups \
