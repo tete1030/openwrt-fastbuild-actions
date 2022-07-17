@@ -4,6 +4,12 @@
 # From https://github.com/P3TERX/Actions-OpenWrt
 
 set +eo pipefail
+
+if [ "${LOCAL_RUN}" == "1" ]; then
+    echo "Skipping cleaning up"
+    exit 0
+fi
+
 export DEBIAN_FRONTEND=noninteractive
 
 echo "Deleting files, please wait ..."

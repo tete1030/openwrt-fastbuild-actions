@@ -3,6 +3,10 @@
 
 install_commands() {
   echo "Installing necessary commands..."
+  if [ "${LOCAL_RUN}" == "1" ]; then
+    echo "Skipping installing"
+    return
+  fi
   export DEBIAN_FRONTEND=noninteractive
 
   sudo -E apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CC86BB64
@@ -13,10 +17,11 @@ install_commands() {
 setup_envs() {
   # Do not change
   BUILDER_IMAGE_ID_BUILDENV="tete1030/openwrt-buildenv:latest"
-  BUILDER_CONTAINER_ID="builder"
+  RANDOM_ID=$(echo $RANDOM | md5sum | head -c 20)
+  BUILDER_CONTAINER_ID="builder-${RANDOM_ID}"
   BUILDER_WORK_DIR="/home/builder"
   BUILDER_TMP_DIR="/tmp/builder"
-  HOST_TMP_DIR="/tmp/builder"
+  HOST_TMP_DIR="$(mktemp -d -t openwrt-builder-XXXXXXXX)"
   BUILDER_BIN_DIR="${BUILDER_WORK_DIR}/openwrt_bin"
   HOST_BIN_DIR="${HOST_WORK_DIR}/openwrt_bin"
   BUILDER_PROFILE_DIR="${BUILDER_WORK_DIR}/user/current"
@@ -38,7 +43,7 @@ setup_envs() {
   # shellcheck disable=SC1090
   source "${HOST_WORK_DIR}/scripts/lib/utils.sh"
 
-  _set_env HOST_TMP_DIR HOST_BIN_DIR
+  _set_env HOST_WORK_DIR HOST_TMP_DIR HOST_BIN_DIR BUILD_MODE BUILD_TARGET
   _set_env BUILDER_IMAGE_ID_BUILDENV BUILDER_CONTAINER_ID BUILDER_WORK_DIR BUILDER_TMP_DIR BUILDER_BIN_DIR BUILDER_PROFILE_DIR BUILDER_MOUNT_OPTS
   append_docker_exec_env BUILDER_WORK_DIR BUILDER_TMP_DIR BUILDER_BIN_DIR BUILDER_PROFILE_DIR
   _set_env DK_EXEC_ENVS

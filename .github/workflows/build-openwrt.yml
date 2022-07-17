@@ -100,10 +100,6 @@ jobs:
       if: env.SKIP_TARGET == '0'
       uses: docker/setup-buildx-action@v1
 
-    - name: Clean up for extra space
-      if: env.SKIP_TARGET == '0' && env.TEST != '1'
-      run: scripts/cisteps/build-openwrt/03-clean_up.sh
-
     - name: Configure docker
       if: env.SKIP_TARGET == '0'
       run: scripts/cisteps/build-openwrt/04-configure_docker.sh
