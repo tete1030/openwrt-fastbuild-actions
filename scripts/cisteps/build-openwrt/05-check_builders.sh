@@ -7,6 +7,10 @@ source "${HOST_WORK_DIR}/scripts/host/docker.sh"
 # shellcheck disable=SC1090
 source "${HOST_WORK_DIR}/scripts/lib/gaction.sh"
 
+if [ "x${OPT_REBUILD}" != "x0" ]; then
+  OPT_REBUILD=1
+fi
+
 if [ "x${OPT_REBUILD}" != "x1" ]; then
   # temporarily disable failure guarder
   set +eo pipefail
