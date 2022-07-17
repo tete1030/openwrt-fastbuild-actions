@@ -9,11 +9,17 @@ _set_env() {
     local var_value="${!var_name}"
     var_value="${var_value//$'\r'/}"
     if [[ $var_value == *$'\n'* ]]; then
+      if [ ${LOCAL_RUN} == "1" ]; then
+        echo -n "read -r -d '' " >> $GITHUB_ENV
+      fi
       echo "${var_name}<<EOF" >> $GITHUB_ENV
       echo "${var_value}" >> $GITHUB_ENV
       echo "EOF" >> $GITHUB_ENV
     else
       echo "${var_name}=${var_value}" >> $GITHUB_ENV
+    fi
+    if [ ${LOCAL_RUN} == "1" ]; then
+      echo "export ${var_name}" >> $GITHUB_ENV
     fi
   done
 }

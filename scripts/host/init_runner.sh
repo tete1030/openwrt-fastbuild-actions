@@ -54,6 +54,8 @@ setup_envs() {
   _set_env OPENWRT_COMPILE_DIR OPENWRT_SOURCE_DIR OPENWRT_CUR_DIR
   append_docker_exec_env OPENWRT_COMPILE_DIR OPENWRT_SOURCE_DIR OPENWRT_CUR_DIR
   _set_env DK_EXEC_ENVS
+
+  _set_env LOCAL_RUN
 }
 
 check_test() {
