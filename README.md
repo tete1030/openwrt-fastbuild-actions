@@ -3,7 +3,7 @@ BuildWrt
 
 > Original OpenWrt-FastBuild-Actions
 
-[中文说明](README_CN_OUTDATED.md)（过时的旧版本说明，不建议阅读，欢迎PR）
+[中文说明](README_CN_OUTDATED.md)（过时的旧版本说明，不建议阅读，欢迎在Wiki页面[中文说明（WIP）](https://github.com/tete1030/openwrt-fastbuild-actions/wiki/%E4%B8%AD%E6%96%87%E8%AF%B4%E6%98%8E%EF%BC%88WIP%EF%BC%89)帮助完善）
 
 This project accelerates OpenWrt building process in GitHub Actions. 
 
@@ -15,6 +15,7 @@ By storing cache in docker images, BuildWrt significantly decreases compiling du
 - [Usage](#usage)
   - [Setup](#setup)
     - [Secrets page](#secrets-page)
+  - [Examples](#examples)
   - [Building](#building)
   - [Advanced usage](#advanced-usage)
     - [Re-create builder](#re-create-builder)
@@ -87,6 +88,12 @@ By storing cache in docker images, BuildWrt significantly decreases compiling du
 #### Secrets page
 
 ![Secrets page](docs/imgs/secrets.png)
+
+### Examples
+
+See my own setup:
+
+https://github.com/tete1030/openwrt-fastbuild-actions/tree/sample
 
 ### Building
 

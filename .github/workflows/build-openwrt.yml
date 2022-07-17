@@ -30,6 +30,7 @@ on:
         description: 'Options in JSON'
         required: false
   repository_dispatch:
+  workflow_dispatch:
   push:
     paths:
     - 'user/**'
@@ -49,6 +50,7 @@ jobs:
       github.event_name == 'push'
       || github.event_name == 'workflow_dispatch'
       || github.event_name == 'repository_dispatch'
+      || github.event_name == 'workflow_dispatch'
       || github.event_name == 'deployment'
       || (github.event_name == 'watch' && github.event.action == 'started' && github.event.repository.owner.id == github.event.sender.id)
       || github.event_name == 'schedule'
@@ -84,12 +86,20 @@ jobs:
     - name: Check if skip this job
       run: scripts/cisteps/build-openwrt/02-check_target.sh
 
+    - name: Clean up for extra space
+      if: env.SKIP_TARGET == '0' && env.TEST != '1'
+      run: scripts/cisteps/build-openwrt/03-clean_up.sh
+
+    # https://github.com/docker/setup-qemu-action
+    - name: Set up QEMU
+      id: buildx-qemy
+      if: env.SKIP_TARGET == '0'
+      uses: docker/setup-qemu-action@v1
+    # https://github.com/docker/setup-buildx-action
     - name: Set up Docker Buildx
       id: buildx
       if: env.SKIP_TARGET == '0'
       uses: docker/setup-buildx-action@v1
-      with:
-        version: latest
 
     - name: Clean up for extra space
       if: env.SKIP_TARGET == '0' && env.TEST != '1'
