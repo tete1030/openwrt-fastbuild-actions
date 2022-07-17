@@ -160,9 +160,9 @@ prepare_dirs() {
   mkdir -p "${HOST_BIN_DIR}"
   chmod 777 "${HOST_BIN_DIR}"
   if [ ! -d "${HOST_TMP_DIR}" ]; then
-    sudo mkdir "${HOST_TMP_DIR}"
+    mkdir "${HOST_TMP_DIR}"
   fi
-  sudo chmod 777 "${HOST_TMP_DIR}"
+  chmod 777 "${HOST_TMP_DIR}"
 }
 
 main() {
