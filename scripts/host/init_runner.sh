@@ -27,6 +27,7 @@ setup_envs() {
   BUILDER_PROFILE_DIR="${BUILDER_WORK_DIR}/user/current"
   HOST_ENV_FILE="${HOST_WORK_DIR}/.my-env"
   touch "${HOST_ENV_FILE}"
+  chmod 666 "${HOST_ENV_FILE}"
   BUILDER_ENV_FILE="${BUILDER_WORK_DIR}/.my-env"
   BUILDER_MOUNT_OPTS="
     -v '${HOST_WORK_DIR}/scripts:${BUILDER_WORK_DIR}/scripts'
