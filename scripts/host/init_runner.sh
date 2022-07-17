@@ -98,6 +98,10 @@ prepare_target() {
     exit 1
   fi
 
+  if [ -d "${HOST_WORK_DIR}/user/current" ]; then
+    rm -rf "${HOST_WORK_DIR}/user/current"
+  fi
+
   # Load default and target configs
   if [ -d "${HOST_WORK_DIR}/user/default" ]; then
     cp -r "${HOST_WORK_DIR}/user/default" "${HOST_WORK_DIR}/user/current"
