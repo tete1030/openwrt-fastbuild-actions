@@ -94,7 +94,9 @@ docker_exec() {
     for env_name in ${DK_EXEC_ENVS}; do
       exec_envs+=( -e "${env_name}=${!env_name}" )
     done
-    docker exec -i "${exec_envs[@]}" "$@"
+    cp -f "${GITHUB_ENV}" "${HOST_ENV_FILE}"
+    docker exec -i "${exec_envs[@]}" -e "GITHUB_ENV=${BUILDER_ENV_FILE}" "$@"
+    cp -f "${HOST_ENV_FILE}" "${GITHUB_ENV}"
   )
 }
 

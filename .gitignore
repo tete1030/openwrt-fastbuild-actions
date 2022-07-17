@@ -3,5 +3,6 @@
 /openwrt_firmware
 
 .my-github-env
+.my-env
 
 .DS_Store
