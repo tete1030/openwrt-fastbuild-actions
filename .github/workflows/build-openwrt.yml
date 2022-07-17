@@ -30,7 +30,6 @@ on:
         description: 'Options in JSON'
         required: false
   repository_dispatch:
-  workflow_dispatch:
   push:
     paths:
     - 'user/**'
