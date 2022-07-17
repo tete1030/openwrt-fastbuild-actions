@@ -16,7 +16,12 @@ _set_env() {
       echo "${var_value}" >> $GITHUB_ENV
       echo "EOF" >> $GITHUB_ENV
     else
-      echo "${var_name}=${var_value}" >> $GITHUB_ENV
+      if [ ${LOCAL_RUN} == "1" ]; then
+        var_value="${var_value//'"'/'\"'}"
+        echo "${var_name}=\"${var_value}\"" >> $GITHUB_ENV
+      else
+        echo "${var_name}=${var_value}" >> $GITHUB_ENV
+      fi
     fi
     if [ ${LOCAL_RUN} == "1" ]; then
       echo "export ${var_name}" >> $GITHUB_ENV
