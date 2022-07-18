@@ -20,7 +20,7 @@ if [ "x${TEST}" = "x1" ]; then
 fi
 
 trickle () {
-    awk 'BEGIN { t = systime() }
+    awk -W interactive 'BEGIN { t = systime() }
                { printf("[%5d] ", systime() - t) ; print $0 }
                { t = systime() }'
 }
