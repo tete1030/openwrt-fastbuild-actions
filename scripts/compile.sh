@@ -20,8 +20,8 @@ if [ "x${TEST}" = "x1" ]; then
 fi
 
 trickle () {
-    awk -W interactive 'BEGIN { t = systime() }
-               { printf("[%5d] ", systime() - t) ; print $0 }
+    gawk 'BEGIN { t = systime() }
+               { printf("[%5d] ", systime() - t) ; print $0 ; system("") }
                { t = systime() }'
 }
 
