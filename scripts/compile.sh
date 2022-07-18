@@ -19,16 +19,22 @@ if [ "x${TEST}" = "x1" ]; then
   exit 0
 fi
 
+trickle () {
+    awk 'BEGIN { t = systime() }
+               { printf("[%5d] ", systime() - t) ; print $0 }
+               { t = systime() }'
+}
+
 compile() {
   (
     cd "${OPENWRT_CUR_DIR}"
     if [ "x${MODE}" = "xm" ]; then
       local nthread=$(($(nproc) + 1)) 
       echo "${nthread} thread compile: $*"
-      make -j${nthread} "$@"
+      make -j${nthread} "$@" | trickle
     elif [ "x${MODE}" = "xs" ]; then
       echo "Fallback to single thread compile: $*"
-      make -j1 V=s "$@"
+      make -j1 V=s "$@" | trickle
     else
       echo "No MODE specified" >&2
       exit 1

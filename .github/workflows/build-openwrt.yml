@@ -170,13 +170,13 @@ jobs:
         TIMEOUT_MIN: 10
       uses: tete1030/safe-debugger-action@dev
 
-    - name: Upload builder
-      if: |
-        env.SKIP_TARGET == '0' && !cancelled() && (
-          job.status == 'success'
-          || env.OPT_PUSH_WHEN_FAIL == '1'
-        )
-      run: scripts/cisteps/build-openwrt/13-upload_builder.sh
+    # - name: Upload builder
+    #   if: |
+    #     env.SKIP_TARGET == '0' && !cancelled() && (
+    #       job.status == 'success'
+    #       || env.OPT_PUSH_WHEN_FAIL == '1'
+    #     )
+    #   run: scripts/cisteps/build-openwrt/13-upload_builder.sh
 
     # - name: Upload bin directory
     #   uses: actions/upload-artifact@master
