@@ -1,46 +1,46 @@
 --- package/feeds/packages/qemu/Makefile
 +++ package/feeds/packages/qemu/Makefile
 @@ -197,6 +197,7 @@
-        +QEMU_UI_VNC_PNG:libpng \
-        +QEMU_UI_VNC_SASL:libsasl2 \
-        +QEMU_UI_SPICE:libspice-server \
-+       +QEMU_LIBUSB:libusb-1.0 \
-        $(if $(filter %-softmmu,$(1)),+libncurses +libfdt +pixman +qemu-firmware-efi $(ICONV_DEPENDS))
+ 	+QEMU_UI_VNC_PNG:libpng \
+ 	+QEMU_UI_VNC_SASL:libsasl2 \
+ 	+QEMU_UI_SPICE:libspice-server \
++	+QEMU_LIBUSB:libusb-1.0 \
+ 	$(if $(filter %-softmmu,$(1)),+libncurses +libfdt +pixman +qemu-firmware-efi $(ICONV_DEPENDS))
    endef
-
+ 
 @@ -258,6 +259,9 @@
  config QEMU_UI_SPICE
-        bool "QEMU SPICE ui support"
-
+ 	bool "QEMU SPICE ui support"
+ 
 +config QEMU_LIBUSB
-+       bool "QEMU libusb"
++	bool "QEMU libusb"
 +
  endif
  endef
-
-@@ -270,6 +271,7 @@
-        CONFIG_QEMU_UI_VNC_PNG \
-        CONFIG_QEMU_UI_VNC_SASL \
-        CONFIG_QEMU_UI_SPICE \
-+       CONFIG_QEMU_LIBUSB \
-
-
+ 
+@@ -267,6 +271,7 @@
+ 	CONFIG_QEMU_UI_VNC_PNG \
+ 	CONFIG_QEMU_UI_VNC_SASL \
+ 	CONFIG_QEMU_UI_SPICE \
++	CONFIG_QEMU_LIBUSB \
+ 
+ 
  # QEMU configure script does not recognize these options
-@@ -389,7 +391,7 @@
-        --disable-libpmem               \
-        --disable-libssh                \
-        --disable-libudev               \
--       --disable-libusb                \
-+       --$(if $(CONFIG_QEMU_LIBUSB),enable,disable)-libusb \
-        --disable-libxml2               \
-        --disable-linux-aio             \
-        --disable-linux-io-uring        \
-@@ -418,7 +420,7 @@
-        --disable-tcmalloc              \
-        --disable-tools                 \
-        --disable-tpm                   \
--       --disable-usb-redir             \
-+       --$(if $(CONFIG_QEMU_LIBUSB),enable,disable)-usb-redir \
-        --disable-vde                   \
-        --disable-virtfs                \
-        --disable-vxhs                  \
+@@ -386,7 +391,7 @@
+ 	--disable-libpmem		\
+ 	--disable-libssh		\
+ 	--disable-libudev		\
+-	--disable-libusb		\
++	--$(if $(CONFIG_QEMU_LIBUSB),enable,disable)-libusb \
+ 	--disable-libxml2		\
+ 	--disable-linux-aio		\
+ 	--disable-linux-io-uring	\
+@@ -415,7 +420,7 @@
+ 	--disable-tcmalloc		\
+ 	--disable-tools			\
+ 	--disable-tpm			\
+-	--disable-usb-redir		\
++	--$(if $(CONFIG_QEMU_LIBUSB),enable,disable)-usb-redir \
+ 	--disable-vde			\
+ 	--disable-virtfs		\
+ 	--disable-vxhs			\
