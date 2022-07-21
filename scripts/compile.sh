@@ -5,6 +5,9 @@
 
 set -eo pipefail
 
+COMPILE_OUTPUT_FILE=/tmp/compile_output.txt
+FAILED_PKG_FILE=/tmp/failed_packages.txt
+
 if [ -z "${OPENWRT_COMPILE_DIR}" ] || [ -z "${OPENWRT_CUR_DIR}" ] || [ -z "${OPENWRT_SOURCE_DIR}" ]; then
   echo "::error::'OPENWRT_COMPILE_DIR', 'OPENWRT_CUR_DIR' or 'OPENWRT_SOURCE_DIR' is empty" >&2
   exit 1
@@ -20,7 +23,7 @@ if [ "x${TEST}" = "x1" ]; then
 fi
 
 save_output() {
-  stdbuf -oL -eL tee /tmp/compile_output.txt
+  stdbuf -oL -eL tee "${COMPILE_OUTPUT_FILE}"
 }
 
 trickle () {
@@ -56,12 +59,12 @@ set +eo pipefail
 last_status=0
 
 prev_failure_package=
-if [ -f "/tmp/failed_packages.txt" ]; then
-  prev_failure_package="$(cat /tmp/failed_packages.txt | head -n 1)"
-  rm -f /tmp/failed_packages.txt
+if [ -f "${FAILED_PKG_FILE}" ]; then
+  prev_failure_package="$(cat "${FAILED_PKG_FILE}" | head -n 1)"
+  rm -f "${FAILED_PKG_FILE}"
 fi
 
-if [ -e "${prev_failure_package}" ]; then
+if [ -z "${prev_failure_package}" ]; then
   if [ "x${OPT_PACKAGE_ONLY}" != "x1" ]; then
     compile
     last_status=$?
@@ -82,16 +85,13 @@ fi
 if [ $last_status -ne 0 ]; then
   echo "::error::Compile has failed" >&2
   echo -n "::error::" >&2
-  grep -i "error:" /tmp/compile_output.txt >&2
+  grep -i "error:" "${COMPILE_OUTPUT_FILE}" >&2
 
   # ERROR: package/feeds/packages/qemu failed to build.
   re='ERROR:\s+([^\s]+)\s+failed to build'
-  if grep -P "$re" -o /tmp/compile_output.txt >/dev/null ; then
+  if grep -P "$re" -o "${COMPILE_OUTPUT_FILE}" >/dev/null ; then
     echo "::error::Failed packages:" >&2
-    grep -P "$re" -o /tmp/compile_output.txt | tr -s ' ' |  cut -d ' ' -f2 | tee /tmp/failed_packages.txt >&2
+    grep -P "$re" -o "${COMPILE_OUTPUT_FILE}" | tr -s ' ' |  cut -d ' ' -f2 | tee "${FAILED_PKG_FILE}" >&2
   else
-    if [ -f "/tmp/failed_packages.txt" ]; then
-      rm -f /tmp/failed_packages.txt
-    fi
   fi
 fi
