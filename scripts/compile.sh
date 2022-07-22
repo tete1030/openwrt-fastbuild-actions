@@ -97,3 +97,5 @@ if [ $last_status -ne 0 ]; then
     grep -P "$re" -o "${COMPILE_OUTPUT_FILE}" | tr -s ' ' |  cut -d ' ' -f2 | tee "${FAILED_PKG_FILE}" >&2
   fi
 fi
+
+exit $last_status
