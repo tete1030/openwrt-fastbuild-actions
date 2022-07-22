@@ -92,6 +92,5 @@ if [ $last_status -ne 0 ]; then
   if grep -P "$re" -o "${COMPILE_OUTPUT_FILE}" >/dev/null ; then
     echo "::error::Failed packages:" >&2
     grep -P "$re" -o "${COMPILE_OUTPUT_FILE}" | tr -s ' ' |  cut -d ' ' -f2 | tee "${FAILED_PKG_FILE}" >&2
-  else
   fi
 fi
