@@ -81,7 +81,7 @@ if [ -z "${prev_failure_package}" ]; then
   fi
 else
   echo "Compiling only previously failed package: ${prev_failure_package}"
-  compile "${prev_failure_package}"
+  compile "${prev_failure_package}/compile"
   last_status=$?
 fi
 
