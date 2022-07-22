@@ -35,16 +35,19 @@ trickle () {
 compile() {
   (
     cd "${OPENWRT_CUR_DIR}"
+    set +eo pipefail
     if [ "x${MODE}" = "xm" ]; then
       local nthread=$(($(nproc) + 1)) 
       echo "${nthread} thread compile: $*"
       make -j${nthread} "$@" | save_output | trickle
+      return ${PIPESTATUS[0]}
     elif [ "x${MODE}" = "xs" ]; then
       echo "Fallback to single thread compile: $*"
       make -j1 V=s "$@" | save_output | trickle
+      return ${PIPESTATUS[0]}
     else
       echo "No MODE specified" >&2
-      exit 1
+      return 1
     fi
   )
 }
