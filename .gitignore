@@ -1,6 +1,7 @@
 /user/current
 /openwrt_bin
 /openwrt_firmware
+/build
 
 .my-github-env
 .my-env

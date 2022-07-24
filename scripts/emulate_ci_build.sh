@@ -16,7 +16,7 @@ export HOST_WORK_DIR
 export BUILD_MODE=normal
 export BUILD_TARGET=x86_64
 export OPT_REBUILD=1
-export EXTERNAL_BUILD_DIR="${HOST_WORK_DIR}/build/openwrt"
+export EXTERNAL_BUILD_DIR="${HOST_WORK_DIR}/build"
 
 run_with_env() {
     source ${GITHUB_ENV}
