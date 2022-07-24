@@ -6,7 +6,9 @@ shopt -s extglob
 
 sudo chown -R "$(id -u):$(id -g)" "${HOST_BIN_DIR}"
 if [ "x${OPT_PACKAGE_ONLY}" != "x1" ]; then
-  mkdir "${HOST_WORK_DIR}/openwrt_firmware"
+  if [ ! -d "${HOST_WORK_DIR}/openwrt_firmware" ]; then
+    mkdir "${HOST_WORK_DIR}/openwrt_firmware"
+  fi
   # shellcheck disable=SC2164
   cd "${HOST_BIN_DIR}/targets/"*/*
   all_firmware_files=( !(packages) )
