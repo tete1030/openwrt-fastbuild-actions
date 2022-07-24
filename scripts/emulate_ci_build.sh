@@ -20,6 +20,9 @@ export EXTERNAL_BUILD_DIR="${HOST_WORK_DIR}/build"
 
 run_with_env() {
     source ${GITHUB_ENV}
+    echo "======================"
+    echo "Running $1"
+    echo "======================"
     $1
 }
 
@@ -35,5 +38,5 @@ run_with_env ${SCRIPT_DIR}/cisteps/build-openwrt/09-prepare_config.sh
 run_with_env ${SCRIPT_DIR}/cisteps/build-openwrt/10-download_packages.sh
 run_with_env ${SCRIPT_DIR}/cisteps/build-openwrt/11-compile_multi.sh
 run_with_env ${SCRIPT_DIR}/cisteps/build-openwrt/13-upload_builder.sh
-run_with_env ${SCRIPT_DIR}/cisteps/build-openwrt/14-upload_builder.sh
+run_with_env ${SCRIPT_DIR}/cisteps/build-openwrt/14-organize_files.sh
 
