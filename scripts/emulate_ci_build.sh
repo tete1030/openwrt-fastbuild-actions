@@ -59,6 +59,6 @@ if [[ $? -ne 0 ]]; then
     run_with_env 12 ${SCRIPT_DIR}/cisteps/build-openwrt/12-compile_single.sh
 fi
 set -eo pipefail
-run_with_env 13 ${SCRIPT_DIR}/cisteps/build-openwrt/13-upload_builder.sh
+# run_with_env 13 ${SCRIPT_DIR}/cisteps/build-openwrt/13-upload_builder.sh
 run_with_env 14 ${SCRIPT_DIR}/cisteps/build-openwrt/14-organize_files.sh
 
