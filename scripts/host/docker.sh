@@ -33,6 +33,10 @@ configure_docker() {
 }
 
 login_to_registry() {
+  if [ -z "${DK_USERNAME}" ] || [ -z "${DK_PASSWORD}" ]; then
+    echo "Missing input DK_USERNAME or DK_PASSWORD" >&2
+    exit 1
+  fi
   echo "${DK_PASSWORD}" | docker login -u "${DK_USERNAME}" --password-stdin "${DK_REGISTRY}"
 }
 

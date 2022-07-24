@@ -159,7 +159,7 @@ update_builder_info() {
     BUILDER_TAG="test-${BUILDER_TAG}"
     _set_env BUILDER_TAG
   fi
-  local builder_full_name="${DK_REGISTRY:+$DK_REGISTRY/}${DK_USERNAME}/${BUILDER_NAME}"
+  local builder_full_name="${DK_REGISTRY:+$DK_REGISTRY/}${DK_USERNAME:+$DK_USERNAME/}${BUILDER_NAME}"
   BUILDER_TAG_INC="${BUILDER_TAG}-inc"
   BUILDER_IMAGE_ID_BASE="${builder_full_name}:${BUILDER_TAG}"
   BUILDER_IMAGE_ID_INC="${builder_full_name}:${BUILDER_TAG_INC}"
