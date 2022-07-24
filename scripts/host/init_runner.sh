@@ -26,19 +26,27 @@ setup_envs() {
   HOST_BIN_DIR="${HOST_WORK_DIR}/openwrt_bin"
   BUILDER_PROFILE_DIR="${BUILDER_WORK_DIR}/user/current"
   HOST_ENV_FILE="${HOST_WORK_DIR}/.my-env"
-  touch "${HOST_ENV_FILE}"
-  chmod 666 "${HOST_ENV_FILE}"
+  touch "${HOST_ENV_FILE}" && chmod 666 "${HOST_ENV_FILE}"
   BUILDER_ENV_FILE="${BUILDER_WORK_DIR}/.my-env"
-  BUILDER_MOUNT_OPTS="
+  BUILDER_BUILD_DIR="${BUILDER_WORK_DIR}/build"
+  OPENWRT_COMPILE_DIR="${BUILDER_BUILD_DIR}/openwrt"
+  OPENWRT_SOURCE_DIR="${BUILDER_TMP_DIR}/openwrt"
+  OPENWRT_CUR_DIR="${OPENWRT_COMPILE_DIR}"
+
+  read -r -d '' BUILDER_MOUNT_OPTS<<-_ThisMessageEnds_ || :
     -v '${HOST_WORK_DIR}/scripts:${BUILDER_WORK_DIR}/scripts'
     -v '${HOST_WORK_DIR}/user:${BUILDER_WORK_DIR}/user'
     -v '${HOST_BIN_DIR}:${BUILDER_BIN_DIR}'
     -v '${HOST_TMP_DIR}:${BUILDER_TMP_DIR}'
     -v '${HOST_ENV_FILE}:${BUILDER_ENV_FILE}'
-  "
-  OPENWRT_COMPILE_DIR="${BUILDER_WORK_DIR}/openwrt"
-  OPENWRT_SOURCE_DIR="${BUILDER_TMP_DIR}/openwrt"
-  OPENWRT_CUR_DIR="${OPENWRT_COMPILE_DIR}"
+_ThisMessageEnds_
+
+  if [[ -n ${EXTERNAL_BUILD_DIR} ]]; then
+    read -r -d '' BUILDER_MOUNT_OPTS<<-_ThisMessageEnds_ || :
+      ${BUILDER_MOUNT_OPTS}
+      -v '${EXTERNAL_BUILD_DIR}:${BUILDER_BUILD_DIR}'
+_ThisMessageEnds_
+  fi
 
   # shellcheck disable=SC1090
   source "${HOST_WORK_DIR}/scripts/host/docker.sh"
@@ -173,6 +181,12 @@ prepare_dirs() {
     mkdir "${HOST_TMP_DIR}"
   fi
   chmod 777 "${HOST_TMP_DIR}"
+  if [[ -n ${EXTERNAL_BUILD_DIR} ]]; then
+    if [ ! -d "${EXTERNAL_BUILD_DIR}" ]; then
+      mkdir -p "${EXTERNAL_BUILD_DIR}"
+    fi
+    chmod -R a+w "${EXTERNAL_BUILD_DIR}"
+  fi
 }
 
 main() {
