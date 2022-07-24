@@ -30,7 +30,7 @@ export OPT_REBUILD=1
 export EXTERNAL_BUILD_DIR="${HOST_WORK_DIR}/build"
 
 run_with_env() {
-    if [[ $1 -le ${start_step} ]]; then
+    if [[ $1 -lt ${start_step} ]]; then
         echo "======================"
         echo "Skipping $2"
         echo "======================"
