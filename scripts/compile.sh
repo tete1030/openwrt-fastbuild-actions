@@ -5,8 +5,12 @@
 
 set -eo pipefail
 
-COMPILE_OUTPUT_FILE=/tmp/compile_output.txt
-FAILED_PKG_FILE=/tmp/failed_packages.txt
+COMPILE_OUTPUT_FILE="${BUILDER_TMP_DIR}/compile_output.txt"
+FAILED_PKG_FILE="${BUILDER_TMP_DIR}/failed_packages.txt"
+
+if [[ $FRESH_START == "1" && -f "${FAILED_PKG_FILE}" ]]; then
+    rm -f "${FAILED_PKG_FILE}"
+fi
 
 if [ -z "${OPENWRT_COMPILE_DIR}" ] || [ -z "${OPENWRT_CUR_DIR}" ] || [ -z "${OPENWRT_SOURCE_DIR}" ]; then
   echo "::error::'OPENWRT_COMPILE_DIR', 'OPENWRT_CUR_DIR' or 'OPENWRT_SOURCE_DIR' is empty" >&2

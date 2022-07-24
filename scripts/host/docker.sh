@@ -41,9 +41,9 @@ pull_image() {
   if [ -n "${IMAGE_TO_PULL}" ]; then
     (
       set +eo pipefail
-      docker pull "${IMAGE_TO_PULL}" 2> >(tee /tmp/dockerpull_stderr.log >&2)
+      docker pull "${IMAGE_TO_PULL}" 2> >(tee "${HOST_TMP_DIR}/dockerpull_stderr.log" >&2)
       ret_val=$?
-      if [ ${ret_val} -ne 0 ] && ( grep -q "max depth exceeded" /tmp/dockerpull_stderr.log ) ; then
+      if [ ${ret_val} -ne 0 ] && ( grep -q "max depth exceeded" "${HOST_TMP_DIR}/dockerpull_stderr.log" ) ; then
         echo "::error::Your image has exceeded maximum layer limit. Normally this should have already been automatically handled, but obviously haven't. You need to manually rebase or rebuild this builder, or delete it on the Docker Hub website." >&2
         exit 1
       fi
