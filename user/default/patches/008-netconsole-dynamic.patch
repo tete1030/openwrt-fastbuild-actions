@@ -1,0 +1,16 @@
+--- package/kernel/linux/modules/netsupport.mk
+--- package/kernel/linux/modules/netsupport.mk
+@@ -1317,10 +1317,11 @@
+ define KernelPackage/netconsole
+   SUBMENU:=$(NETWORK_SUPPORT_MENU)
+   TITLE:=Network console logging support
++  DEPENDS:=+kmod-fs-configfs
+   KCONFIG:=CONFIG_NETCONSOLE \
+-	  CONFIG_NETCONSOLE_DYNAMIC=n
++	  CONFIG_NETCONSOLE_DYNAMIC=y
+   FILES:=$(LINUX_DIR)/drivers/net/netconsole.ko
+-  AUTOLOAD:=$(call AutoProbe,netconsole)
++  AUTOLOAD:=$(call AutoProbe,31,netconsole)
+ endef
+ 
+ define KernelPackage/netconsole/description
