@@ -100,7 +100,7 @@ docker_exec() {
     done
     cp -f "${GITHUB_ENV}" "${HOST_ENV_FILE}"
     chmod 666 "${HOST_ENV_FILE}"
-    docker exec -i "${exec_envs[@]}" -e "GITHUB_ENV=${BUILDER_ENV_FILE}" "$@"
+    docker exec -i "${exec_envs[@]}" -e "TERM=${TERM}" -e "GITHUB_ENV=${BUILDER_ENV_FILE}" "$@"
     cp -f "${HOST_ENV_FILE}" "${GITHUB_ENV}"
   )
 }
