@@ -339,6 +339,7 @@ CONFIG_PACKAGE_tmux=y
 CONFIG_PACKAGE_transmission-daemon-openssl=y
 CONFIG_PACKAGE_transmission-web-control=y
 CONFIG_PACKAGE_uclibcxx=m
+CONFIG_PACKAGE_unzip=m
 CONFIG_PACKAGE_vim-full=y
 # CONFIG_PACKAGE_vlmcsd is not set
 CONFIG_PACKAGE_watchcat=y
